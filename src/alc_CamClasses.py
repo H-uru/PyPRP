@@ -37,11 +37,12 @@ from alcurutypes import *
 from alcdxtconv import *
 from alchexdump import *
 from alc_GeomClasses import *
-from alc_LogicClasses import *
+#from alc_LogicClasses import *
 from alcGObjects import *
 from alcConvexHull import *
 from alc_VolumeIsect import *
 from alc_AlcScript import *
+from alc_RefParser import *
 
 import alcconfig, alchexdump
 
@@ -51,11 +52,12 @@ import alcconfig, alchexdump
 
 class plCameraModifier1(hsKeyedObject):    # actually descends from plSingleModifer, but doesn't use those read/write functions
     class CamTrans:
-        def __init__(self,to=UruObjectRef()):
-            self.fTransTo = to
-            self.fCutPos = 0 # boolean
-            self.fCutPOA = 0 # boolean
-            self.fIgnore = 0 # boolean
+        def __init__(self,parent):
+            self.parent = parent
+            self.fTransTo = UruObjectRef()
+            self.fCutPos = False # boolean
+            self.fCutPOA = False # boolean
+            self.fIgnore = False # boolean
             self.fAccel = 60.0
             self.fDecel = 60.0
             self.fVelocity = 60.0
@@ -90,16 +92,25 @@ class plCameraModifier1(hsKeyedObject):    # actually descends from plSingleModi
         def import_obj(self,obj,count):
             pass
 
-        def export_obj(self,obj,prp):
+        def export_script(self,script):
+            self.fAccel = float(FindInDict(script,"accel",self.fAccel))
+            self.fDecel = float(FindInDict(script,"decel",self.fDecel))
+            self.fVelocity = float(FindInDict(script,"velocity",self.fVelocity))
+            self.fPOAAccel = float(FindInDict(script,"poaaccel",self.fPOAAccel))
+            self.fPOADecel = float(FindInDict(script,"poadecel",self.fPOADecel))
+            self.fPOCVelocity = float(FindInDict(script,"poavelocity",self.fPOAVelocity))
+
+            self.fCutPos = bool(str(FindInDict(script,"cutpos",str(self.fCutPos))).lower() == "true")
+            self.fCutPOA = bool(str(FindInDict(script,"cutpoa",str(self.fCutPOA))).lower() == "true")
+            self.fIgnore = bool(str(FindInDict(script,"ignore",str(self.fIgnore))).lower() == "true")
+
+            transto = FindInDict(script,"to",None)
+            # do something with that...
+            refparser = ScriptRefParser(self.parent.getRoot(),False,"scnobj",[0x0001])
+            self.fSubjectKey = refparser.MixedRef_FindCreateRef(transto)
+        
             pass
    
-    Flags = \
-    { \
-        "kRefBrain"         : 0, \
-        "kRefCut"           : 1, \
-        "kRefTrack"         : 2, \
-        "kRefCallbackMsg"   : 3  \
-    }
    
     def __init__(self,parent,name="unnamed",type=0x009B):
         hsKeyedObject.__init__(self,parent,name,type)
@@ -235,7 +246,9 @@ class plCameraModifier1(hsKeyedObject):    # actually descends from plSingleModi
 
         pass
 
-    def export_obj(self,obj,prp):
+    def export_obj(self,obj):
+        root = self.getRoot()
+    
         print "Exporting Camera Modifier Object"
     
         # --- Find the camera's script object ----
@@ -254,9 +267,6 @@ class plCameraModifier1(hsKeyedObject):    # actually descends from plSingleModi
             print "Camera is not perpective - please changeit to perspective"
             pass
         
-        # -------- Camera Transitions ---------
-        cam = plCameraModifier1.CamTrans()
-        self.fTrans.append(cam)
 
         # -------- Camera Brains --------
 
@@ -275,22 +285,51 @@ class plCameraModifier1(hsKeyedObject):    # actually descends from plSingleModi
         # determine the camera brain
         if(cambraintype == "fixed"):
             # fixed camera brain
-            cambrain = prp.find(0x009F,str(self.Key.name),1)
+            cambrain = plCameraBrain1_Fixed.FindCreate(root,str(self.Key.name))
         elif(cambraintype == "circle"):
             # Circle camera brain
-            cambrain = prp.find(0x00C2,str(self.Key.name),1)
+            cambrain = plCameraBrain1_Circle.FindCreate(root,str(self.Key.name))
         elif(cambraintype == "avatar"):
             # Avatar camera brain
-            cambrain = prp.find(0x009E,str(self.Key.name),1)
+            cambrain = plCameraBrain1_Avatar.FindCreate(root,str(self.Key.name))
         elif(cambraintype == "firstperson"):
             # First Person Camera Brain
-            cambrain = prp.find(0x00B3,str(self.Key.name),1)
+            cambrain = plCameraBrain1_FirstPerson.FindCreate(root,str(self.Key.name))
         else:
             # simple and default camera brain
-            cambrain = prp.find(0x0099,str(self.Key.name),1)
+            cambrain = plCameraBrain1.FindCreate(root,str(self.Key.name))
 
-        cambrain.data.export_obj(obj,prp)
+        cambrain.data.export_obj(obj)
         self.fBrain = cambrain.data.getRef()
+        
+        
+        # -------- Camera Transitions ---------
+        transitions = list(FindInDict(objscript,"camera.transitions",[]))
+        for transitionscript in transitions:
+            cam = plCameraModifier1.CamTrans(self)
+            cam.export_script(transitionscript)
+            self.fTrans.append(cam)
+
+        if len(self.fTrans) == 0:
+            cam = plCameraModifier1.CamTrans(self)
+            self.fTrans.append(cam)
+
+
+
+    def _Export(page,obj,scnobj,name):
+        # --------  Camera Modifier 1 -------------
+        cameramod = plCameraModifier1.FindCreate(page,name)
+        cameramod.data.export_obj(obj)
+
+        # now link the camera modifier to the object (twice, since that appears to be what cyan does
+        scnobj.data.addModifier(cameramod)
+        scnobj.data.addModifier(cameramod)
+        
+
+    Export = staticmethod(_Export)
+
+    ## Needs to be moved to plCameraModifier1.Export(self,obj,scnobj,name)
+
         
     def _Import(scnobj,prp,obj):
         # Lights
@@ -302,90 +341,7 @@ class plCameraModifier1(hsKeyedObject):    # actually descends from plSingleModi
                 break
 
     Import = staticmethod(_Import)
-        
 
-
-class plCameraRegionDetector(plDetectorModifier):    
-    def __init__(self,parent,name="unnamed",type=0x006F):
-        plDetectorModifier.__init__(self,parent,name,type)
-        
-        self.fMessages = []
-        
-    def _Find(page,name):
-        return page.find(0x006F,name,0)
-    Find = staticmethod(_Find)
-
-    def _FindCreate(page,name):
-        return page.find(0x006F,name,1)
-    FindCreate = staticmethod(_FindCreate)
-
-    def changePageRaw(self,sid,did,stype,dtype):
-        plDetectorModifier.changePageRaw(self,sid,did,stype,dtype)
-
-    def read(self,stream):
-        plDetectorModifier.read(self,stream)
-       
-        count = stream.Read32()
-        self.fMessages = []
-        for i in range(count):
-            msg = plCameraMsg()
-            type = stream.Read16() # read in message type
-            msg.read(stream)
-            self.fMessages.append(msg)
-    
-    def write(self,stream):
-        plDetectorModifier.write(self,stream)
-        
-        stream.Write32(len(self.fMessages))
-        for msg in self.fMessages:
-            stream.Write16(msg.MessageType) # read in message type
-            msg.write(stream)
-    
-
-
-    def import_obj(self,obj):
-        try:
-            obj.removeProperty("regiontype")
-        except:
-            pass
-        obj.addProperty("regiontype","camera")
-
-        objscript = AlcScript.objects.FindOrCreate(obj.name)
-
-        msgscripts = []
-        for msg in self.fMessages:
-            msgscript = {} 
-            StoreInDict(msgscript,"camera",str(msg.fNewCam.Key.name))
-
-            if self.fMessages[0].fCmd[plCameraMsg.ModCmds["kSetAsPrimary"]] == 1:
-                StoreInDict(msgscript,"setprimary",True)
-            else:
-                StoreInDict(msgscript,"setprimary",False)
-            
-            msgscripts.append(msgscript)
-        
-        StoreInDict(objscript,"region.camera.cameras",msgscripts)
-
-    def export_obj(self,camerakey,obj,prp):
-        print "Exporting Camera Region Detector"
-        
-        CamMsg = plCameraMsg()
-        CamMsg.fNewCam = camerakey
-        CamMsg.fBCastFlags |= plMessage.plBCastFlags["kBCastByType"]
-        CamMsg.fCmd[plCameraMsg.ModCmds["kRegionPushCamera"]] = 1 # this makes it set the camera
-        
-        setdefault = getTextPropertyOrDefault(obj,"setDefCam","0")
-        if(setdefault != "0" and setdefault != "false" and setdefault != "False"):
-            print "Setting camera region to change the default camera region"
-            CamMsg.fCmd[plCameraMsg.ModCmds["kSetAsPrimary"]] = 1
-        else:
-            print "Setting camera region to temporary switch"
-
-        
-
-        
-        self.fMessages.append(CamMsg)
-    
 
 class plCameraBrain1(hsKeyedObject):    
 
@@ -417,6 +373,38 @@ class plCameraBrain1(hsKeyedObject):
         "kFallingStopped"           : 24,
         "kBeginFalling"             : 25 
     }
+    
+    ScriptFlags = {
+        "cutpos"                   : 0,
+        "cutposonce"               : 1, 
+        "cutpoa"                   : 2, 
+        "cutpoaonce"               : 3, 
+        "animatefov"               : 4,
+        "followlocalavatar"        : 5, 
+        "panicvelocity"            : 6, 
+        "railcomponent"            : 7, 
+        "subject"                  : 8,
+        "circletarget"             : 9, 
+        "maintainlOS"              : 10, 
+        "zoomenabled"              : 11, 
+        "istransitioncamera"       : 12,
+        "worldspacepoa"            : 13, 
+        "worldspacepos"            : 14, 
+        "cutposwhilepan"           : 15, 
+        "cutpoawhilepan"           : 16,
+        "nonphys"                  : 17, 
+        "neveranimatefov"          : 18, 
+        "ignoresubworldmovement"   : 19, 
+        "falling"                  : 20,
+        "running"                  : 21, 
+        "verticalwhenfalling"      : 22, 
+        "speedupwhenrunning"       : 23, 
+        "fallingstopped"           : 24,
+        "beginfalling"             : 25 
+    }
+    
+    
+    
     def __init__(self,parent,name="unnamed",type=0x0099):
         hsKeyedObject.__init__(self,parent,name,type)
         #format
@@ -495,15 +483,31 @@ class plCameraBrain1(hsKeyedObject):
 
 
     def import_obj(self,obj):
-        obj.addProperty("POA_X",float(self.fPOAOffset.x))    
-        obj.addProperty("POA_Y",float(self.fPOAOffset.y))    
-        obj.addProperty("POA_Z",float(self.fPOAOffset.z))    
+        objscript = AlcScript.objects.FindCreate(obj.name)
+        StoreInDict(objscript,"camera.brain.type","simple")
 
-        if(str(self.fRail.Key.name) != ""):
-            obj.addProperty("RailCamera",str(self.fRail.Key.name)) 
+        StoreInDict(objscript,"camera.brain.poa","%f,%f,%f"%(float(self.fPOAOffset.x),float(self.fOAOffset.y),float(self.fPOAOffset.z)))
+        StoreInDict(objscript,"camera.brain.accel",self.fAccel)
+        StoreInDict(objscript,"camera.brain.decel",self.fDecel)
+        StoreInDict(objscript,"camera.brain.velocity",self.fVelocity)
+        StoreInDict(objscript,"camera.brain.poaaccel",self.fPOAAccel)
+        StoreInDict(objscript,"camera.brain.poadecel",self.fPOADecel)
+        StoreInDict(objscript,"camera.brain.poavelocity",self.fPOAVelocity)
+        StoreInDict(objscript,"camera.brain.xpanlimit",self.fXPanLimit)
+        StoreInDict(objscript,"camera.brain.zpanlimit",self.fZPanLimit)
+        StoreInDict(objscript,"camera.brain.zoomrate",self.fZoomRate)
+        StoreInDict(objscript,"camera.brain.zoommin",self.fZoomMin)
+        StoreInDict(objscript,"camera.brain.zoommax",self.fZoomMax)
+
+        if not self.fRail.isNull():
+            StoreInDict(objscript,"camera.brain.rail","%0x%X:%s"%(int(self.fSubjectKey.object_type),str(self.fSubjectKey.Key.Name)))
+
+        if not self.fSubjectKey.isNull():
+            StoreInDict(objscript,"camera.brain.subjectkey","%0x%X:%s"%(int(self.fSubjectKey.object_type),str(self.fSubjectKey.Key.Name)))
+
        
 
-    def export_obj(self,obj,prp):
+    def export_obj(self,obj):
         print "Exporting CameraBrain1"
         # -------- Initialize default settings
         self.fFlags[plCameraBrain1.Flags["kFollowLocalAvatar"]] = 1
@@ -512,6 +516,34 @@ class plCameraBrain1(hsKeyedObject):
         
         # ------ Obtain the AlcScript Object ------
         objscript = AlcScript.objects.Find(obj.name)
+
+
+        self.fAccel = float(FindInDict(objscript,"camera.brain.accel",self.fAccel))
+        self.fDecel = float(FindInDict(objscript,"camera.brain.decel",self.fDecel))
+        self.fVelocity = float(FindInDict(objscript,"camera.brain.velocity",self.fVelocity))
+        self.fPOAAccel = float(FindInDict(objscript,"camera.brain.poaaccel",self.fPOAAccel))
+        self.fPOADecel = float(FindInDict(objscript,"camera.brain.poadecel",self.fPOADecel))
+        self.fPOCVelocity = float(FindInDict(objscript,"camera.brain.poavelocity",self.fPOAVelocity))
+        self.fXPanLimit= float(FindInDict(objscript,"camera.brain.xpanlimit",self.fXPanLimit))
+        self.fZPanLimit= float(FindInDict(objscript,"camera.brain.zpanlimit",self.fZPanLimit))
+        self.fZoomRate= float(FindInDict(objscript,"camera.brain.zoomrate",self.fZoomRate))
+        self.fZoomMin= float(FindInDict(objscript,"camera.brain.zoommin",self.fZoomMin))
+        self.fZoomMax= float(FindInDict(objscript,"camera.brain.zoommax",self.fZoomMax))
+        
+        # AlcScript: camera.brain.subjectkey
+        subject = FindInDict(objscript,"camera.brain.subjectkey",None)
+        # do something with that...
+        refparser = ScriptRefParser(self.getRoot(),"",False,[])
+        self.fSubjectKey = refparser.MixedRef_FindCreateRef(subject)
+
+        # AlcScript: camera.brain.subjectkey
+        rail = FindInDict(objscript,"camera.brain.rail",None)
+        # do something with that...
+        refparser = ScriptRefParser(self.getRoot(),"",False,[])
+        self.fRail = refparser.MixedRef_FindCreateRef(rail)
+
+
+
         # ------ Process ------
         # AlcScript: camera.brain.poa = "<float X>,<float Y>,<float Z>"
         poa = str(FindInDict(objscript,"camera.brain.poa","0,0,0"))
@@ -521,36 +553,15 @@ class plCameraBrain1(hsKeyedObject):
         except ValueError, detail:
             print "  Error parsing camera.brain.poa (Value:",poa,") : ",detail
 
-        # AlcScript: camera.brain.followavatar = [ "false", "true" (Default)]
-        follow = str(FindInDict(objscript,"camera.brain.followavatar","0,0,0"))
-        if follow.lower() == "false":
-            self.fFlags[plCameraBrain1.Flags["kFollowLocalAvatar"]] = 0
-        else:
-            self.fFlags[plCameraBrain1.Flags["kFollowLocalAvatar"]] = 1
-        
-        # AlcScript: camera.brain.cutposition= [ "once", "true", "false" (Default)]
-        brain_cutpos = str(FindInDict(objscript,"camera.brain.cutposition","false"))
-        if brain_cutpos == "true":
-            self.fFlags[plCameraBrain1.Flags["kCutPos"]] = 1
-            self.fFlags[plCameraBrain1.Flags["kCutPosOnce"]] = 0
-        elif brain_cutpos == "once":
-            self.fFlags[plCameraBrain1.Flags["kCutPos"]] = 0
-            self.fFlags[plCameraBrain1.Flags["kCutPosOnce"]] = 1
-        else:
-            self.fFlags[plCameraBrain1.Flags["kCutPos"]] = 0
-            self.fFlags[plCameraBrain1.Flags["kCutPosOnce"]] = 0
-        
-        # AlcScript: camera.brain.cutpoa = [ "once", "true", "false" (Default)]
-        brain_cutpoa = str(FindInDict(objscript,"camera.brain.cutpoa","false"))
-        if brain_cutpoa == "true":
-            self.fFlags[plCameraBrain1.Flags["kCutPOA"]] = 1
-            self.fFlags[plCameraBrain1.Flags["kCutPOAOnce"]] = 0
-        elif brain_cutpoa == "once":
-            self.fFlags[plCameraBrain1.Flags["kCutPOA"]] = 0
-            self.fFlags[plCameraBrain1.Flags["kCutPOAOnce"]] = 1
-        else:
-            self.fFlags[plCameraBrain1.Flags["kCutPOA"]] = 0
-            self.fFlags[plCameraBrain1.Flags["kCutPOAOnce"]] = 0
+        flags = FindInDict(objscript,"camera.brain.flags",None)
+        if type(flags) == list:
+            self.fFlags = hsBitVector() # reset
+            for flag in flags:
+                if flag.lower() in plCameraBrain1.ScriptFlags:
+                    idx =  plCameraBrain1.ScriptFlags[flag.lower()]
+                    self.fFlags.SetBit(idx)
+
+  
                 
 
         
@@ -596,20 +607,26 @@ class plCameraBrain1_Fixed(plCameraBrain1):
 
     def import_obj(self,obj):
         plCameraBrain1.import_obj(self,obj)
-        obj.addProperty("cambrain","fixed")
-        obj.addProperty("Fixedcam_target",str(self.fTargetPoint.Key.name))
+        objscript = AlcScript.objects.FindCreate(obj.name)
+        StoreInDict(objscript,"camera.brain.type","fixed")
+        if not self.fTargetPoint.isNull():
+            StoreInDict(objscript,"camera.brain.target","%0x%X:%s"%(int(self.fSubjectKey.object_type),str(self.fSubjectKey.Key.Name)))
         
 
-    def export_obj(self,obj,prp):
-        plCameraBrain1.export_obj(self,obj,prp)
+    def export_obj(self,obj):
+        plCameraBrain1.export_obj(self,obj)
         print "Exporting CameraBrain1_Fixed"
         # ------ Obtain the AlcScript Object ------
         objscript = AlcScript.objects.Find(obj.name)
         # ------ Conintue if it's set ------
 
         # AlcScript: camera.brain.target = string
-        target = str(FindInDict(objscript,"camera.brain.target",""))
+        target = FindInDict(objscript,"camera.brain.target",None)
         # do something with that...
+        refparser = ScriptRefParser(self.getRoot(),"","scnobj",[0x0001])
+        self.fTargetPoint = refparser.MixedRef_FindCreateRef(target)
+        
+        
 
 class plCameraBrain1_Circle(plCameraBrain1_Fixed):
     CircleFlags = {
@@ -621,6 +638,18 @@ class plCameraBrain1_Circle(plCameraBrain1_Fixed):
         "kPOAObject"            : 0x20,
         "kCircleLocalAvatar"    : 0x40
     }
+
+    ScriptCircleFlags = {
+        "lagged"               :  0x1,
+        "absolutelag"          :  0x3,
+        "farthest"             :  0x4,
+        "targetted"            :  0x8,
+        "hascenterobject"      : 0x10,
+        "poaobject"            : 0x20,
+        "circlelocalavatar"    : 0x40
+    }
+    
+    
     def __init__(self,parent,name="unnamed",type=0x00C2):
         plCameraBrain1_Fixed.__init__(self,parent,name,type)
 
@@ -694,16 +723,26 @@ class plCameraBrain1_Circle(plCameraBrain1_Fixed):
 
     def import_obj(self,obj):
         plCameraBrain1.import_obj(self,obj)
-        obj.addProperty("cambrain","circle")
-        
-        obj.addProperty("Circle_flags",alcHex2Ascii(self.fCircleFlags))
+        objscript = AlcScript.objects.FindCreate(obj.name)
+        StoreInDict(objscript,"camera.brain.type","circle")
         
         obj.data.setClipEnd(self.fRadius)
         obj.data.setMode("showLimits")
      
 
-    def export_obj(self,obj,prp):
-        plCameraBrain1.export_obj(self,obj,prp)
+        flaglist = []
+        
+        for flag in plCameraBrain1_Circle.ScriptCircleFlags.keys():
+            if self.fCicleFlags & plCameraBrain1_Circle.ScriptCircleFlags[flag] > 0:
+                flaglist.append(flag)
+        
+        
+        StoreInDict(objscript,"camera.brain.cicleflags",flaglist)
+
+
+
+    def export_obj(self,obj):
+        plCameraBrain1_Fixed.export_obj(self,obj)
         # -------- Export based on blender object -------
         # get the matrices
         LocalToWorld=hsMatrix44()
@@ -721,14 +760,12 @@ class plCameraBrain1_Circle(plCameraBrain1_Fixed):
         # -------Continue based on AlcScript object ------
         objscript = AlcScript.objects.Find(obj.name)
         # ------ Conintue if it's set ------
-        # AlcScript: camera.brain.distance = ["farthest","closest" (default)]
-        dist = str(FindInDict(objscript,"camera.brain.distance","closest"))
-        if dist.lower() == "farthest":
-            self.fCircleFlags |= plCameraBrain1_Circle.CircleFlags["kFarthest"]
-        # AlcScript: camera.brain.circleavatar = ["true" (default),"false"]
-        follow = str(FindInDict(objscript,"camera.brain.circleavatar","true"))
-        if follow.lower() == "true":
-            self.fCircleFlags |= plCameraBrain1_Circle.CircleFlags["kCircleLocalAvatar"]
+        flags = FindInDict(objscript,"camera.brain.circleflags",None)
+        if type(flags) == list:
+            self.fCircleFlags = 0
+            for flag in flags:
+                if flag.lower() in plCameraBrain1_Circle.ScriptCircleFlags:
+                    self.fCircleFlags |= plCameraBrain1_Circle.ScriptCircleFlags[flag.lower()]
 
 
 class plCameraBrain1_Avatar(plCameraBrain1):    
@@ -774,25 +811,25 @@ class plCameraBrain1_Avatar(plCameraBrain1):
 
     def import_obj(self,obj):
         plCameraBrain1.import_obj(self,obj)
-        obj.addProperty("cambrain","avatar")
-        obj.addProperty("AvCam_X",float(self.fOffset.x))
-        obj.addProperty("AvCam_Y",float(self.fOffset.y))
-        obj.addProperty("AvCam_Z",float(self.fOffset.z))
+        objscript = AlcScript.objects.FindCreate(obj.name)
+        StoreInDict(objscript,"camera.brain.type","avatar")
+        
+        StoreInDict(objscript,"camera.brain.fpoffset","%f,%f,%f"%(float(self.fOffset.x),float(self.fOffset.y),float(self.fOffset.z)))
 
-    def export_obj(self,obj,prp):
+    def export_obj(self,obj):
         plCameraBrain1.export_obj(self,obj,prp)
-        # -------- Export based on blender object -------
-        self.fOffset.x = getFloatPropertyOrDefault(obj,"AvCam_X",self.fOffset.x)
-        self.fOffset.y = getFloatPropertyOrDefault(obj,"AvCam_Y",self.fOffset.y)
-        self.fOffset.z = getFloatPropertyOrDefault(obj,"AvCam_Z",self.fOffset.z)
 
         # ------ Obtain the AlcScript Object ------
-        script_cam = AlcScript.objects.Find(obj.name)
+        objscript = AlcScript.objects.Find(obj.name)
         # ------ Conintue if it's set ------
-        if script_cam != None:
-            if script_cam.Contains("brain"):
-                if script_cam.brain.Contains("avatar"):
-                    pass
+        # AlcScript: camera.brain.offset = "<float X>,<float Y>,<float Z>"
+
+        offset = str(FindInDict(objscript,"camera.brain.offset","0,0,0"))
+        try:
+            X,Y,Z, = offset.split(',')
+            self.fOffset = Vertex(float(X),float(Y),float(Z))
+        except ValueError, detail:
+            print "  Error parsing camera.brain.offset (Value:",offset,") : ",detail
 
 
 class plCameraBrain1_FirstPerson(plCameraBrain1_Avatar):    
@@ -818,22 +855,8 @@ class plCameraBrain1_FirstPerson(plCameraBrain1_Avatar):
 
 
     def import_obj(self,obj):
-        plCameraBrain1.import_obj(self,obj)
-        obj.addProperty("cambrain","firstperson")
-        obj.addProperty("FpCam_X",float(self.fOffset.x))
-        obj.addProperty("FpCam_Y",float(self.fOffset.y))
-        obj.addProperty("FpCam_Z",float(self.fOffset.z))
-
-    def export_obj(self,obj,prp):
-        plCameraBrain1.export_obj(self,obj,prp)
-
-        # ------ Obtain the AlcScript Object ------
-        objscript = AlcScript.objects.Find(obj.name)
-        # ------ Conintue if it's set ------
-        # AlcScript: camera.brain.offset = "<float X>,<float Y>,<float Z>"
-        offset = str(FindInDict(objscript,"camera.brain.offset","0,0,0"))
-        try:
-            X,Y,Z, = offset.split(',')
-            self.fOffset = Vertex(float(X),float(Y),float(Z))
-        except ValueError, detail:
-            print "  Error parsing camera.brain.offset (Value:",offset,") : ",detail
+        plCameraBrain1_Avatar.import_obj(self,obj)
+        StoreInDict(objscript,"camera.brain.type","firstperson")
+        
+    def export_obj(self,obj):
+        plCameraBrain1_Avatar.export_obj(self,obj,prp)

@@ -358,7 +358,7 @@ class alcUruPage:
 
         # Second pass: 
         #  Lights 
-        #  Click Regions 
+        #  Empties
         #  Camera Regions
         
         AlcLogicHelper.clickregion_list=[]
@@ -444,6 +444,7 @@ class alcUruPage:
                     #find the sceneobject or create it
                     scnobj = self.prp.find(0x01,name,1)
                     scnobj.data.scene=SceneNodeRef
+                    
                     plCoordinateInterface.Export(self,obj,scnobj,name,1,objlist)
                     
                     audioIface = self.prp.find(0x0011, name, 1) #Create the audio Interface
@@ -466,6 +467,9 @@ class alcUruPage:
                     
                     scnobj.data.audio = audioIface.data.getRef() #Set the Audio Interface ref
 
+                    # Logical Export
+                    AlcLogicHelper.Export(self,obj,scnobj,name)
+
                 elif alctype=="swpoint": #A spawnPoint
                     print "" 
                     print "[SpawnPoint %s]" % name
@@ -485,6 +489,9 @@ class alcUruPage:
 
                     # Coordinate Export
                     plCoordinateInterface.Export(self,obj,scnobj,name,1,objlist)
+
+                    # Logical Export
+                    AlcLogicHelper.Export(self,obj,scnobj,name)
                 
                 else: # Any other point
                     print "" 
@@ -495,57 +502,21 @@ class alcUruPage:
                     # Coordinate Export
                     plCoordinateInterface.Export(self,obj,scnobj,name,1,objlist)
 
+                    # Logical Export
+                    AlcLogicHelper.Export(self,obj,scnobj,name)
+
 
             elif obj_type=="Mesh":
                 # See if it is a region
                 
                 if (alctype=="region"):
                     
-                    try:
-                        regiontype = objscript['regiontype']
-                    except:
-                        regiontype = "unknown"
-                    
+                    regiontype = str(FindInDict(objscript,'regiontype',"logic"))
                     regiontype = getTextPropertyOrDefault(obj,"regiontype",regiontype)
                     
-                    # Only process Camera regions....
-
-                    # This will be so deprectated! :)
-                    
-                    if(regiontype == "camerargn"):
-                        # camera regions should also be processed in the first pass
-                        # so all click regions are known before we process camera objects
-                        name=str(obj.name)
-                            
-                        print "" 
-                        print "[Camera Region %s]" % name
-
-                        #find the sceneobject or create it
-                        scnobj=self.prp.find(0x01,name,1)
-                        scnobj.data.scene=SceneNodeRef
-                        
-                        isdynamic=1 # Camera regions default to dynamic
-                        
-                        # Simulation export
-                        plSimulationInterface.Export(self,obj,scnobj,name,SceneNodeRef,isdynamic)
-    
-                        # Coordinate export
-                        plCoordinateInterface.Export(self,obj,scnobj,name,isdynamic,objlist)
-    
-                        # Now we store a few things in the scene object.
-                        # read in and store to which camera it refers
-                        scnobj.attach["cameralink"] = getTextPropertyOrDefault(obj,"camera",None)
-                        # store its blender object
-                        scnobj.attach["blendobj"] = obj 
-                        
-                        print " Links to Camera '%s'" % (scnobj.attach["cameralink"])
-    
-                        # Add it to the camera region list
-                        camregion_list.append(scnobj)
-                    
-                    # Hm, we actually, still have that option? It's probably broken now....
-                    # Better let someone fix it up majorly
-                    elif(regiontype == "climbable"):
+                    if(regiontype == "climbable"):
+                        # Special space to process climbable regions....
+                        # Code must be reviewed....
                         
                         print "" 
                         print "[Climbable Region %s]" % name
@@ -590,7 +561,39 @@ class alcUruPage:
                     alctype = 'object'
                 alctype = getTextPropertyOrDefault(obj,"alctype",alctype)
 
-                if alctype=="object" or alctype=="sprite": #Object or sprite export
+                if alctype=="region": #region export
+                    print "" 
+                    print "[Region Object %s]" % name
+
+                    try:
+                        regiontype = objscript['regiontype']
+                    except:
+                        regiontype = "unknown"
+                    
+                    regiontype = getTextPropertyOrDefault(obj,"regiontype",regiontype)
+
+                    print " Region type: %s"% regiontype 
+                    
+                    #find the sceneobject or create it
+                    scnobj=self.prp.find(0x01,name,1)
+                    scnobj.data.scene=SceneNodeRef
+
+                    # handle any special col_type settings here:
+                    
+                    isdynamic = AlcLogicHelper.IsRegionDynamic(obj)
+                    AlcLogicHelper.ExportRegions(self,obj,scnobj,name)
+                    
+                    # Region-specific settings are processed in the plHKPhysical exporter
+                    plSimulationInterface.Export(self,obj,scnobj,name,SceneNodeRef,isdynamic)
+
+                    # Export the coordinate interface ('self' is passed as ref to this resmgr)
+                    plCoordinateInterface.Export(self,obj,scnobj,name,isdynamic,objlist)
+
+                elif alctype=="collider": #Physical export
+                    # we export colliders on the fourth pass
+                    objlist2.append(obj)
+
+                else: #if alctype=="object" or alctype=="sprite" or anything else...
                     #find the sceneobject or create it
                     scnobj=self.prp.find(0x01,name,1)
                     scnobj.data.scene=SceneNodeRef
@@ -622,8 +625,6 @@ class alcUruPage:
                         print "          - Object is ladder-sized"
                         print "          If these criteria are not met, unpredictible results might occur"
                         print "          Consider using Climbable regions for more predictability"
-                    
-                    
 
                     # Logical Export
                     AlcLogicHelper.Export(self,obj,scnobj,name)
@@ -639,55 +640,6 @@ class alcUruPage:
 
                     # Coordinate Export
                     plCoordinateInterface.Export(self,obj,scnobj,name,isdynamic,objlist)
-
-                    
-                elif alctype=="region": #region export
-                    print "" 
-                    print "[Region Object %s]" % name
-
-                    try:
-                        regiontype = objscript['regiontype']
-                    except:
-                        regiontype = "unknown"
-                    
-                    regiontype = getTextPropertyOrDefault(obj,"regiontype",regiontype)
-
-                    print " Region type: %s"% regiontype 
-                    
-                    #find the sceneobject or create it
-                    scnobj=self.prp.find(0x01,name,1)
-                    scnobj.data.scene=SceneNodeRef
-
-                    # handle any special col_type settings here:
-                    
-                    isdynamic = AlcLogicHelper.IsRegionDynamic(obj)
-                    AlcLogicHelper.ExportRegions(self,obj,scnobj,name)
-                    
-                    # Region-specific settings are processed in the plHKPhysical exporter
-                    plSimulationInterface.Export(self,obj,scnobj,name,SceneNodeRef,isdynamic)
-
-                    # Export the coordinate interface ('self' is passed as ref to this resmgr)
-                    plCoordinateInterface.Export(self,obj,scnobj,name,isdynamic,objlist)
-
-                            
-                ######################
-                # Point type support
-                ######################
-                elif alctype=="point": 
-                    print "" 
-                    print "[Point Object %s]" % name
-                    #find the sceneobject or create it
-                    scnobj=self.prp.find(0x01,name,1)
-                    scnobj.data.scene=SceneNodeRef
-                    # get the coordinates
-                    self.setCoordInterface(scnobj,name,1,obj)
-
-                elif alctype=="collider": #Physical export
-                    # we export colliders on the fourth pass
-                    objlist2.append(obj)
-
-                else: # alctype not recognized 
-                    objlist2.append(obj)
  
             elif obj_type=="Camera":
                 print "" 
@@ -700,38 +652,11 @@ class alcUruPage:
                 # Export the coordinate interface ('self' is passed as ref to this resmgr)
                 plCoordinateInterface.Export(self,obj,scnobj,name,isdynamic,objlist)
 
-                ## Needs to be moved to plCameraModifier1.Export(self,obj,scnobj,name)
-                # --------  Camera Modifier 1 -------------
-                cameramod = self.prp.find(0x009B,name,1)
-                cameramod.data.export_obj(obj,self.prp)
+                # Logical Export - OK, may be a bit weird but perhaps someone has use for it :)
+                AlcLogicHelper.Export(self,obj,scnobj,name)
+
+                plCameraModifier1.Export(self,obj,scnobj,name)
                                  
-                # now link the camera modifier to the object (twice, since that appears to be what cyan does
-                scnobj.data.data2.append(cameramod.data.getRef())
-                scnobj.data.data2.append(cameramod.data.getRef())
-
-                # --------  Camera Detector Region ---------
-
-                ## Needs to be moved to plCameraRegionDetector.Export(self,obj,scnobj,name,camregion_list)
-                
-                # Now locate a cameraregion that links to this camera
-                foundCamRegion = 0
-                for camregion in camregion_list:
-                    # see what camera regions link to this camera
-                    if(camregion.attach["cameralink"] == name):
-                        print "Region %s links to this camera" % str(camregion.data.Key.name)
-                        # now create the camera Region Detector
-                        camregdetect = self.prp.find(0x006F,name,1)
-                        camerakey = scnobj.data.getRef()
-                        # find or create the parent object
-                        #find the sceneobject or create it
-                        camregdetect.data.export_obj(camerakey,camregion.attach["blendobj"],self.prp)
-                        camregion.data.scene=SceneNodeRef
-                        camregion.data.data2.append(camregdetect.data.getRef())
-                        foundCamRegion += 1
-                if(foundCamRegion == 0):
-                    print "  WARNING: Camera has NO regions associated"
-                else:
-                    print " Camera has %d regions associated" % foundCamRegion
                     
             else: # Not a mesh - save for next pass
                 objlist2.append(obj)

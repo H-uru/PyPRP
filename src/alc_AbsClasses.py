@@ -48,7 +48,6 @@ class plSynchedObject(hsKeyedObject):                       #Type 0x28
         "kAllStateIsVolatile"        : 0x80  \
     }
 
-
     def __init__(self,parent,name="unnamed",type=0x28):
         hsKeyedObject.__init__(self,parent,name,type)
         self.fSynchFlags=0

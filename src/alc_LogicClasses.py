@@ -46,55 +46,38 @@ from alc_SwimClasses import *
 from alc_Messages import *
 from alc_Classes import *
 from alc_RefParser import *
+from alc_ObjClasses import *
 
 class AlcLogicHelper:
 
     def _Export(page,obj,scnobj,name):
-        AlcLogicHelper.ExportSDL(page,obj,scnobj,name)
-        AlcLogicHelper.ExportClickable(page,obj,scnobj,name)
+        print " [LogicHelper]"
+        objscript = AlcScript.objects.Find(obj.name)
+        # Export prefefined scripts:
+     
+#        AlcLogicHelper.ExportSDL(page,obj,scnobj,name)
+#        AlcLogicHelper.ExportClickable(page,obj,scnobj,name)
+
+        # Export the logic....
+        logicscript = FindInDict(objscript,'logic',{})
+        AlcLogicHelper.ExportLogic(page,logicscript,scnobj)    
         pass
     Export = staticmethod(_Export)
 
     def _ExportSDL(page,obj,scnobj,name):
-        #
-        # Check For Conditional Objects
-        #
-        try:
-            p=obj.getProperty("sdldefault")
-            sdldefault=bool(p.getData())
-        except (AttributeError, RuntimeError):
-            sdldefault=None
-        if (sdldefault != None):
-            pythname=str("Pyth") + name + str("_Vis")
-            sdlname=name + str("Vis")
-            if sdldefault==True:
-                sdld="1"
-            else:
-                sdld="0"
-            print "=> Conditional Objects (uses and SDL value of 'VAR BOOL	      %s[1]		DEFAULT=%s DEFAULTOPTION=VAULT') <=" % (sdlname, sdld)
-            pythMod = page.prp.find(0x00A2,pythname,1)
-            pythMod.data.PyFile = Ustr("xAgeSDLBoolShowHide",self.age.version)
-            pyArg1 = plPyArg()
-            pyArg1.idx = 0x00000001
-            pyArg1.type = 0x00000004
-            pyArg1.data = str32(sdlname,0)
-            pythMod.data.PyArgs.append(pyArg1)
-            pyArg2 = plPyArg()
-            pyArg2.idx = 0x00000003
-            pyArg2.type = 0x00000001
-            pyArg2.data = 0x00000000
-            pythMod.data.PyArgs.append(pyArg2)
-            scnobj.data.data2.append(pythMod.data.getRef())
-    
+        pass
     ExportSDL = staticmethod(_ExportSDL)
 
     def _ExportClickable(page,obj,scnobj,name):
         pass
-    
     ExportClickable = staticmethod(_ExportClickable)
 
     
     def _CreateLadderRegions(page,obj):
+        
+        # don't process any further until we reviewed this
+        return
+
         # creates a set of ladder regions from the bounding box of an object
 
        
@@ -300,7 +283,8 @@ class AlcLogicHelper:
     def _ExportRegions(page,obj,scnobj,name):
         objscript = AlcScript.objects.Find(obj.name)
 
-        regiontype = str(FindInDict(objscript,'regiontype',"logic"))
+        regiontype = FindInDict(objscript,'region.type',"logic")
+        regiontype = FindInDict(objscript,'regiontype',regiontype)
         regiontype = getTextPropertyOrDefault(obj,"regiontype",regiontype)
 
         print " [LogicHelper]"
@@ -312,6 +296,8 @@ class AlcLogicHelper:
             plSwimRegionInterface.Export(page,obj,scnobj,name)
         elif regiontype.lower() == "panic":
             plPanicLinkRegion.Export(page,obj,scnobj,name)
+        elif regiontype.lower() == "camera":
+            plCameraRegionDetector.Export(page,obj,scnobj,name)
         elif regiontype.lower() == "logic":
             logicscript = FindInDict(objscript,'logic',{})
             AlcLogicHelper.ExportLogic(page,logicscript,scnobj)
@@ -350,17 +336,23 @@ class AlcLogicHelper:
             actions = [actions,]
         if type(actions) == list:
             AlcLogicHelper.ExportActions(page,actions,scnobj)
+        else:
+            print "   No actions in list"
         
+        print "   Exporting modifiers"
         # export of modifiers is delegated to the plInterfaceInfoModifier
         logicmods = FindInDict(script,"modifiers",None)
         if type(logicmods) == dict: # It should be a list - if it's a dict, make it a list with one entry
             logicmods = [logicmods,]
         if type(logicmods) == list:
             plInterfaceInfoModifier.Export(page,logicmods,scnobj)
+        else:
+            print "   No modifiers"
 
     ExportLogic = staticmethod(_ExportLogic)
 
     def _ExportActions(page,script,scnobj):
+        print "   Exporting actions"
         if type(script) == list:
             for actscript in script:
                 if type(actscript) == dict:
@@ -377,7 +369,8 @@ class AlcLogicHelper:
                     # if we have a name, then that one overrides the tag
                     name = FindInDict(actscript,"name",None)
                     if not name is None:
-                        handle is name
+                        handle = name
+
 
                     # Now parse the action data
                     _type = str(FindInDict(actscript,'type','none'))
@@ -410,7 +403,7 @@ class AlcLogicHelper:
 
     RunQuickScript = staticmethod(_RunQuickScript)
             
-    def _ExportFootstep(page,surfacelist,scnobj):
+    def _ExportFootstep(page,surface,scnobj):
         # Build up the required script
         
         txt  = "modifiers:\n"
@@ -425,7 +418,7 @@ class AlcLogicHelper:
         txt += "        direction: enter\n"
         txt += "    actions:\n"
         txt += "      - type: responder\n"
-        txt += "        ref: -\n"
+        txt += "        ref: /\n"
         txt += "\n"
         txt += "  - tag: Exit\n"
         txt += "    flags:\n"
@@ -438,7 +431,7 @@ class AlcLogicHelper:
         txt += "        direction: exit\n"
         txt += "    actions:\n"
         txt += "      - type: responder\n"
-        txt += "        ref: -\n"
+        txt += "        ref: /n"
         txt += "\n"
         txt += "actions:\n"
         txt += "  - type: responder\n"
@@ -447,8 +440,8 @@ class AlcLogicHelper:
         txt += "        - cmds:\n"
         txt += "            - type: footstep\n"
         txt += "              params:\n"
-        txt += "                  oneshotreceivers:\n"
-        txt += "                    - " + str(oneshotmod.data.Key.name) + "\n"  
+        txt += "                  surface:\n"
+        txt += "                    - " + str(surface) + "\n"  
         txt += "              waiton: -1\n"
         txt += "          nextstate: 0\n"
         txt += "          waittocmd: 0\n"
@@ -467,7 +460,7 @@ class plInterfaceInfoModifier(plSingleModifier):
     def __init__(self,parent,name="unnamed",type=0x00CB):
         plSingleModifier.__init__(self,parent,name,type)
         #format
-        self.objects=hsTArray([0x2D],self.getVersion()) # modifiers Type 2D (LogicModifier) 
+        self.fKeyList=hsTArray([0x2D],self.getVersion()) # modifiers Type 2D (LogicModifier) 
         ####
         
         self.LogicModIdx = 0
@@ -482,21 +475,21 @@ class plInterfaceInfoModifier(plSingleModifier):
 
     def changePageRaw(self,sid,did,stype,dtype):
         plSingleModifier.changePageRaw(self,sid,did,stype,dtype)
-        self.objects.changePageRaw(sid,did,stype,dtype)
+        self.fKeyList.changePageRaw(sid,did,stype,dtype)
 
 
     def read(self,stream):
         plSingleModifier.read(self,stream)
-        self.objects.read(stream)
+        self.fKeyList.read(stream)
 
 
     def write(self,stream):
         plSingleModifier.write(self,stream)
-        self.objects.update(self.Key)
-        self.objects.write(stream)
+        self.fKeyList.update(self.Key)
+        self.fKeyList.write(stream)
 
     def addLogicMod(self,lmod):
-        self.objects.append(lmod.data.getRef())
+        self.fKeyList.append(lmod.data.getRef())
 
 
     def export_script(self,script,scnobj):
@@ -508,7 +501,7 @@ class plInterfaceInfoModifier(plSingleModifier):
                 # logicmods
                 if tag == "":
                     if self.LogicModIdx == 0:
-                        handle = str(scnobj.data.Key.name) + "_" + str(self.LogicModIdx)
+                        handle = str(scnobj.data.Key.name)
                     else:
                         handle = str(scnobj.data.Key.name) + "_" + str(self.LogicModIdx)
                 else:
@@ -518,16 +511,16 @@ class plInterfaceInfoModifier(plSingleModifier):
                 # if we have a name, then that one overrides the tag
                 name = FindInDict(logicscript,"name",None)
                 if not name is None:
-                    handle is name
+                    handle = name
 
                 logicmod = plLogicModifier.FindCreate(self.getRoot(),handle)
                 logicmod.data.export_script(logicscript,scnobj)
 
                 self.addLogicMod(logicmod)
                 scnobj.data.addModifier(logicmod)
-                
-    
+            
     def _Export(page,script,scnobj):
+        print "   Exporting modifiers"
         handle = str(scnobj.data.Key.name)
         intf_infomod = plInterfaceInfoModifier.FindCreate(page,handle)
         intf_infomod.data.export_script(script,scnobj)
@@ -710,18 +703,22 @@ class plLogicModifier(plLogicModBase):
                     ref = str(FindInDict(actscript,"ref",None))
                     refparser = ScriptRefParser(self.getRoot(),str(scnobj.data.Key.name))
                 
+                
                     plobj = None
                     if action_type == "pythonfile":
                         # plPythonFileMod
+                        print "Locating python file reference '%s'"%(ref)
                         refparser.SetDefaultType(0x00A2) 
                         refparser.SetAllowList([0x00A2,])
                         plobj = refparser.MixedRef_FindCreate(ref)
                     elif action_type == "responder":
                         # plResponderModifier
+                        print "Locating responder mod reference '%s'"%(ref)
                         refparser.SetDefaultType(0x007C) 
                         refparser.SetAllowList([0x007C,])
                         plobj = refparser.MixedRef_FindCreate(ref)
                     elif action_type == "oneshot":
+                        print "Creating Responder modifier to oneshot reference '%s'"%(ref)
                         # plOneShotMod
                         refparser.SetDefaultType(0x0077) 
                         refparser.SetAllowList([0x0077,])
@@ -746,11 +743,12 @@ class plLogicModifier(plLogicModBase):
                         txt += "  - detect_trigger\n"
 
                         plobj.data.export_script(AlcScript(txt).GetRootScript(),scnobj)
-                    
+                        # Also add this new respondermodifier to the scene node..
+                        scnobj.data.addModifier(plobj)
+                        
                     if not plobj is None:
                         # add it as receiver to self
                         self.addReceiver(plobj)
-                        scnobj.data.addModifier(plobj)
                     
                                        
 
@@ -799,21 +797,27 @@ class plDetectorModifier(plSingleModifier):                 #Type 0x24
     def addProxyKey(self,key):
         self.fProxyKey = key.data.getRef()
         
-    def export_script(self,script,scnobj,logicmod):
+    def export_script(self,script,scnobj,logicmod,activatorCO=None):
         self.addReceiver(logicmod)
 
         # check where we should add ourself..
         remote = FindInDict(script,"remote",None)
-        if not remote is None and str(remote) != "":
-            # if a name was given, usethat one to Find (or Create) the scene object ofthe seek point
-            ext_scnobj = plSceneObject.FindCreate(self.getRoot(),remote)
+        hide = bool( str(FindInDict(script,'hide','false') ).lower() == 'true')        
 
-            ext_scnobj.data.addModifier(self.parent)
-        else:
-            # else, add it to the "scene object" (which can occasinally be an ActivatorCondObj)
-            scnobj.data.addModifier(self.parent)
+        if not hide:
+            if not remote is None and str(remote) != "":
+                # if a name was given, usethat one to Find (or Create) the scene object ofthe seek point
+                ext_scnobj = plSceneObject.FindCreate(self.getRoot(),remote)
+    
+                ext_scnobj.data.addModifier(self.parent)
+            else:
+                # else, add it to the "scene object" (which can occasinally be an ActivatorCondObj)
+                scnobj.data.addModifier(self.parent)
+            
+        if not activatorCO is None:
+            activatorCO.data.addModifier(self.parent)
 
-    def _Export(page,script,scnobj,logicmod):
+    def _Export(page,script,scnobj,logicmod,activatorCO=None):
         # gets the script dictionary for one decectormodifier from plLogicModifier
         if type(script) == dict:
             _type = str(FindInDict(script,"type",None)).lower()
@@ -829,6 +833,9 @@ class plDetectorModifier(plSingleModifier):                 #Type 0x24
             name = FindInDict(script,"name",None)
             if not name is None:
                 handle = str(name)
+
+            print "    Found Activator %s of type:"%(handle), _type
+
             
             detmod = None
             if _type == "objectinvolume":
@@ -840,7 +847,7 @@ class plDetectorModifier(plSingleModifier):                 #Type 0x24
             
             if not detmod == None:
                 # Add the logicmodifier to the new class
-                detmod.data.export_script(script,scnobj,logicmod)
+                detmod.data.export_script(script,scnobj,logicmod,activatorCO)
     Export = staticmethod(_Export)
                 
                 
@@ -859,8 +866,8 @@ class plPickingDetector(plDetectorModifier):                    #Type 0x002B
         return page.find(0x002B,name,1)
     FindCreate = staticmethod(_FindCreate)
 
-    def export_script(self,script,scnobj,logicmod):
-        plDetectorModifier.export_script(self,script,scnobj,logicmod)
+    def export_script(self,script,scnobj,logicmod,activatorCO=None):
+        plDetectorModifier.export_script(self,script,scnobj,logicmod,activatorCO)
 
 
 class plCollisionDetector(plDetectorModifier):              #Type 0x2C
@@ -896,8 +903,8 @@ class plCollisionDetector(plDetectorModifier):              #Type 0x2C
         plDetectorModifier.write(self,buf)
         buf.WriteByte(self.fType)
 
-    def export_script(self,script,scnobj,logicmod):
-        plDetectorModifier.export_script(self,script,scnobj,logicmod)
+    def export_script(self,script,scnobj,logicmod,activatorCO=None):
+        plDetectorModifier.export_script(self,script,scnobj,logicmod,activatorCO)
         types = list(FindInDict(script,"triggers",[]))
         
         if len(types) > 0:
@@ -927,8 +934,8 @@ class plObjectInVolumeDetector(plCollisionDetector):
     def import_obj(self,obj):
         pass
         
-    def export_script(self,script,scnobj,logicmod):
-        plCollisionDetector.export_script(self,script,scnobj,logicmod)
+    def export_script(self,script,scnobj,logicmod,activatorCO=None):
+        plCollisionDetector.export_script(self,script,scnobj,logicmod,activatorCO)
         # create an VolumeSensorConditionalObject - if no name specified, use own name
         
         volsens = str(FindInDict(script,"volumesensor","/"))
@@ -969,8 +976,8 @@ class plObjectInVolumeAndFacingDetector(plObjectInVolumeDetector): # type 0x00E7
         stream.WriteBool(self.fNeedWalkingForward)
 
 
-    def export_script(self,script,scnobj,logicmod):
-        plObjectInVolumeDetector.export_script(self,script,scnobj,logicmod)
+    def export_script(self,script,scnobj,logicmod,activatorCO=None):
+        plObjectInVolumeDetector.export_script(self,script,scnobj,logicmod,activatorCO)
         if str(FindInDict(script,"needwalkfwd","false")).lower() == True:
             self.fNeedWalkingForward = True
         else:
@@ -1024,6 +1031,91 @@ class plPanicLinkRegion(plCollisionDetector):
     
     Export = staticmethod(_Export)
 
+
+
+class plCameraRegionDetector(plDetectorModifier):    
+    def __init__(self,parent,name="unnamed",type=0x006F):
+        plDetectorModifier.__init__(self,parent,name,type)
+        
+        self.fMessages = []
+        
+    def _Find(page,name):
+        return page.find(0x006F,name,0)
+    Find = staticmethod(_Find)
+
+    def _FindCreate(page,name):
+        return page.find(0x006F,name,1)
+    FindCreate = staticmethod(_FindCreate)
+
+    def changePageRaw(self,sid,did,stype,dtype):
+        plDetectorModifier.changePageRaw(self,sid,did,stype,dtype)
+
+    def read(self,stream):
+        plDetectorModifier.read(self,stream)
+       
+        count = stream.Read32()
+        self.fMessages = []
+        for i in range(count):
+            msg = PrpMessage.FromStream(stream,self.getVersion())
+            self.fMessages.append(msg)
+    
+    def write(self,stream):
+        plDetectorModifier.write(self,stream)
+        
+        stream.Write32(len(self.fMessages))
+        for msg in self.fMessages:
+            
+            msg.write(stream)
+    
+
+
+    def import_obj(self,obj):
+        try:
+            obj.removeProperty("regiontype")
+        except:
+            pass
+        obj.addProperty("regiontype","camera")
+
+        objscript = AlcScript.objects.FindOrCreate(obj.name)
+
+        msgscripts = []
+        for msg in self.fMessages:
+            msgscript = {} 
+            StoreInDict(msgscript,"camera",str(msg.fNewCam.Key.name))
+
+            if self.fMessages[0].fCmd[plCameraMsg.ModCmds["kSetAsPrimary"]] == 1:
+                StoreInDict(msgscript,"setprimary",True)
+            else:
+                StoreInDict(msgscript,"setprimary",False)
+            
+            msgscripts.append(msgscript)
+        
+        StoreInDict(objscript,"region.camera.cameras",msgscripts)
+
+    def export_obj(self,obj,scnobj):
+        print "  [CameraRegionDetector %s]"%(str(self.Key.name))
+        objscript = AlcScript.objects.Find(obj.name)
+        
+        messages = list(FindInDict(objscript,"region.camera.messages"))
+        
+        for camscript in messages:
+            # Create a new camera message
+            msg = PrpMessage(0x020A,self.getVersion())
+            
+            refparser = ScriptRefParser(self.getRoot(),"",False,[])
+            msg.data.export_script(camscript,refparser)
+            
+            self.fMessages.append(msg)
+
+    def _Export(page,obj,scnobj,name):
+        #set the coordinate interface
+        plcamdetect=plCameraRegionDetector.FindCreate(page,name)
+        plcamdetect.data.export_obj(obj,scnobj)
+        scnobj.data.addModifier(plcamdetect)
+    
+    Export = staticmethod(_Export)
+
+
 ###########################
 ##                       ##
 ##  Conditional Objects  ##
@@ -1062,12 +1154,12 @@ class plConditionalObject(hsKeyedObject):                   #Type 0x2E
         buf.WriteBool(self.fToggle)
 
     def export_script(self,script,scnobj,logicmod):
-        if str(FindInDict(script,"satisfied","false")).lower() == "true":
-            self.fToggle = True
+        if str(FindInDict(script,"satisfied",str(self.bSatisfied))).lower() == "true":
+            self.bSatisfied = True
         else:
-            self.fToggle = False
+            self.bSatisfied = False
             
-        if str(FindInDict(script,"toggle","false")).lower() == "true":
+        if str(FindInDict(script,"toggle",str(self.fToggle))).lower() == "true":
             self.fToggle = True
         else:
             self.fToggle = False
@@ -1087,6 +1179,8 @@ class plConditionalObject(hsKeyedObject):                   #Type 0x2E
             name = FindInDict(script,"name",None)
             if not name is None:
                 handle = str(name)
+
+            print "    Found Condition %s of type:"%(handle), _type
                 
             condobj = None
             if _type == "volumesensor":
@@ -1095,6 +1189,8 @@ class plConditionalObject(hsKeyedObject):                   #Type 0x2E
                 condobj = plFacingConditionalObject.FindCreate(page,handle)
             elif _type == "activator":
                 condobj = plActivatorConditionalObject.FindCreate(page,handle)
+            elif _type == "objectinbox":
+                condobj = plObjectInBoxConditionalObject.FindCreate(page,handle)
             
             if not condobj == None:
                 # Add the new class to the logicmodifier
@@ -1116,7 +1212,7 @@ class plObjectInBoxConditionalObject(plConditionalObject):
     FindCreate = staticmethod(_FindCreate)
 
     def export_script(self,script,scnobj,logicmod):
-        plConditionalObject.export_script(script,scnobj,logicmod)
+        plConditionalObject.export_script(self,script,scnobj,logicmod)
 
 class plVolumeSensorConditionalObject(plConditionalObject):    
     Type = \
@@ -1214,7 +1310,7 @@ class plActivatorConditionalObject(plConditionalObject):
         
         activators = list(FindInDict(script,"activators",[]))
         for activatorscript in activators:
-            plDetectorModifier.Export(self.getRoot(),activatorscript,self.parent,logicmod)
+            plDetectorModifier.Export(self.getRoot(),activatorscript,scnobj,logicmod,self.parent)
   
 
 class plFacingConditionalObject(plConditionalObject):
@@ -1304,7 +1400,6 @@ class plSittingModifier(plSingleModifier):
             key.write(stream)
 
 
-
 class plOneShotMod(plMultiModifier):
     def __init__(self,parent,name="unnamed",type=0x0077):
         plMultiModifier.__init__(self,parent,name,type)
@@ -1342,6 +1437,7 @@ class plOneShotMod(plMultiModifier):
         stream.WriteBool(self.fNoSeek)
 
     def export_script(self,script,scnobj=None):
+        print "   [OneShotMod %s]"%(str(self.Key.name))
         # allow object to be customized given a given script....
     
         
@@ -1428,6 +1524,7 @@ class plPythonFileMod(plMultiModifier):
         self.fParameters.append(pyparam)
         
     def export_script(self,script,scnobj):
+        print "   [PythonFileMod %s]"%(str(self.Key.name))
         self.fPythonFile = str(FindInDict(script,"file",""))
         
         receiverlist = list(FindInDict(script,"receivers",[]))
@@ -1536,14 +1633,18 @@ class plPythonParameter :
         "string"                : {"typenum":  4, "type": "str"     }, \
         "sceneobject"           : {"typenum":  5, "type": "key",     "defaultkeytype": 0x0001, "allowlist": [0x0001,] }, \
         "sceneobjectlist"       : {"typenum":  6, "type": "keylist", "defaultkeytype": 0x0001, "allowlist": [0x0001,] }, \
-        "activatorlist"         : {"typenum":  7, "type": "keylist", "defaultkeytype": None,  "allowlist": [0x002D,0x00A2,0x00AE,] }, \
+        "activator"             : {"typenum":  7, "type": "key",     "defaultkeytype": 0x002D,  "allowlist": [0x002D,0x00A2,0x00AE,] }, \
+        "activatorlist"         : {"typenum":  7, "type": "keylist", "defaultkeytype": 0x002D,  "allowlist": [0x002D,0x00A2,0x00AE,] }, \
+        "responder"             : {"typenum":  8, "type": "key",     "defaultkeytype": 0x007C, "allowlist": [0x007C,] }, \
         "responderlist"         : {"typenum":  8, "type": "keylist", "defaultkeytype": 0x007C, "allowlist": [0x007C,] }, \
 #       "dynamictext"           : {"typenum":  9, "type": "key",     "defaultkeytype": 0x00AD, "allowlist": [0x00AD,] }, \
 #       "guidialog"             : {"typenum": 10, "type": "key",     "defaultkeytype": 0x0098, "allowlist": [0x0098,] }, \
 #       "excluderegion"         : {"typenum": 11, "type": "key",     "defaultkeytype": 0x00A4, "allowlist": [0x00A4,] }, \
 #       "animation"             : {"typenum": 12, "type": "key",     "defaultkeytype": None,   "allowlist": [0x006D,0x00A8,] }, \
         "animationname"         : {"typenum": 13, "type": "str"}, \
-        "behavior"              : {"typenum": 14, "type": "key",     "defaultkeytype": None,  "allowlist": [0x0077,] }, \
+# Duplicate is to allow for english spelling:
+        "behaviour"             : {"typenum": 14, "type": "key",     "defaultkeytype": 0x0077,  "allowlist": [0x0077,] }, \
+        "behavior"              : {"typenum": 14, "type": "key",     "defaultkeytype": 0x0077,  "allowlist": [0x0077,] }, \
         "material"              : {"typenum": 15, "type": "key",     "defaultkeytype": 0x0004, "allowlist": [0x0004,], "tag": "texture",  }, \
 #       "guipopupmenu"          : {"typenum": 16, "type": "key",     "defaultkeytype": None,   "allowlist": [0x0119,] }, \
 #       "guiskin"               : {"typenum": 17, "type": "key",     "defaultkeytype": None,   "allowlist": [0xFFFF,] }, \
@@ -1559,7 +1660,7 @@ class plPythonParameter :
         self.parent = parent
         self.fID = 0
         self.fValueType = plPythonParameter.ValueType["kNone"]
-        self.fObjectKey = UruObjectRef(self.parent.getVersion())
+        self.fObjectKey = UruObjectRef(self.parent.data.getVersion())
     
         self.fValue = None
         
@@ -1609,7 +1710,7 @@ class plPythonParameter :
     def _ExportScript(pyfmod,argscript,index,scnobj):
         _type = str(FindInDict(argscript,"type","none"))
         page = pyfmod.data.getRoot()
-        resmgr = pyfmod.data.resmanager
+        resmgr = page.resmanager
         
         if plPythonParameter.ScriptValueType.has_key(_type):
             typeinfo = plPythonParameter.ScriptValueType[_type]
@@ -1619,40 +1720,40 @@ class plPythonParameter :
                 param.fValue = value
                 param.fID = index
                 param.fValueType = typeinfo["typenum"]
-                pyfmod.addParameter(param)
+                pyfmod.data.addParameter(param)
             elif typeinfo["type"] == "int":
                 value = int(FindInDict(argscript,"value","0"))
                 param = plPythonParameter(pyfmod)
                 param.fValue = value
                 param.fID = index
                 param.fValueType = typeinfo["typenum"]
-                pyfmod.addParameter(param)
+                pyfmod.data.addParameter(param)
             elif typeinfo["type"] == "float":
                 value = float(FindInDict(argscript,"value","0.0"))
                 param = plPythonParameter(pyfmod)
                 param.fValue = value
                 param.fID = index
                 param.fValueType = typeinfo["typenum"]
-                pyfmod.addParameter(param)
+                pyfmod.data.addParameter(param)
             elif typeinfo["type"] == "str":
                 value = str(FindInDict(argscript,"value","0"))
                 param = plPythonParameter(pyfmod)
                 param.fValue = value
                 param.fID = index
                 param.fValueType = typeinfo["typenum"]
-                pyfmod.addParameter(param)
+                pyfmod.data.addParameter(param)
             elif typeinfo["type"] == "none":
                 param = plPythonParameter(pyfmod)
                 param.fID = index
                 param.fValueType = typeinfo["typenum"]
-                pyfmod.addParameter(param)
+                pyfmod.data.addParameter(param)
             elif typeinfo["type"] == "key":
                 ref = FindInDict(argscript,"ref",None)
                 plPythonParameter.ExportKey(pyfmod,ref,typeinfo,index,scnobj)
             elif typeinfo["type"] == "keylist":
                 param = plPythonParameter(pyfmod)
 
-                refs = list(FindInDict(argscript,"ref",[]))
+                refs = list(FindInDict(argscript,"refs",[]))
 
                 for ref in refs:
                     if type(ref) == str:
@@ -1662,7 +1763,7 @@ class plPythonParameter :
 
     def _ExportKey(pyfmod,keystr,typeinfo,index,scnobj):
         page = pyfmod.data.getRoot()
-        resmgr = pyfmod.data.resmanager
+        resmgr = page.resmanager
 
         # prepare the key...
         param = plPythonParameter(pyfmod)
@@ -1676,11 +1777,16 @@ class plPythonParameter :
                 if not alcconfig.export_textures_to_page_prp:
                     page=resmgr.findPrp("Textures")
                     if page==None:
-                        raise "Textures PRP file not found"
+                        raise "    Textures PRP file not found"
 
-        refparser = ScriptRefParser(page,str(scnobj.data.Key.name),typeinfo["defaulttype"],typeinfo["allowlist"])
+        refparser = ScriptRefParser(page,str(scnobj.data.Key.name),typeinfo["defaultkeytype"],typeinfo["allowlist"])
         # and try to find a plasma object accordingly:
+        print "    For python file mod %s, index %i we're exporting value type %s, key string %s"%(str(pyfmod.data.Key.name),index,typeinfo["typenum"],keystr)
         param.fObjectKey = refparser.MixedRef_FindCreateRef(keystr)
+        print "    Key string boiled down to: ",param.fObjectKey
+        pyfmod.data.addParameter(param)
+
+    ExportKey = staticmethod(_ExportKey)
 
 
 class plResponderModifier(plSingleModifier):
@@ -1774,6 +1880,7 @@ class plResponderModifier(plSingleModifier):
         stream.WriteByte(self.fFlags)
         
     def export_script(self,script,scnobj):
+        print "   [ResponderModifier %s]"%(str(self.Key.name))
         statelist = FindInDict(script,"states",[])
         if type(statelist) != list:
             statelist = []

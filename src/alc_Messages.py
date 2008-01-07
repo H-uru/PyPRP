@@ -472,6 +472,47 @@ class plCameraMsg(plMessage):                   # Message Type: 0x020A - plCamer
         "kResetPanning"                         : 35, \
         "kNumCmds"                              : 36  \
     }
+
+    ScriptModCmds = \
+    { \
+        "setsubject"                           :  0, \
+        "cameramod"                            :  1, \
+        "setasprimary"                         :  2, \
+        "transitionto"                         :  3, \
+        "push"                                 :  4, \
+        "pop"                                  :  5, \
+        "entering"                             :  6, \
+        "cut"                                  :  7, \
+        "resetonenter"                         :  8, \
+        "resetonexit"                          :  9, \
+        "changeparams"                         : 10, \
+        "worldspace"                           : 11, \
+        "createnewdefaultCam"                  : 12, \
+        "regionpushcamera"                     : 13, \
+        "regionpopcamera"                      : 14, \
+        "regionpushpoa"                        : 15, \
+        "regionpoppoa"                         : 16, \
+        "followlocalplayer"                    : 17, \
+        "respondertrigger"                     : 18, \
+        "setfov"                               : 19, \
+        "addfovKeyFrame"                       : 20, \
+        "startzoomIn"                          : 21, \
+        "startzoomOut"                         : 22, \
+        "stopzoom"                             : 23, \
+        "setanimated"                          : 24, \
+        "pythonoverridepush"                   : 25, \
+        "pythonoverridepop"                    : 26, \
+        "pythonoverridepushcut"                : 27, \
+        "pythonsetfirstpersonoverrideenable"   : 28, \
+        "pythonundofirstperson"                : 29, \
+        "updatecameras"                        : 20, \
+        "respondersetthirdperson"              : 31, \
+        "responderundothirdperson"             : 32, \
+        "nonphyson"                            : 33, \
+        "nonphysoff"                           : 34, \
+        "resetpanning"                         : 35, \
+    }
+
     
     def __init__(self,parent=None,type=0x020A):
         plMessage.__init__(self,parent,type)
@@ -482,6 +523,7 @@ class plCameraMsg(plMessage):                   # Message Type: 0x020A - plCamer
         self.fNewCam = UruObjectRef()
         self.fTriggerer = UruObjectRef()
         self.fConfig = plCameraConfig()
+        self.fBCastFlags |= plMessage.plBCastFlags["kBCastByType"]
 
     def read(self,stream):
         self.IMsgRead(stream)
@@ -506,6 +548,31 @@ class plCameraMsg(plMessage):                   # Message Type: 0x020A - plCamer
     def export_script(self,script,refparser):
         plMessage.export_script(self,script,refparser)
 
+        configscript = dict(FindInDict(script,"config",{}))
+        self.fConfig.export_script(script,refparser)
+
+        newcamref = FindInDict(script,"newcam",None)
+
+        refparser.SetDefaultType("scnobj")
+        refparser.SetAllowList([0x0001,])
+        self.fNewCam = refparser.MixedRef_FindCreateRef(newcamref)
+
+        trigref = FindInDict(script,"triggerer",None)
+        refparser.ClearDefaultType()
+        refparser.ClearAllowList()
+        self.fTriggerer = refparser.RefString_FindCreateRef(trigref)
+
+        self.fTransTime = float(FindInDict(script,"transitiontime",self.fTransTime))
+        self.fActivated = bool(str(FindInDict(script,"activated",str(self.fActivated))).lower() == "true")
+        
+        cmdlist = FindInDict(script,"cmds",None)
+        if type(cmdlist) == list:
+            self.fCmd = hsBitVector()
+            for cmd in cmdlist:
+                if cmd.lower() in plCameraMsg.ScriptModCmds:
+                    cidx = plCameraMsg.ScriptModCmds[cmd.lower()]
+                    self.fCmd.SetBit(cidx)
+    
 
 class plCameraConfig:
     Flags = \
@@ -552,6 +619,24 @@ class plCameraConfig:
         self.fOffset.write(stream)
         stream.WriteBool(self.fWorldspace)
 
+    def export_script(self,script,refparser):
+        self.fAccel = float(FindInDict(script,"accel",self.fAccel))
+        self.fDecel = float(FindInDict(script,"decel",self.fDecel))
+        self.fVel = float(FindInDict(script,"velocity",self.fVel))
+        self.fFPAccel = float(FindInDict(script,"fpaccel",self.fFPAccel))
+        self.fFPDecel = float(FindInDict(script,"fpdecel",self.fFPDecel))
+        self.fFPVel = float(FindInDict(script,"fpvelocity",self.fFPVel))
+        self.fFOVw = float(FindInDict(script,"fovw",self.fFOVw))
+        self.fFOVh = float(FindInDict(script,"fovh",self.fFOVh))
+        self.fWorldspace = bool(str(FindInDict(script,"worldspace",str(self.fWorldspace))).lower() == "true")
+
+        offset = str(FindInDict(script,"offset","0,0,0"))
+        try:
+            X,Y,Z, = offset.split(',')
+            self.fOffset = Vertex(float(X),float(Y),float(Z))
+        except ValueError, detail:
+            print "  Error parsing camera.brain.offset (Value:",offset,") : ",detail
+
 
 class plSwimMsg(plMessage):
     def __init__(self,parent=None,type=0x0451):
@@ -575,10 +660,12 @@ class plSwimMsg(plMessage):
         pass
 
 class plOneShotCallback:
-    def __init__(self):
+    def __init__(self,parent):
         self.fMarker = ""
         self.fReceiver = UruObjectRef()
         self.fUser = 0 # Int32
+        
+        self.parent = parent
 
     def read(self,stream):
         self.fMarker = stream.ReadSafeString()
@@ -590,10 +677,23 @@ class plOneShotCallback:
         self.fReceiver.write(stream)
         stream.Write16(self.fUser)
 
-class plOneShotCallbacks:
-    def __init__(self):
-        self.fCallbacks = []
+    def export_script(self,script,refparser):
+        self.fMarker = str(FindInDict(script,"marker",""))
+        ref = FindInDict(script,"receiver","/")
+        if ref == "/":
+            self.fReceiver = self.parent.parent.fSender
+        else:
+            refparser.SetDefaultType("respondermod")
+            refparser.SetAllowList([]) # Type of OneShotMod
+            self.rReceiver = refparser.RefString_FindCreateRef(ref)
         
+        self.fUser = int(FindInDict(script,"user",0x00))
+
+class plOneShotCallbacks:
+    def __init__(self,parent):
+        self.fCallbacks = []
+        self.parent = parent
+       
     def read(self,stream):
         count = stream.Read32()
         self.fCallbacks = []
@@ -608,11 +708,16 @@ class plOneShotCallbacks:
         
         for cb in self.fCallbacks:
             cb.write()
-
+            
+    def export_script(self,script,refparser):
+        for cbscript in script:
+            cb = plOneShotCallback()
+            cb.export_script(cbscript,refparser)
+            
 class plOneShotMsg(plMessage):
     def __init__(self,parent=None,type=0x0302):
         plMessage.__init__(self,parent,type)
-        self.fCallbacks = plOneShotCallbacks()
+        self.fCallbacks = plOneShotCallbacks(self)
         
     def read(self,stream):
         self.IMsgRead(stream)
@@ -638,6 +743,9 @@ class plOneShotMsg(plMessage):
                 plref = refparser.MixedRef_FindCreateRef(keystr)
                 if not plref.isNull():
                     self.fReceivers.append(plref)
+        
+        callbacks = list(FindInDict(script,'callbacks',[]))
+        self.fCallbacks.export_script(callbacks,refparser)    
 
         refparser.ClearDefaultType()
         refparser.ClearAllowList()

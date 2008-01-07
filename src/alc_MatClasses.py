@@ -920,23 +920,24 @@ class plLayer(plLayerInterface):             # Type 0x06
         specR = specR * mat.getSpec()/2
         specG = specG * mat.getSpec()/2
         specB = specB * mat.getSpec()/2
+        specCol=RGBA(specR,specG,specB,matA,type=1)
 
         mirR,mirG,mirB = mat.getMirCol()
 
         emitfactor = mat.getEmit()
-        ambfactor = mat.getAmb()
-
-        
-        diffuseCol=RGBA(matR,matG,matB,matA,type=1)
-        specCol=RGBA(specR,specG,specB,matA,type=1)
-        
         #calculat the emissive colors
         emitR = matR * emitfactor
         emitG = matG * emitfactor
         emitB = matB * emitfactor
         emitCol=RGBA(emitR,emitG,emitB,1,type=1)
+  
+
+        
+        diffuseCol=RGBA(matR,matG,matB,matA,type=1)
+        
 
         # calculate the ambient colors
+        ambfactor = mat.getAmb()        
         ambR = matR * ambfactor
         ambG = matG * ambfactor
         ambB = matB * ambfactor

@@ -37,7 +37,7 @@ from alc_AbsClasses import *
 from alc_MatClasses import *
 from alc_DrawClasses import *
 from alc_SwimClasses import *
-from alc_CamClasses import *
+#from alc_CamClasses import *
 from alcurutypes import *
 from alcdxtconv import *
 from alchexdump import *
@@ -1337,8 +1337,10 @@ class plHKPhysical(plPhysical):
         
         if prptype == "region":
             print "  Setting Region-Specific settings...."
-            regiontype = FindInDict(objscript,'regiontype',"logic")
+
             
+            regiontype = FindInDict(objscript,'region.type',"logic")
+            regiontype = FindInDict(objscript,'regiontype',regiontype)
             regiontype = getTextPropertyOrDefault(obj,"regiontype",regiontype)
            
             if regiontype == "swimdetect":
@@ -1429,31 +1431,55 @@ class plHKPhysical(plPhysical):
             self.gFlagsDetect = plHKPhysical.FlagsDetect["cDetectNone"]
             self.gFlagsRespond = plHKPhysical.FlagsRespond["cRespInitial"]
 
-            if scnobj.attach.has_key('clickable') and scnobj.attach['clickable'] == True: # 
-                # Special settings when an object is "clickable"
-                
-                self.gFlagsRespond = plHKPhysical.FlagsRespond["cRespClickable"]
-                self.gColType = plHKPhysical.Collision["cDetector"]
-                self.fGroup[plHKPhysical.Group["kGroupDynamicBlocker"]] = 1
-                self.fLOSDB |= plHKPhysical.plLOSDB["kLOSDBUIItems"]
 
+                
+            coltype = getTextPropertyOrDefault(obj,"physlogic",None)
+            coltype = FindInDict(objscript,"physical.physlogic",coltype)
+            
+            if coltype is None or coltype not in ["none","storepos","resetpos","detect"]:
+                # Default decoding neccesary
+                # if the object has logicmodifiers script, consider it a detector
+                if FindInDict(objscript,"logic.modifiers",None) != None:
+                    print "  Autotetecting object to logical receiver - setting settings accordingly"
+                
+                    self.gFlagsRespond = plHKPhysical.FlagsRespond["cRespClickable"]
+                    self.gColType = plHKPhysical.Collision["cDetector"]
+                    self.fGroup[plHKPhysical.Group["kGroupAvatar"]] = 1
+                    self.fLOSDB = plHKPhysical.plLOSDB["kLOSDBUIItems"]
+                    
+                else:
+                    # basic setting: if it is dynamic, it is kickable
+                    if not isdynamic:
+                        self.gColType = plHKPhysical.Collision["cStorePosition"]
+                    else:
+                        self.gColType = plHKPhysical.Collision["cResetPosition"]        
             else:
-                # basic setting: if it is dynamic, it is kickable
-                if not isdynamic:
+                if coltype == "storepos":
                     self.gColType = plHKPhysical.Collision["cStorePosition"]
-                else:
-                    self.gColType = plHKPhysical.Collision["cResetPosition"]        
-                
-                if (str(FindInDict(objscript,"physical.pinned","false")).lower() == "true" or (obj.rbFlags & Blender.Object.RBFlags["DYNAMIC"] == 0 and obj.rbFlags & Blender.Object.RBFlags["ACTOR"])):
-                    print "  Pinning object"
-                    self.fGroup[plPhysical.Group["kGroupDynamicBlocker"]] = 1
-                
-                # and make objects Camera Blockers By default - or let them through if physical.camerapassthrough is set to true
-                if str(FindInDict(objscript,"physical.campassthrough","false")).lower() != "true":
-                    print "  Camera blocking enabled"
-                    self.fLOSDB |= plPhysical.plLOSDB["kLOSDBCameraBlockers"]
-                else:
-                    print "  Camera blocking disabled"
+                elif coltype == "resetpos":
+                    self.gColType = plHKPhysical.Collision["cResetPosition"]
+                elif coltype == "detect":
+                    self.gColType = plHKPhysical.Collision["cDetector"]
+
+                    self.gFlagsRespond = plHKPhysical.FlagsRespond["cRespClickable"]
+                    self.gColType = plHKPhysical.Collision["cDetector"]
+                    self.fGroup[plHKPhysical.Group["kGroupAvatar"]] = 1
+                    self.fLOSDB = plHKPhysical.plLOSDB["kLOSDBUIItems"]
+
+                else: # if coltype == "none":
+                    self.gColType = plHKPhysical.Collision["cNone"]
+            
+            
+            if (str(FindInDict(objscript,"physical.pinned","false")).lower() == "true" or (obj.rbFlags & Blender.Object.RBFlags["DYNAMIC"] == 0 and obj.rbFlags & Blender.Object.RBFlags["ACTOR"])):
+                print "  Pinning object"
+                self.fGroup[plPhysical.Group["kGroupDynamicBlocker"]] = 1
+            
+            # and make objects Camera Blockers By default - or let them through if physical.camerapassthrough is set to true
+            if str(FindInDict(objscript,"physical.campassthrough","false")).lower() != "true":
+                print "  Camera blocking enabled"
+                self.fLOSDB |= plPhysical.plLOSDB["kLOSDBCameraBlockers"]
+            else:
+                print "  Camera blocking disabled"
 
         #set position and other attribs
         if (self.fMass == 0.0 and  isdynamic == 0): 

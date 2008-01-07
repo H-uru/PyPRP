@@ -29,14 +29,12 @@ Blender: 243
 Group: 'Add'
 Submenu: 'Create a New Book' i_book
 Submenu: 'Create a New SpawnPoint' i_swpoint
-Submenu: 'Add a General Region' i_region
+Submenu: 'Add a (Generic) Logic Region' i_region
 Submenu: 'Add a Footstep Sound Region' i_footstepregion
 Submenu: 'Add a Panic Link Region' i_paniclnkregion
 Submenu: 'Add a Swim Region' i_swimregion
 Submenu: 'Add a Swim Surface' i_swimsurface
 Submenu: 'Add a Climbing Region' i_climbregion
-Submenu: 'Add a Clickable Region' i_clickregion
-Submenu: 'Add a Camera Region' i_cameraregion
 Submenu: 'Set Default age fni settings' i_init
 Submenu: 'Add Default AlcScript' i_alcscript
 Tooltip: 'alcugs pyprp'
@@ -83,28 +81,14 @@ age:
           name: mainRoom
 
 config:
-    agesdlhook: True
+    agesdlhook: true
     """)    
-
-#    AlcScript.book = AlcScript() # Special init.... book only
-#    AlcScript.objects = None
-#    
-#    rmgr=alcResManager()
-#    age=rmgr.findAge("noname",1)
-#    age.setSeq(100)
-#    age.addBuiltInPages()
-#    age.addPage("mainRoom",0,0)
-#    age.import_book()
-
-#    AlcScript.StoreToBlender() # as only book is set, only book will be stored
-#    Blender.Redraw()
 
 
 def new_point():
     print "Adding a new SpawnPoint"
     alcCreateLinkInPoint()
     Blender.Redraw()
-
 
 def new_region():
     print "Adding a new General Region"
@@ -129,21 +113,6 @@ def new_swimregion():
 def new_swimsurface():
     print "Adding a new swimming surface"
     alcCreateSwimSurface()
-    Blender.Redraw()
-
-def new_climbregion():
-    print "Adding a new Climb Region"
-    alcCreateClimbRegion()
-    Blender.Redraw()
-
-def new_clickregion():
-    print "Adding a new Clickable Region"
-    alcCreateClickableRegion()
-    Blender.Redraw()
-
-def new_cameraregion():
-    print "Adding a new Camera Region"
-    alcCreateCameraRegion()
     Blender.Redraw()
 
 def new_alcscript():

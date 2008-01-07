@@ -24,6 +24,7 @@
 
 
 import md5, random, binascii, cStringIO, copy, Image, math, struct, StringIO, os, os.path, pickle
+from alcurutypes import *
 
 class ScriptRefParser:
     NameToType = \
@@ -154,8 +155,9 @@ class ScriptRefParser:
 
                     # try to decode the first param as a typename
                     try:
-                        keytype = ScriptRefParser.NameTypeDecode(_type)
+                        keytype = ScriptRefParser.NameTypeDecode(type_id)
                     except:
+                        print "Error decoding keytype:",type_id
                         return None
 
                     return { 'type': keytype, "name": name,"pagename": None }
@@ -181,8 +183,8 @@ class ScriptRefParser:
                     # type needs to be in base 16 coding
                     return int(_type,16)
                 except:
-                    raise ValueError, "Could not decode %s to an object type code. Type of object:"%(_type),type(_type)
-
+                    print "WARNING: Could not decode %s to an object type code. Type of object:"%(_type),type(_type)
+                    raise ValueError, "Decoding error"   
     NameTypeDecode = staticmethod(_NameTypeDecode)
 
     # Next we have object functions
@@ -203,7 +205,6 @@ class ScriptRefParser:
     def TagString_FindCreate(self,keystring,create=True):
         # it's a simple reference (name or tag) = so parse it accordingly on the current
         # page...
-        print " Decoding TagString:",keystring
         # This function needs "defaulttype" to be set, and prefers "self.basename" to be set
         if not self.defaulttype is None:
             # try to decode the first param as a typename
@@ -214,8 +215,11 @@ class ScriptRefParser:
                 return None                
         
             refname = ScriptRefParser.TagString_ParseName(keystring,self.basename)
-            print "TagString has been decoded to:",refname
-            return self.page.find(keytype,refname,create)
+
+            if refname != "":
+                return self.page.find(keytype,refname,create)
+            else:
+                return None
         else:
             return None
 
@@ -231,40 +235,42 @@ class ScriptRefParser:
 
     def RefString_FindCreate(self,keystring,create=True):
         # this parses a RefString for the current page if possible
-        print " Decoding RefString:",keystring
         # 
-        resmgr = self.page.resourcemgr
+        resmgr = self.page.resmanager
 
         keyinfo = ScriptRefParser.RefString_Decode(keystring)
-        
+                    
         if not keyinfo is None:
-            
             # if we havea basename set, we can see if it is a tag, and act on that accordingly
             # in a refstring we accept "$<tag>" for tags and  "/" for default name - but only if a 
             # basename is set
             
             if not self.basename is None and self.basename != "":
                 nametype = ScriptRefParser.MixedRef_GetType(keyinfo['name'])
-                
                 if nametype == "TAG" or nametype == "NONE":
                     name = ScriptRefParser.TagString_ParseName(keyinfo['name'],self.basename)
                 else:
                     name = keyinfo['name']
             else:
                 name = keyinfo['name']
-                
-            # Try to find the page referenced...
-            # If not possible, we default back to the current page
-            if not keyinfo["pagename"] is None:
-                page=resmgr.findPrp(str(keyinfo["pagename"]))
-                if page is None:
+
+            if name != "":
+    
+                # Try to find the page referenced...
+                # If not possible, we default back to the current page
+                if not keyinfo["pagename"] is None:
+                    page=resmgr.findPrp(str(keyinfo["pagename"]))
+                    if page is None:
+                        page = self.page
+                else:
                     page = self.page
-            else:
-                page = self.page
-            
-            # see if the object type is in the allow list
-            if len(self.allowlist) == 0 or keyinfo["type"] in allowlist:
-                return page.find(keyinfo["type"],name,create)
+                
+                # see if the object type is in the allow list
+                if len(self.allowlist) == 0 or keyinfo["type"] in self.allowlist:
+                    return page.find(keyinfo["type"],name,create)
+                else:
+                    print "Warning: Key type",keyinfo["type"],"is not list of allowes types:",self.allowlist
+                    return None
             else:
                 return None
         else:
