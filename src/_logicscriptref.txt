@@ -1,0 +1,89 @@
+logic:
+    modifiers: # each item in the list makes for a separate logicmod
+        - id: <handle/name of logic block> # all detectors in this block link back to same logicmodifier
+          flags:
+            - oneshot
+            - ...
+          activators:
+            - type:[objectinvolume | Objectinvolumeandfacing | pickingdetector]:
+              remote: [:<fullname> | $<tag> | <tag>]
+              facingtolerance: ....
+          
+          conditions:
+            - type: [objectinbox | facing | ....]:
+                <specific settings>
+            - type: activator
+              toggle: [true|false]
+              activators:
+                  - <[Same as logic.modifiers.activators]>
+                        ....
+          actions:
+            - type: [pythonfile|responder|oneshot] # builds default respmod for oneshotmod
+              ref: [:<fullname> | $<tag> | <tag>]
+    
+    actions:
+        - type: oneshot 
+          [tag|name]: <handle/name>
+          hide: [true|false]
+          oneshot:
+              animation: <name of animation>
+              remote: <name of seekpoint object> # setting will attach the oneshotmod to that scnobj instead of current
+              smartseek: [true|false]
+              duration: <float>
+
+        - type: pythonfile
+          [tag|name]: <handle/name>
+          hide: [true|false]
+          pythonfile:
+            file: <filename>
+            parameters:
+                - type: [bool | int | string | float]
+                  value:  <value>
+                
+                - type: [logicmod | responder | oneshot]
+                  ref:  [:<fullname> | $<tag> | <keytype>:<fullname>[@<page>]]
+                
+                - type: scenenode
+                  
+                
+                - index: <int>
+                  type: uruobjectref
+                  key: <type>:name@page
+                    type: <object type nr>
+                    name: <object name>
+                    page: <page name> # if omitted default to current page
+
+        - type: responder: # respmod is linked to logicmod, pyrespmod not, bothe can be linked to py
+          [tag|name]: <handle/name>
+          hide: [true|false]
+          responder:
+            states:
+                - cmds: 
+                    - type: <msgtype>
+                      params: 
+                        <msg specific settings>
+                        
+                      waiton: <signed int>
+                    - type: <msgtype>
+                      params: 
+                        <msg specific settings>
+                      waiton: <signed int>
+                  ncallbacks: <int>
+                  nextstate: <int>
+                  waittocmd:
+                    0: 3
+                    1: 0
+                    2: 3
+                    .....
+            curstate: <int>
+            flags:
+                - detecttrigger
+                - detectuntrigger
+                - skipffsound
+
+    quickscripts:
+        footstepsound:
+            surfaces:
+                - dirt
+                - water
+            
