@@ -300,7 +300,7 @@ class AlcLogicHelper:
             plPanicLinkRegion.Export(page,obj,scnobj,name)
         elif regiontype.lower() == "camera":
             plCameraRegionDetector.Export(page,obj,scnobj,name)
-        elif regiontype.lower() == "logic":
+        else:
             logicscript = FindInDict(objscript,'logic',{})
             AlcLogicHelper.ExportLogic(page,logicscript,scnobj)
         
@@ -323,11 +323,8 @@ class AlcLogicHelper:
         elif regiontype.lower() == "swim":
             return False
         else:
-            # use objects "actor" settings to determine that
-            if obj.rbFlags & Blender.Object.RBFlags["ACTOR"]:
-                return True
-            else:
-                return False          
+            return True # as it won't hurt, and may cause problems wiht selfseekanimation quickscript regions 
+                         # if it's not done
         
     IsRegionDynamic= staticmethod(_IsRegionDynamic)
             
@@ -340,6 +337,7 @@ class AlcLogicHelper:
             AlcLogicHelper.ExportActions(page,actions,scnobj)
         else:
             print "   No actions in list"
+            print actions
         
         print "   Exporting modifiers"
         # export of modifiers is delegated to the plInterfaceInfoModifier
@@ -350,6 +348,7 @@ class AlcLogicHelper:
             plInterfaceInfoModifier.Export(page,logicmods,scnobj)
         else:
             print "   No modifiers"
+            print logicmods
 
     ExportLogic = staticmethod(_ExportLogic)
 
@@ -1650,8 +1649,9 @@ class plPythonParameter :
             stream.WriteFloat(self.fValue)
 
         elif plPythonParameter.ValueTypeTable[self.fValueType] == "str":
-            stream.Write32(len(str(self.fValue)))
+            stream.Write32(len(str(self.fValue))+1)
             stream.write(str(self.fValue))
+            stream.WriteByte(00) # Add terminator character
 
         elif plPythonParameter.ValueTypeTable[self.fValueType] == "key":
             self.fObjectKey.write(stream)

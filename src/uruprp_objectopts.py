@@ -28,12 +28,9 @@
 
 """
 Name: 'PyPRP'
-Blender: 237
+Blender: 245
 Group: 'Object'
 Submenu: 'Copy Logic Properties from main selection to secondary selection' i_CopyProperties
-Submenu: 'Update regions from old-style to new-style' i_fixregions
-Submenu: 'Add default collider settings' i_collide
-Submenu: 'Show object Info' i_objinfo
 
 Tooltip: 'alcugs pyprp'
 """
@@ -56,160 +53,6 @@ from os.path import *
 from alc_Functions import *
 from alcresmanager import *
 
-def add_collideinfo():
-    print "Adding default colliderinfo"
-
-    l = Blender.Object.GetSelected()
-    for obj in l:
-        # first remove the existing properties
-        try:
-            p = obj.getProperty("alctype")
-            obj.removeProperty(p)
-        except (AttributeError, RuntimeError):
-            pass
-        try:
-            p = obj.getProperty("col_type")
-            obj.removeProperty(p)
-        except (AttributeError, RuntimeError):
-            pass
-        try:
-            p = obj.getProperty("mass")
-            obj.removeProperty(p)
-        except (AttributeError, RuntimeError):
-            pass
-        try:
-            p = obj.getProperty("rc")
-            obj.removeProperty(p)
-        except (AttributeError, RuntimeError):
-            pass
-        try:
-            p = obj.getProperty("el")
-            obj.removeProperty(p)
-        except (AttributeError, RuntimeError):
-            pass
-        try:
-            p = obj.getProperty("col_flags0")
-            obj.removeProperty(p)
-        except (AttributeError, RuntimeError):
-            pass
-        try:
-            p = obj.getProperty("col_flags1")
-            obj.removeProperty(p)
-        except (AttributeError, RuntimeError):
-            pass
-        try:
-            p = obj.getProperty("col_flags2")
-            obj.removeProperty(p)
-        except (AttributeError, RuntimeError):
-            pass
-        try:
-            p = obj.getProperty("col_flags3")
-            obj.removeProperty(p)
-        except (AttributeError, RuntimeError):
-            pass
-        try:
-            p = obj.getProperty("col_flags4")
-            obj.removeProperty(p)
-        except (AttributeError, RuntimeError):
-            pass
-        try:
-            p = obj.getProperty("col_flags5")
-            obj.removeProperty(p)
-        except (AttributeError, RuntimeError):
-            pass
-
-        # now add the new properties
-        obj.addProperty("col_type","4")
-        obj.addProperty("mass",0.0)
-        obj.addProperty("rc",4.0)
-        obj.addProperty("el",0.0)
-        obj.addProperty("col_flags0","0200")
-        obj.addProperty("col_flags1","00000000")
-        obj.addProperty("col_flags2","02000000")
-        obj.addProperty("col_flags3","0000")
-        obj.addProperty("col_flags4","00000080")
-        obj.addProperty("col_flags5","00000004")
-    Blender.Redraw()
-
-def convert_props():
-    l = Blender.Object.Get()
-    for obj in l:
-        name = str(obj.name)
-        obj_type=obj.getType()
-        try:
-            p=obj.getProperty("alctype")
-            alctype=str(p.getData())
-        except (AttributeError, RuntimeError):
-            alctype="object"
-        try:
-            p=obj.getProperty("alcspecial")
-            alcspecial=str(p.getData())
-        except (AttributeError, RuntimeError):
-            alcspecial="none"
-        
-        if (obj_type == "Mesh" and alctype == "collider"):
-            if alcspecial in ["footsteprgn","paniclnkrgn","swimrgn","swimplainsfc","swimscursfc","swimccursfc","climbregion","clickregion"]:
-                p=obj.getProperty("alctype")
-                obj.removeProperty(p)
-                p=obj.getProperty("alcspecial")
-                obj.removeProperty(p)
-                obj.addProperty("alctype","region")
-                
-                #do a conversion to new object names when neccessary
-                prpregion = alcspecial
-                    
-                obj.addProperty("prpregion",prpregion)
-
-                #remove default properties (depending on the type of region)
-                
-               
-                if(prpregion == "swimrgn"):
-                    deldefaultproperty(obj,"mass",0.0);
-                    deldefaultproperty(obj,"rc",0.0);
-                    deldefaultproperty(obj,"el",0.0);
-                    deldefaultproperty(obj,"col_type","1");
-                    deldefaultproperty(obj,"col_flags0","0000");
-                    deldefaultproperty(obj,"col_flags1","00020000");
-                    deldefaultproperty(obj,"col_flags2","00000000");
-                    deldefaultproperty(obj,"col_flags3","0000");
-                    deldefaultproperty(obj,"col_flags4","00000000");
-                    deldefaultproperty(obj,"col_flags5","00000000");
-                elif (prpregion == "swimplainsfc") or (prpregion == "swimccursfc") or (prpregion == "swimscursfc"):
-                    deldefaultproperty(obj,"mass",0.0);
-                    deldefaultproperty(obj,"rc",0.0);
-                    deldefaultproperty(obj,"el",0.0);
-                    deldefaultproperty(obj,"col_type","4");
-                    deldefaultproperty(obj,"col_flags0","0000");
-                    deldefaultproperty(obj,"col_flags1","00000000");
-                    deldefaultproperty(obj,"col_flags2","00000000");
-                    deldefaultproperty(obj,"col_flags3","0000");
-                    deldefaultproperty(obj,"col_flags4","00000000");
-                    deldefaultproperty(obj,"col_flags5","00000080");
-                elif (prpregion == "clickrgn"):
-                    deldefaultproperty(obj,"mass",1.0);
-                    deldefaultproperty(obj,"rc",0.0);
-                    deldefaultproperty(obj,"el",0.0);
-                    deldefaultproperty(obj,"col_type","3");
-                    deldefaultproperty(obj,"col_flags0","0400");
-                    deldefaultproperty(obj,"col_flags1","08000000");
-                    deldefaultproperty(obj,"col_flags2","00000000");
-                    deldefaultproperty(obj,"col_flags3","0000");
-                    deldefaultproperty(obj,"col_flags4","00000004");
-                    deldefaultproperty(obj,"col_flags5","00000000");
-                elif (prpregion != "unknown"):
-                    deldefaultproperty(obj,"mass",1.0);
-                    deldefaultproperty(obj,"rc",0.0);
-                    deldefaultproperty(obj,"el",0.0);
-                    deldefaultproperty(obj,"col_type","3");
-                    deldefaultproperty(obj,"col_flags0","0400");
-                    deldefaultproperty(obj,"col_flags1","08000000");
-                    deldefaultproperty(obj,"col_flags2","00000000");
-                    deldefaultproperty(obj,"col_flags3","0000");
-                    deldefaultproperty(obj,"col_flags4","00000004");
-                    deldefaultproperty(obj,"col_flags5","00000000");
-                
-                print "Converted region object \"%s\"" % name 
-        pass
 
 def CopyProperties():
 
@@ -243,57 +86,13 @@ def deldefaultproperty(obj,propertyname,defaultvalue):
     except (AttributeError, RuntimeError):
         print "Error removing %s property" % propertyname
 
-def showObjectInfo():
-    HullTypes = {"BOX" : 0, "SPHERE" : 1, "CYLINDER" : 2, "CONE" : 3, "TRIANGLEMESH" : 4, "CONVEXHULL" : 5}
-
-    l = Blender.Object.GetSelected()
-    for obj in l:
-        name = str(obj.name)
-
-        print "Info on Object [%s]" % name
-        if obj.rbFlags & Object.RBFlags["BOUNDS"]:
-            print " Object has bounds set"
-
-            if obj.rbShapeBoundType == HullTypes["BOX"]:
-                print " Hull shape is box"
-            elif obj.rbShapeBoundType == HullTypes["SPHERE"]:
-                print " Hull shape is sphere"
-            elif obj.rbShapeBoundType == HullTypes["CYLINDER"]:
-                print " Hull shape is cylinder"
-            elif obj.rbShapeBoundType == HullTypes["CONE"]:
-                print " Hull shape is cone"
-            elif obj.rbShapeBoundType == HullTypes["TRIANGLEMESH"]:
-                print " Hull shape is trianglemesh"
-            elif obj.rbShapeBoundType == HullTypes["CONVEXHULL"]:
-                print " Hull shape is convexhull"
-             
-        print "==="
-        if obj.rbFlags & (Object.RBFlags["DYNAMIC"] | Object.RBFlags["ACTOR"]):
-            print " Object has DYNAMIC properties"
-            print "  Mass: %f" % obj.rbMass
-
-        print "==="
-        if obj.isSB():
-            print " Object has a softbody"
-            print " Refriction: %f" % obj.getSBFriction()
-            print " Mass: %f" % obj.getSBMass()
-            print " Elasticity: %f" % obj.SBSpeed
-            
-
-
 
 
 def do_main():
     args = __script__['arg']
     w = args.split("_")
-    if w[1]=="collide":
-        add_collideinfo()
-    elif w[1]=="fixregions":
-        convert_props()
-    elif w[1]=="CopyProperties":
+    if w[1]=="CopyProperties":
         CopyProperties()
-    elif w[1]=="objinfo":
-        showObjectInfo()
     else:
         raise "Unknown options %s" %(w)
 

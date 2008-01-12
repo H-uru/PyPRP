@@ -44,6 +44,7 @@ from alc_AbsClasses import *
 from alc_Functions import *
 from alcmfsgen import *
 from alc_LogicClasses import *
+from alc_QuickScripts import *
 
 class alcUruPage:
     TypeFlags = \
@@ -304,6 +305,9 @@ class alcUruPage:
             ###  / 
             ### /
 
+            # Parse the objects quickscripts
+            RunQuickScripts(obj)
+
             # Get the name
             name=str(obj.name)
 
@@ -316,13 +320,13 @@ class alcUruPage:
             # Get this object's AlcScript section
             objscript = AlcScript.objects.Find(obj.name)
 
-            # Get the "alctype" property, first from the alcscript, and next from the 'alctype' proprty 
+            # Get the "type" property, first from the alcscript, and next from the 'alctype' proprty 
             # (which overrides alsccript)
             try:
                 alctype = objscript['type']
             except:
                 alctype = 'object'
-            alctype = getTextPropertyOrDefault(obj,"alctype",alctype)
+            alctype = getTextPropertyOrDefault(obj,"type",alctype)
             
 
             # Soft Volumes are special kinds of meshes, 
@@ -374,13 +378,13 @@ class alcUruPage:
             # Get this object's AlcScript section
             objscript = AlcScript.objects.Find(obj.name)
 
-            # Get the "alctype" property, first from the alcscript, and next from the 'alctype' proprty 
+            # Get the "type" property, first from the alcscript, and next from the 'alctype' proprty 
             # (which overrides alsccript)
             try:
                 alctype = objscript['type']
             except:
                 alctype = 'object'
-            alctype = getTextPropertyOrDefault(obj,"alctype",alctype)
+            alctype = getTextPropertyOrDefault(obj,"type",alctype)
 
             # Get the name
             name=str(obj.name)
@@ -403,7 +407,7 @@ class alcUruPage:
                 scnobj.data.scene=SceneNodeRef
 
                 #
-                plLightInfo.Export(self,obj,scnobj,name,SceneNodeRef,softvolumeparser):
+                plLightInfo.Export(self,obj,scnobj,name,SceneNodeRef,softVolumeParser)
 
                 # Coordinate export
                 plCoordinateInterface.Export(self,obj,scnobj,name,True,objlist) 
@@ -420,7 +424,7 @@ class alcUruPage:
                     
                     plCoordinateInterface.Export(self,obj,scnobj,name,1,objlist)
                     
-                    plAudioInterface.Export(self,obj,scnobj,name,SceneNodeRef,softvolumeparser)
+                    plAudioInterface.Export(self,obj,scnobj,name,SceneNodeRef,softVolumeParser)
                     # Logical Export
                     AlcLogicHelper.Export(self,obj,scnobj,name)
 
@@ -449,6 +453,7 @@ class alcUruPage:
                     # Coordinate Export
                     plCoordinateInterface.Export(self,obj,scnobj,name,1,objlist)
 
+                    plAudioInterface.Export(self,obj,scnobj,name,SceneNodeRef,softVolumeParser)
                     # Logical Export
                     AlcLogicHelper.Export(self,obj,scnobj,name)
 
@@ -500,13 +505,13 @@ class alcUruPage:
                 isdynamic=0
 
             if obj_type=="Mesh":
-                # Get the "alctype" property, first from the alcscript, and next from the 'alctype' proprty 
+                # Get the "type" property, first from the alcscript, and next from the 'alctype' proprty 
                 # (which overrides alsccript)
                 try:
                     alctype = objscript['type']
                 except:
                     alctype = 'object'
-                alctype = getTextPropertyOrDefault(obj,"alctype",alctype)
+                alctype = getTextPropertyOrDefault(obj,"type",alctype)
 
                 if alctype=="region": #region export
                     print "" 
@@ -587,6 +592,9 @@ class alcUruPage:
 
                     # Coordinate Export
                     plCoordinateInterface.Export(self,obj,scnobj,name,isdynamic,objlist)
+                    
+                    # Audio export :) - Waiting for fixes in implement
+                    plAudioInterface.Export(self,obj,scnobj,name,SceneNodeRef,softVolumeParser)
  
             elif obj_type=="Camera":
                 print "" 
@@ -619,13 +627,13 @@ class alcUruPage:
             # Get this object's AlcScript section
             objscript = AlcScript.objects.Find(obj.name)
 
-            # Get the "alctype" property, first from the alcscript, and next from the 'alctype' proprty 
+            # Get the "type" property, first from the alcscript, and next from the 'alctype' proprty 
             # (which overrides alsccript)
             try:
                 alctype = objscript['type']
             except:
                 alctype = 'object'
-            alctype = getTextPropertyOrDefault(obj,"alctype",alctype)
+            alctype = getTextPropertyOrDefault(obj,"type",alctype)
 
             # Get the name
             name=str(obj.name)

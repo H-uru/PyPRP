@@ -79,14 +79,18 @@ class plAudioInterface(plObjInterface):             #Type 0x11
     def dump(self):
         print "Dump() deprecated on Audio and Sound classes"
         
-    def _Export(page,obj,scnobj,name,SceneNodeRef,softvolumeparser):
+    def _Export(page,obj,scnobj,name,SceneNodeRef,softVolumeParser):
         # Get this object's AlcScript section
         objscript = AlcScript.objects.Find(obj.name)
+        
+        # if no sound info specified, return none...
+        if FindInDict(objscript,"sound",None) is None:
+            return
 
         audioIface = plAudioInterface.FindCreate(page, name) #Create the audio Interface
         if audioIface == None:
             raise "ERROR: AudioInterface for %s not found!" %(str(scnobj.data.Key))
-            continue
+            return
             
         audioIface.data.parentref = scnobj.data.getRef()
         

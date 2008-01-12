@@ -226,7 +226,7 @@ class plConvexIsect(plVolumeIsect):
                 sobj.setName(name)
                 sobj.layers = [6,]
                 sobj.drawType = 2
-                sobj.addProperty("alctype","svconvex")
+                sobj.addProperty("type","svconvex")
                 if (page != 0):
                     sobj.addProperty("page_num",str(page))
 

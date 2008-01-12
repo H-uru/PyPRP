@@ -86,7 +86,7 @@ class plSpawnModifier(plMultiModifier):
         plMultiModifier.write(self,stream)
     
     def import_obj(self,obj):
-        obj.addProperty("alctype","swpoint")
+        obj.addProperty("type","swpoint")
         obj.layers = [2,]
         try:
             obj.setDrawMode(9)
@@ -104,7 +104,7 @@ class plSpawnModifier(plMultiModifier):
                 found=1
                 break
         if not found:
-            mod= plSpawnModifier.FindCreateself(page,name)
+            mod= plSpawnModifier.FindCreate(page,name)
             scnobj.data.addModifier(mod)
 
     Export = staticmethod(_Export)
@@ -462,7 +462,6 @@ class plSoftVolumeSimple(plSoftVolume):
         self.VI7C = PrpVolumeIsect(0x02F5,self.getVersion())
         self.VI7C.data.export_object(obj)
 
-    def _Export(
 
 
 class plSoftVolumeComplex(plSoftVolume):

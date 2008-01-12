@@ -154,7 +154,7 @@ class plLightInfo(plObjInterface):                          #Type 0x54 (Uru)
 
     Import = staticmethod(_Import)
 
-    def _Export(page,obj,scnobj,name,SceneNodeRef,softvolumeparser):
+    def _Export(page,obj,scnobj,name,SceneNodeRef,softVolumeParser):
 
         # --- Determine Lamp type and Shadow Type ---
         shadow = None

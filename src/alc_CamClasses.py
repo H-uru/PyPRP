@@ -412,8 +412,6 @@ class plCameraBrain1(hsKeyedObject):
         
         # -------- Initialize default settings
         self.fFlags.SetBit(plCameraBrain1.Flags["kFollowLocalAvatar"])
-
-        kMaintainLOS
         
         self.fPOAOffset = Vertex(0.0,0.0,6.0)
 
@@ -774,7 +772,7 @@ class plCameraBrain1_Avatar(plCameraBrain1):
     def __init__(self,parent,name="unnamed",type=0x009E):
         plCameraBrain1.__init__(self,parent,name,type)
         # Set default flag...
-        self.fFlags.SetBit(plCameraBrain1.Flags["kMaintainLOS"]])
+        self.fFlags.SetBit(plCameraBrain1.Flags["kMaintainLOS"])
 
         # set the Camerabrain1 floats to match defaults for this brain type
         self.fAccel = 10

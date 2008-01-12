@@ -29,6 +29,7 @@ Blender: 245
 Group: 'Wizards'
 Submenu: 'Upgrade Book (Keep old objects)' i_book_keepold
 Submenu: 'Upgrade Book (Delete old objects)' i_book_delold
+Submenu: 'Upgrade properties' i_props
 Tooltip: 'Alcugs PyPRP Upgrade'
 """
 
@@ -63,6 +64,8 @@ def do_main():
             upgrade_book(True)
         else:
             upgrade_book(False)
+    elif w[1]=="props":
+        Wizard_alctype_update()
     else:
         raise "Unknown options %s" %(w)
 

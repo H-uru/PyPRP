@@ -566,7 +566,7 @@ class plSimulationInterface(plObjInterface):
 
     def _Export(page,obj,scnobj,name,SceneNodeRef,isdynamic=0):
         # if there are bounds to export...
-        alctype = getTextPropertyOrDefault(obj,"alctype","object")
+        alctype = getTextPropertyOrDefault(obj,"type","object")
         if obj.rbFlags & Object.RBFlags["BOUNDS"] or alctype == "region":
             #set the simulation interface
             
@@ -1171,7 +1171,7 @@ class plHKPhysical(plPhysical):
                     sobj=alcCreateMesh('Phys_' + str(self.Key.name),hull.vertexs,hull.faces)
                     if self.getPageNum() != 0: # but only if it's not page 0
                         obj.addProperty("page_num",str(self.getPageNum()))
-                    sobj.addProperty("alctype","collider")
+                    sobj.addProperty("type","collider")
                     sobj.addProperty("rootobj",obj.name)
                     sobj.layers=[2,]
                     sobj.drawType=2
@@ -1184,7 +1184,7 @@ class plHKPhysical(plPhysical):
                 hull = alcConvexHull(self.fBounds.fVertices)
                 mesh.verts.extend(hull.vertexs)
                 mesh.faces.extend(hull.faces)
-                sobj.addProperty("alctype","collider")
+                sobj.addProperty("type","collider")
                 sobj.layers=[2,]
                 sobj.drawType=2
 
@@ -1199,7 +1199,7 @@ class plHKPhysical(plPhysical):
                     sobj=alcCreateMesh('Phys_' + str(self.Key.name),self.fBounds.fVertices,self.fBounds.fFaces)
                     if self.getPageNum() != 0: # but only if it's not page 0
                         obj.addProperty("page_num",str(self.getPageNum()))
-                    sobj.addProperty("alctype","collider")
+                    sobj.addProperty("type","collider")
                     sobj.addProperty("rootobj",obj.name)
                     sobj.layers=[2,]
                     sobj.drawType=2
@@ -1213,7 +1213,7 @@ class plHKPhysical(plPhysical):
                 print "   Face Count   :",len(self.fBounds.fFaces)
                 mesh.verts.extend(self.fBounds.fVertices)
                 mesh.faces.extend(self.fBounds.fFaces)
-                sobj.addProperty("alctype","collider")
+                sobj.addProperty("type","collider")
                 sobj.layers=[2,]
                 sobj.drawType=2
                 
@@ -1264,10 +1264,10 @@ class plHKPhysical(plPhysical):
                 
                 if self.fLOSDB & plPhysical.plLOSDB["kLOSDBCameraBlockers"]:
                     try:
-                        sobj.removeProperty("alctype")
+                        sobj.removeProperty("type")
                     except:
                         pass
-                    sobj.addProperty("alctype","camcollider")
+                    sobj.addProperty("type","camcollider")
                 else:
                     # Not a camera colloder, but probably covered by a region we don't get yet..
                     pass
@@ -1288,10 +1288,10 @@ class plHKPhysical(plPhysical):
             # If it is a region...
             sobj.layers=[3,] # regions go to layer 3
             try:
-                sobj.removeProperty("alctype")
+                sobj.removeProperty("type")
             except:
                 pass
-            sobj.addProperty("alctype","region")
+            sobj.addProperty("type","region")
 
             
   
@@ -1333,7 +1333,7 @@ class plHKPhysical(plPhysical):
             prptype = objscript['type']
         except:
             prptype = "object"
-        prptype = getTextPropertyOrDefault(obj,"alctype",prptype)
+        prptype = getTextPropertyOrDefault(obj,"type",prptype)
         
         if prptype == "region":
             print "  Setting Region-Specific settings...."
@@ -1404,10 +1404,10 @@ class plHKPhysical(plPhysical):
                 print "  Mass",obj.rbMass
 
             # retrieve friction from logic property
-            self.fRC = getFloatPropertyOrDefault(obj,"rc",-1.0)
+            self.fRC = float(FindInDict(objscript,"physical.friction",-1.0))
             if self.fRC == -1.0:
                 # retrieve from alcscript if not set as logic property
-                self.fRC = float(FindInDict(objscript,"physical.friction",-1.0))
+                self.fRC = getFloatPropertyOrDefault(obj,"rc",-1.0)
 
             if self.fRC < 0.0:
                 print "  No Friction, disabling frictive setting"
@@ -1420,9 +1420,9 @@ class plHKPhysical(plPhysical):
                 print "  Friction:",self.fRC
     
             # retrieve elasticity from logic property
-            self.fEL = getFloatPropertyOrDefault(obj,"el",-1)
+            self.fEL = float(FindInDict(objscript,"physical.elasticity",0.0))
             if self.fEL == -1:
-                self.fEL = float(FindInDict(objscript,"physical.elasticity",0.0))
+                self.fEL = getFloatPropertyOrDefault(obj,"el",-1)
             if self.fEL < 0.0:
                 print "  No Elasticity set"
             else:
@@ -1431,8 +1431,6 @@ class plHKPhysical(plPhysical):
             self.gFlagsDetect = plHKPhysical.FlagsDetect["cDetectNone"]
             self.gFlagsRespond = plHKPhysical.FlagsRespond["cRespInitial"]
 
-
-                
             coltype = getTextPropertyOrDefault(obj,"physlogic",None)
             coltype = FindInDict(objscript,"physical.physlogic",coltype)
             
@@ -1468,7 +1466,7 @@ class plHKPhysical(plPhysical):
 
                 else: # if coltype == "none":
                     self.gColType = plHKPhysical.Collision["cNone"]
-            
+
             
             if (str(FindInDict(objscript,"physical.pinned","false")).lower() == "true" or (obj.rbFlags & Blender.Object.RBFlags["DYNAMIC"] == 0 and obj.rbFlags & Blender.Object.RBFlags["ACTOR"])):
                 print "  Pinning object"

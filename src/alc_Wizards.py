@@ -166,3 +166,44 @@ def Wizard_BookUpgrade(RemoveOld = False):
         for obj in oldbookobjects:
             scene.objects.unlink(obj)
     
+
+def Wizard_alctype_update():
+    l = Blender.Object.Get()
+    for obj in l:
+        name = str(obj.name)
+        obj_type=obj.getType()
+        try:
+            p=obj.getProperty("alctype")
+            type=str(p.getData())
+            obj.removeProperty(p)
+            obj.addProperty("type",type)
+        except (AttributeError, RuntimeError):
+            pass
+
+        try:
+            p=obj.getProperty("prpregion")
+            type=str(p.getData())
+            obj.removeProperty(p)
+            
+            if type == "climbregion":
+                type = "climbing"
+            elif type == "swimregion" or type == "swimrgn":
+                type = "swimdetect"
+            elif type == "swimplainsfc" or type == "swimscursfc" or type == "swimccursfc":
+                type = "swim"
+            elif type == "paniclnkrgn":
+                type = "panic"
+            elif type == "footsteprgn":
+                type = "footstep"
+            elif type == "camerargn":
+                type = "camera"
+            elif type == "clickregion":
+                type = "logic"
+            
+            obj.addProperty("regiontype",type)
+            
+        except (AttributeError, RuntimeError):
+            pass
+                
+        pass
+

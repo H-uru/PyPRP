@@ -146,7 +146,7 @@ def alcCreateLinkInPoint(name="LinkInPointDefault",where=None,page=0):
     scene = Blender.Scene.GetCurrent()
     scene.link(obj)
     #obj.addProperty("name",name)
-    obj.addProperty("alctype","swpoint")
+    obj.addProperty("type","swpoint")
     if page!=0:
         obj.addProperty("page_num",str(page))
     if where==None:
@@ -170,7 +170,7 @@ def alcCreateRegion(name="Region",where=None,page=0):
     rgnsize = 4
     rgnoffset = 0 - (rgnsize/2)
     obj = alcCreateBox(name,rgnsize,rgnoffset,rgnoffset,rgnoffset)
-    obj.addProperty("alctype","region")
+    obj.addProperty("type","region")
     obj.addProperty("prpregion","unknown")
 
     if page!=0:
@@ -189,29 +189,21 @@ def alcCreateRegion(name="Region",where=None,page=0):
 
 def alcCreatePanicLnkRegion(name="PanicLnk",where=None,page=0):
     obj = alcCreateRegion(name,where,page)
-    p = obj.getProperty("prpregion")
-    p.setData("paniclnkrgn")
+    obj.addProperty("regiontype","panic")
     return obj
 
 def alcCreateFootstepRegion(name="FootStep",where=None,page=0):
     obj = alcCreateRegion(name,where,page)
-    p = obj.getProperty("prpregion")
-    p.setData("footsteprgn")
-    obj.addProperty("footstepsound",int(0))
+    obj.addProperty("regiontype","footstep")
+    obj.addProperty("footstepsound","dirt")
     return obj
 
 def alcCreateClickableRegion(where=None,page=0):
     obj = alcCreateRegion("ClickableRegion",where,page)
-    p = obj.getProperty("prpregion")
-    p.setData("clickregion")
     return obj
 
 def alcCreateCameraRegion(name="CameraRgn",where=None,page=0):
     obj = alcCreateRegion(name,where,page)
-    p = obj.getProperty("prpregion")
-    p.setData("camerargn")
-    obj.addProperty("camera","")
-    obj.addProperty("setDefCam","false")
     return obj
 
 def alcCreateSwimRegion(name="SwimDetRgn",where=None,page=0):
@@ -226,7 +218,7 @@ def alcCreateSwimSurface(name="SwimSfc",where=None,page=0):
     obj = alcCreatePlane(tempname,rgnsize,rgnoffset,rgnoffset,0)
     scene = Blender.Scene.GetCurrent()
     #scene.link(obj)
-    obj.addProperty("alctype","region")
+    obj.addProperty("type","region")
     obj.addProperty("regiontype","swim")
 
     if page!=0:
@@ -242,6 +234,12 @@ def alcCreateSwimSurface(name="SwimSfc",where=None,page=0):
     #Blender.Redraw()
     return obj
 
+
+def alcCreateClimbRegion(name="ClimbRgn",where=None,page=0):
+    obj = alcCreateRegion("ClickableRegion",where,page)
+    obj.addProperty("regiontype","climbing")
+
+    return obj
 
 def alcCreateMesh(name,vertices,faces):
     obj = Blender.Mesh.New(name)
@@ -288,16 +286,6 @@ def alcFindBlenderText(name):
         out=Blender.Text.New(name)
     return out
     
-
-def alcCreateClimbRegion(name="ClimbRgn",where=None,page=0):
-    obj = alcCreateRegion("ClickableRegion",where,page)
-    p = obj.getProperty("prpregion")
-    p.setData("climbregion")
-
-    obj.addProperty("bottomFlag","00")
-    obj.addProperty("climbOffset",int(0))
-    obj.addProperty("climbHeight",int(0))
-    return obj
     
 def deldefaultproperty(obj,propertyname,defaultvalue):
     try:
@@ -384,7 +372,7 @@ def alcCreateSoftVolumePlane():
     rgnoffset = 0 - (rgnsize/2)
     obj = alcCreatePlane(tempname,rgnsize,rgnoffset,rgnoffset,0)
     scene = Blender.Scene.GetCurrent()
-    obj.addProperty("alctype","svconvex")
+    obj.addProperty("type","svconvex")
     obj.setLocation(Blender.Window.GetCursorPos())
     obj.layers = [6,]
     obj.drawType = 2
@@ -396,7 +384,7 @@ def alcCreateSoftVolumeCube():
     rgnsize = 4
     rgnoffset = 0 - (rgnsize/2)
     obj = alcCreateBox(tempname,rgnsize,rgnoffset,rgnoffset,rgnoffset,True)
-    obj.addProperty("alctype","svconvex")
+    obj.addProperty("type","svconvex")
     obj.setLocation(Blender.Window.GetCursorPos())
     obj.layers = [6,]
     obj.drawType = 2
