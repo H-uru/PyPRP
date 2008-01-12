@@ -826,7 +826,7 @@ class plCameraBrain1_Avatar(plCameraBrain1):
         StoreInDict(objscript,"camera.brain.fpoffset","%f,%f,%f"%(float(self.fOffset.x),float(self.fOffset.y),float(self.fOffset.z)))
 
     def export_obj(self,obj):
-        plCameraBrain1.export_obj(self,obj,prp)
+        plCameraBrain1.export_obj(self,obj)
 
         # ------ Obtain the AlcScript Object ------
         objscript = AlcScript.objects.Find(obj.name)
@@ -868,4 +868,4 @@ class plCameraBrain1_FirstPerson(plCameraBrain1_Avatar):
         StoreInDict(objscript,"camera.brain.type","firstperson")
         
     def export_obj(self,obj):
-        plCameraBrain1_Avatar.export_obj(self,obj,prp)
+        plCameraBrain1_Avatar.export_obj(self,obj)

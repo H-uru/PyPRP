@@ -956,7 +956,7 @@ class plLayer(plLayerInterface):             # Type 0x06
             self.fState.fShadeFlags |= hsGMatState.hsGMatShadeFlags["kShadeReallyNoFog"]            
                     
         if mat.getMode() & Blender.Material.Modes['ZTRANSP']:
-            self.fState.fZFlags |= hsGMatZFlags["kZNoZWrite"]
+            self.fState.fZFlags |= hsGMatState.hsGMatZFlags["kNoZWrite"]
             
         if mat.getSpec() > 0.0:
             self.fState.fShadeFlags |= hsGMatState.hsGMatShadeFlags["kShadeSpecular"]
