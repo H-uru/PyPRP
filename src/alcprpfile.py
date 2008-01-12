@@ -164,6 +164,8 @@ class PrpObject:
                 self.data=plCameraBrain1_Fixed(self)
             elif self.type==0x00A2:
                 self.data=plPythonFileMod(self)
+            elif self.type==0x00A4:
+                self.data=plExcludeRegionModifier(self)
             elif self.type==0x00A6:
                 self.data=plVolumeSensorConditionalObject(self)
             elif self.type==0x00A8:
@@ -271,7 +273,7 @@ class PrpObject:
         self.size=size
         buf.seek(offset)
         self.data.validation=verify
-        if False: # Handy debuggin tool, but not very useful to users....
+        if True: # Handy debuggin tool, but not very useful to users....
             print "[Type: 0x%x]"%(self.type)
 
         try:

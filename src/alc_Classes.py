@@ -376,6 +376,48 @@ class plAGMasterMod(hsKeyedObject):
             ref.write(stream)
 
 
+class plExcludeRegionModifier(plSingleModifier):
+    Flags = \
+    { \
+        "kBlockCameras" : 0 \
+    }
+    
+    def __init__(self,parent,name="unnamed",type=0x00A4):
+        plSingleModifier.__init__(self,parent,name,type)
+
+        self.fSafePoints = []
+        self.fSeek = True
+        self.fSeekTime = 10
+
+    def _Find(page,name):
+        return page.find(0x00A4,name,0)
+    Find = staticmethod(_Find)
+
+    def _FindCreate(page,name):
+        return page.find(0x00A4,name,1)
+    FindCreate = staticmethod(_FindCreate)
+
+    def read(self,stream):
+        plSingleModifier.read(self,stream)
+        
+        count = stream.Read32()
+        for i in range(count):
+            safepoint = UruObjectRef()
+            safepoint.read(stream)
+            self.fSafePoints.append(safepoint)
+
+        self.fSeek = stream.ReadBool()
+        self.fSeekTime = stream.ReadFloat()
+    
+    def write(self,stream):
+        plSingleModifier.write(self,stream)
+        
+        stream.Write32(len(fSafePoints))
+        for safepoint in self.fSafePoints:
+            safepoint.write(stream)
+            
+        stream.WriteBool(self.fSeek)
+        stream.WriteFloat(self.fSeekTime)
 
 class plSoftVolume(plRegionBase):               #Type 0x0087 (Uru)
     def __init__(self,parent,name="unnamed",type=0x0087):

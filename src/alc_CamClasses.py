@@ -50,66 +50,70 @@ import alcconfig, alchexdump
 
 ################# Rework of the camera classes ###################
 
+class CamTrans:
+    def __init__(self,parent):
+        self.parent = parent
+        self.fTransTo = UruObjectRef()
+        self.fCutPos = False # boolean
+        self.fCutPOA = False # boolean
+        self.fIgnore = False # boolean
+        self.fAccel = 60.0
+        self.fDecel = 60.0
+        self.fVelocity = 60.0
+        self.fPOAAccel = 60.0
+        self.fPOADecel = 60.0
+        self.fPOAVelocity = 60.0
+
+    def read(self,stream):
+        print "w"
+        self.fTransTo.read(stream)
+        print "v"
+        self.fCutPos = stream.ReadBool()
+        self.fCutPOA = stream.ReadBool()
+        self.fIgnore = stream.ReadBool()
+        self.fVelocity = stream.ReadFloat()
+        self.fAccel = stream.ReadFloat()
+        self.fDecel = stream.ReadFloat()
+        self.fPOAVelocity = stream.ReadFloat()
+        self.fPOAAccel = stream.ReadFloat()
+        self.fPOADecel = stream.ReadFloat()
+
+    def write(self,stream):
+        self.fTransTo.write(stream)
+        stream.WriteBool(self.fCutPos)
+        stream.WriteBool(self.fCutPOA)
+        stream.WriteBool(self.fIgnore)
+        stream.WriteFloat(self.fVelocity)
+        stream.WriteFloat(self.fAccel)
+        stream.WriteFloat(self.fDecel)
+        stream.WriteFloat(self.fPOAVelocity)
+        stream.WriteFloat(self.fPOAAccel)
+        stream.WriteFloat(self.fPOADecel)        
+
+    def import_obj(self,obj,count):
+        pass
+
+    def export_script(self,script):
+        self.fAccel = float(FindInDict(script,"accel",self.fAccel))
+        self.fDecel = float(FindInDict(script,"decel",self.fDecel))
+        self.fVelocity = float(FindInDict(script,"velocity",self.fVelocity))
+        self.fPOAAccel = float(FindInDict(script,"poaaccel",self.fPOAAccel))
+        self.fPOADecel = float(FindInDict(script,"poadecel",self.fPOADecel))
+        self.fPOCVelocity = float(FindInDict(script,"poavelocity",self.fPOAVelocity))
+
+        self.fCutPos = bool(str(FindInDict(script,"cutpos",str(self.fCutPos))).lower() == "true")
+        self.fCutPOA = bool(str(FindInDict(script,"cutpoa",str(self.fCutPOA))).lower() == "true")
+        self.fIgnore = bool(str(FindInDict(script,"ignore",str(self.fIgnore))).lower() == "true")
+
+        transto = FindInDict(script,"to",None)
+        # do something with that...
+        refparser = ScriptRefParser(self.parent.getRoot(),False,"scnobj",[0x0001])
+        self.fSubjectKey = refparser.MixedRef_FindCreateRef(transto)
+    
+        pass
+
+
 class plCameraModifier1(plSingleModifier):    # actually descends from plSingleModifer, but doesn't use those read/write functions
-    class CamTrans:
-        def __init__(self,parent):
-            self.parent = parent
-            self.fTransTo = UruObjectRef()
-            self.fCutPos = False # boolean
-            self.fCutPOA = False # boolean
-            self.fIgnore = False # boolean
-            self.fAccel = 60.0
-            self.fDecel = 60.0
-            self.fVelocity = 60.0
-            self.fPOAAccel = 60.0
-            self.fPOADecel = 60.0
-            self.fPOAVelocity = 60.0
-
-        def read(self,stream):
-            self.fTransTo.read(stream)
-            self.fCutPos = stream.ReadBool()
-            self.fCutPOA = stream.ReadBool()
-            self.fIgnore = stream.ReadBool()
-            self.fVelocity = stream.ReadFloat()
-            self.fAccel = stream.ReadFloat()
-            self.fDecel = stream.ReadFloat()
-            self.fPOAVelocity = stream.ReadFloat()
-            self.fPOAAccel = stream.ReadFloat()
-            self.fPOADecel = stream.ReadFloat()
-
-        def write(self,stream):
-            self.fTransTo.write(stream)
-            stream.WriteBool(self.fCutPos)
-            stream.WriteBool(self.fCutPOA)
-            stream.WriteBool(self.fIgnore)
-            stream.WriteFloat(self.fVelocity)
-            stream.WriteFloat(self.fAccel)
-            stream.WriteFloat(self.fDecel)
-            stream.WriteFloat(self.fPOAVelocity)
-            stream.WriteFloat(self.fPOAAccel)
-            stream.WriteFloat(self.fPOADecel)        
-
-        def import_obj(self,obj,count):
-            pass
-
-        def export_script(self,script):
-            self.fAccel = float(FindInDict(script,"accel",self.fAccel))
-            self.fDecel = float(FindInDict(script,"decel",self.fDecel))
-            self.fVelocity = float(FindInDict(script,"velocity",self.fVelocity))
-            self.fPOAAccel = float(FindInDict(script,"poaaccel",self.fPOAAccel))
-            self.fPOADecel = float(FindInDict(script,"poadecel",self.fPOADecel))
-            self.fPOCVelocity = float(FindInDict(script,"poavelocity",self.fPOAVelocity))
-
-            self.fCutPos = bool(str(FindInDict(script,"cutpos",str(self.fCutPos))).lower() == "true")
-            self.fCutPOA = bool(str(FindInDict(script,"cutpoa",str(self.fCutPOA))).lower() == "true")
-            self.fIgnore = bool(str(FindInDict(script,"ignore",str(self.fIgnore))).lower() == "true")
-
-            transto = FindInDict(script,"to",None)
-            # do something with that...
-            refparser = ScriptRefParser(self.parent.getRoot(),False,"scnobj",[0x0001])
-            self.fSubjectKey = refparser.MixedRef_FindCreateRef(transto)
-        
-            pass
    
    
     def __init__(self,parent,name="unnamed",type=0x009B):
@@ -151,7 +155,7 @@ class plCameraModifier1(plSingleModifier):    # actually descends from plSingleM
         
         count = stream.Read32()
         for i in range(count):
-            cam = plCameraModifier1.CamTrans()
+            cam = CamTrans(self)
             cam.read(stream) # not like this in Plasma, but makes it easier here :)
             self.fTrans.append(cam)
         
@@ -163,10 +167,13 @@ class plCameraModifier1(plSingleModifier):    # actually descends from plSingleM
         
         
         try:
+            print "Y"
  
             for i in range(count):
                 Msg = PrpMessage.FromStream(stream)
                 self.fMessageQueue.add(Msg.data)
+
+            print "Z"
     
             for msg in self.fMessageQueue:
                 msg.fSender.read(stream)
@@ -306,12 +313,12 @@ class plCameraModifier1(plSingleModifier):    # actually descends from plSingleM
         # -------- Camera Transitions ---------
         transitions = list(FindInDict(objscript,"camera.transitions",[]))
         for transitionscript in transitions:
-            cam = plCameraModifier1.CamTrans(self)
+            cam = CamTrans(self)
             cam.export_script(transitionscript)
             self.fTrans.append(cam)
 
         if len(self.fTrans) == 0:
-            cam = plCameraModifier1.CamTrans(self)
+            cam = CamTrans(self)
             self.fTrans.append(cam)
 
 

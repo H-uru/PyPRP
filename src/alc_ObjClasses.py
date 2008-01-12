@@ -37,7 +37,7 @@ from alc_AbsClasses import *
 from alc_MatClasses import *
 from alc_DrawClasses import *
 from alc_SwimClasses import *
-#from alc_CamClasses import *
+from alc_CamClasses import *
 from alcurutypes import *
 from alcdxtconv import *
 from alchexdump import *

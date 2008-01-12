@@ -701,7 +701,7 @@ class plOneShotCallbacks:
         self.fCallbacks = []
         
         for i in range(count):
-            cb = plOneShotCallback()
+            cb = plOneShotCallback(self)
             cb.read(stream)
             self.fCallbacks.append(cb)
 

@@ -1029,9 +1029,9 @@ class plCameraRegionDetector(plDetectorModifier):
         msgscripts = []
         for msg in self.fMessages:
             msgscript = {} 
-            StoreInDict(msgscript,"camera",str(msg.fNewCam.Key.name))
+            StoreInDict(msgscript,"camera",str(msg.data.fNewCam.Key.name))
 
-            if self.fMessages[0].fCmd[plCameraMsg.ModCmds["kSetAsPrimary"]] == 1:
+            if self.fMessages[0].data.fCmd[plCameraMsg.ModCmds["kSetAsPrimary"]] == 1:
                 StoreInDict(msgscript,"setprimary",True)
             else:
                 StoreInDict(msgscript,"setprimary",False)
@@ -1451,7 +1451,7 @@ class plPythonFileMod(plMultiModifier):
         count = stream.Read32()
         self.fParameters = []
         for i in range(count):
-            parm = plPythonParameter(self)
+            parm = plPythonParameter(self.parent)
             parm.read(stream)
             self.fParameters.append(parm)
 
