@@ -30,6 +30,7 @@ Group: 'Wizards'
 Submenu: 'Upgrade Book (Keep old objects)' i_book_keepold
 Submenu: 'Upgrade Book (Delete old objects)' i_book_delold
 Submenu: 'Upgrade properties' i_props
+Submenu: 'Assign default bounds to selected objects' i_bounds
 Tooltip: 'Alcugs PyPRP Upgrade'
 """
 
@@ -56,6 +57,13 @@ def upgrade_book(RemoveOld):
     print "Upgrading Book Settings"
     Wizard_BookUpgrade(RemoveOld)
     
+def setbounds():
+    objects = Blender.Scene.GetCurrent().objects.selected
+    for sobject in objects:
+        sobject.rbFlags |= Blender.Object.RBFlags.BOUNDS
+        print Object.RBShapes
+        sobject.rbShapeBoundType = Blender.Object.RBShapes["POLYHEDERON"]
+    
 def do_main():
     args = __script__['arg']
     w = args.split("_")
@@ -66,6 +74,8 @@ def do_main():
             upgrade_book(False)
     elif w[1]=="props":
         Wizard_alctype_update()
+    elif w[1]=="bounds":
+        setbounds()
     else:
         raise "Unknown options %s" %(w)
 
