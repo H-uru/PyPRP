@@ -79,7 +79,7 @@ class VertexCoderColorElement:
                 return buf.ReadByte()
         else:
            raise RuntimeError, "VertexCoderColorElement prematurely reached end of count."
-
+4
 
 class plVertexCoder:
     # Still uses struct.pack and struct.unpack, but that is no problem

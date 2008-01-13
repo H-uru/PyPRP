@@ -199,11 +199,17 @@ def alcCreateFootstepRegion(name="FootStep",where=None,page=0):
     return obj
 
 def alcCreateClickableRegion(where=None,page=0):
-    obj = alcCreateRegion("ClickableRegion",where,page)
+    obj = alcCreateRegion("ClickRegion",where,page)
     return obj
 
 def alcCreateCameraRegion(name="CameraRgn",where=None,page=0):
     obj = alcCreateRegion(name,where,page)
+    return obj
+
+def alcCreateClimbRegion(name="ClimbRgn",where=None,page=0):
+    obj = alcCreateRegion("ClimbRegion",where,page)
+    obj.addProperty("regiontype","climbing")
+
     return obj
 
 def alcCreateSwimRegion(name="SwimDetRgn",where=None,page=0):
@@ -235,11 +241,6 @@ def alcCreateSwimSurface(name="SwimSfc",where=None,page=0):
     return obj
 
 
-def alcCreateClimbRegion(name="ClimbRgn",where=None,page=0):
-    obj = alcCreateRegion("ClickableRegion",where,page)
-    obj.addProperty("regiontype","climbing")
-
-    return obj
 
 def alcCreateMesh(name,vertices,faces):
     obj = Blender.Mesh.New(name)

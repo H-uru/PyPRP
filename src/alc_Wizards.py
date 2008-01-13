@@ -204,6 +204,6 @@ def Wizard_alctype_update():
             
         except (AttributeError, RuntimeError):
             pass
-                
+                            
         pass
 

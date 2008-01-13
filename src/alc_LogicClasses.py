@@ -2051,7 +2051,7 @@ class plAvLadderMod(plSingleModifier):
         print "  [Ladder Modifier %s]"%(str(self.Key.name))
         objscript = AlcScript.objects.FindOrCreate(obj.name)
         # calculate the approximate Direction vector
-        vct = str(FindInDict(objscript,"region.ladder.untr_ladderview","0,-1,0"))
+        vct = str(FindInDict(objscript,"region.ladder.ladderview","0,-1,0"))
         try:
             X,Y,Z, = vct.split(',')
             v = Vertex(float(X),float(Y),float(Z))
@@ -2063,7 +2063,6 @@ class plAvLadderMod(plSingleModifier):
         print matrix
         rotpart = matrix.rotationPart()
         rotmatrix = rotpart.resize4x4()
-        rotmatrix.invert()
         rotmatrix.transpose()
         m = hsMatrix44()
         m.set(rotmatrix)

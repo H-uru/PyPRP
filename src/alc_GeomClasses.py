@@ -207,6 +207,12 @@ class RGBA:
         buf.WriteFloat(self.g)
         buf.WriteFloat(self.b)
         buf.WriteFloat(self.a)
+    
+    def equals(col):
+        if self.r == col.r and self.b == col.b and self.g == col.g and self.a == col.a:
+            return True
+        else:
+            return False
 
 
 class Vertex:
@@ -253,6 +259,10 @@ class Vertex:
                 if not (self.tex[i][0] == v.tex[i][0] and self.tex[i][1] == v.tex[i][1]):
                     return False
         
+        # check vertex color
+        
+        if not self.color.equals(v.color):
+            return False
 
         # check blend weights
         if len(self.blend) != len(v.blend):

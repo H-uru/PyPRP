@@ -112,6 +112,21 @@ def new_swimsurface():
     alcCreateSwimSurface()
     Blender.Redraw()
 
+def new_climbregion():
+    print "Adding a new Climb Region"
+    alcCreateClimbRegion()
+    Blender.Redraw()
+
+def new_clickregion():
+    print "Adding a new Clickable Region"
+    alcCreateClickableRegion()
+    Blender.Redraw()
+
+def new_cameraregion():
+    print "Adding a new Camera Region"
+    alcCreateCameraRegion()
+    Blender.Redraw()
+
 def new_alcscript():
     print "Setting basic alcscript settings"
     txt=alcFindBlenderText("AlcScript")

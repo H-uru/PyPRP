@@ -290,7 +290,7 @@ class plArmatureEffectStateMsg(plMessage):
         "woodladder"        : 14, \
         "deepwater"         : 15, \
         "maintainerglass"   : 16, \
-        "Maintainerstone"   : 17, \
+        "maintainerstone"   : 17, \
         "swimming"          : 18, \
     }
 
