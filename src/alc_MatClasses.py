@@ -836,8 +836,8 @@ class plLayer(plLayerInterface):             # Type 0x06
                                                 | hsGMatState.hsGMatBlendFlags["kBlendNoTexColor"]
                                                 )
                     self.fState.fClampFlags |= hsGMatState.hsGMatClampFlags["kClampTexture"]
-                    self.fState.fShadeFlags |= hsGMatState.hsGMatShadeFlags[""]
-                    self.fState.fZFlags     |= hsGMatState.hsGMatZFlags["kNoZWrite"]
+                    #self.fState.fShadeFlags |= hsGMatState.hsGMatShadeFlags[""]
+                    self.fState.fZFlags     |= hsGMatState.hsGMatZFlags["kZNoZWrite"]
                     self.fState.fMiscFlags  |= 0 # | hsGMatState.hsGMatMiscFlags[""] 
                                                 
 
@@ -956,7 +956,7 @@ class plLayer(plLayerInterface):             # Type 0x06
             self.fState.fShadeFlags |= hsGMatState.hsGMatShadeFlags["kShadeReallyNoFog"]            
                     
         if mat.getMode() & Blender.Material.Modes['ZTRANSP']:
-            self.fState.fZFlags |= hsGMatState.hsGMatZFlags["kNoZWrite"]
+            self.fState.fZFlags |= hsGMatState.hsGMatZFlags["kZNoZWrite"]
             
         if mat.getSpec() > 0.0:
             self.fState.fShadeFlags |= hsGMatState.hsGMatShadeFlags["kShadeSpecular"]
