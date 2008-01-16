@@ -723,33 +723,20 @@ class plLayer(plLayerInterface):             # Type 0x06
                 i += 1
 
             Use_Sticky = False
-            Use_Orco = False
             # Loop through Layers To see which coorinate systems are used.
             for _mtex in mat.getTextures():
                 if not _mtex is None:
                     if _mtex.texco == Blender.Texture.TexCo["STICK"] and mesh.vertexUV:
                         Use_Sticky = True
-                    elif _mtex.texco == Blender.Texture.TexCo["ORCO"]:
-                        Use_Orco = True
             
             UVSticky = 0 # Setting Sticky gives you 1st uv layer if no Sticky Coords set...
             if Use_Sticky:
                 UVSticky = len(UVLayers)
                 
-            UVOrco = 0 # Failsafe: If not set, UVOrco links to ist uv layer
-            if Use_Orco:
-                if Use_Sticky:
-                    UVOrco = len(UVLayers) + 1
-                else:
-                    UVOrco = len(UVLayers)
-
             # Check out current mapping
             if mtex.texco == Blender.Texture.TexCo["STICK"]:
                 print "    -> Using sticky mapping"
                 self.fUVWSrc = UVSticky
-            elif mtex.texco == Blender.Texture.TexCo["ORCO"]:
-                print "    -> Using Orco mapping"
-                self.fUVWSrc = UVOrco
             elif mtex.texco == Blender.Texture.TexCo["UV"]:
                 try:
                     self.fUVWSrc = UVLayers[mtex.uvlayer]
@@ -831,10 +818,10 @@ class plLayer(plLayerInterface):             # Type 0x06
                     # now create a blend, depending on whether it is horizontal or vertical:
                     if(tex.flags & Blender.Texture.Flags.FLIPBLEND > 0):
                         #Vertical blend
-                        blendname = "ALPHA_BLEND_FILTER_V_LIN_4x64"
+                        blendname = "ALPHA_BLEND_FILTER_V_LIN_64x64"
                         
                         blenddata = cStringIO.StringIO()
-                        blendwidth = 4
+                        blendwidth = 64
                         blendheight = 64
                         
                         for y in range(blendheight,0,-1):
@@ -843,11 +830,11 @@ class plLayer(plLayerInterface):             # Type 0x06
                                 blenddata.write(struct.pack("BBBB",255,255,255,alpha))
                     else:
                         #Horizontal blend
-                        blendname = "ALPHA_BLEND_FILTER_U_LIN_64x4"
+                        blendname = "ALPHA_BLEND_FILTER_U_LIN_64x64"
             
                         blenddata = cStringIO.StringIO()
                         blendwidth = 64
-                        blendheight = 4
+                        blendheight = 64
                         
                         for y in range(blendheight,0,-1):
                             for x in range(0,blendwidth):
@@ -858,7 +845,7 @@ class plLayer(plLayerInterface):             # Type 0x06
                     # now create a blend, depending on whether it is horizontal or vertical:
                     if(tex.flags & Blender.Texture.Flags.FLIPBLEND > 0):
                         #Vertical blend
-                        blendname = "ALPHA_BLEND_FILTER_V_QUAD_4x64"
+                        blendname = "ALPHA_BLEND_FILTER_V_QUAD_64x64"
                         
                         blenddata = cStringIO.StringIO()
                         blendwidth = 4
@@ -870,7 +857,7 @@ class plLayer(plLayerInterface):             # Type 0x06
                                 blenddata.write(struct.pack("BBBB",255,255,255,alpha))
                     else:
                         #Horizontal blend
-                        blendname = "ALPHA_BLEND_FILTER_U_QUAD_64x4"
+                        blendname = "ALPHA_BLEND_FILTER_U_QUAD_64x64"
             
                         blenddata = cStringIO.StringIO()
                         blendwidth = 64
@@ -885,7 +872,7 @@ class plLayer(plLayerInterface):             # Type 0x06
                     # now create a blend, depending on whether it is horizontal or vertical:
                     if(tex.flags & Blender.Texture.Flags.FLIPBLEND > 0):
                         #Vertical blend
-                        blendname = "ALPHA_BLEND_FILTER_V_EASE_4x64"
+                        blendname = "ALPHA_BLEND_FILTER_V_EASE_64x64"
                         
                         blenddata = cStringIO.StringIO()
                         blendwidth = 4
@@ -897,7 +884,7 @@ class plLayer(plLayerInterface):             # Type 0x06
                                 blenddata.write(struct.pack("BBBB",255,255,255,alpha))
                     else:
                         #Horizontal blend
-                        blendname = "ALPHA_BLEND_FILTER_U_EASE_64x4"
+                        blendname = "ALPHA_BLEND_FILTER_U_EASE_64x64"
             
                         blenddata = cStringIO.StringIO()
                         blendwidth = 64
@@ -1020,25 +1007,26 @@ class plLayer(plLayerInterface):             # Type 0x06
 
             
             # now process additional mtex settings
-            # find the texture object, so we can get some values from it
-            
-            # first make a calculation of the uv transformation matrix.
-            uvmobj = Blender.Object.New ('Empty')
-            
-            trickscale = mtex.size[2]
-            # now set the scale (and rotation) to the object
-            uvmobj.SizeX = mtex.size[0] * trickscale
-            uvmobj.SizeY = mtex.size[1] * trickscale
-            uvmobj.LocX = mtex.ofs[0]
-            uvmobj.LocY = mtex.ofs[1]
-            uvm=getMatrix(uvmobj)
-            uvm.transpose()
-            self.fTransform.set(uvm)
-
-            self.fOpacity = mtex.colfac # factor how texture blends with color used as alpha blend value
 
 
             if not stencil:
+                # find the texture object, so we can get some values from it
+                
+                # first make a calculation of the uv transformation matrix.
+                uvmobj = Blender.Object.New ('Empty')
+                
+                trickscale = mtex.size[2]
+                # now set the scale (and rotation) to the object
+                uvmobj.SizeX = mtex.size[0] * trickscale
+                uvmobj.SizeY = mtex.size[1] * trickscale
+                uvmobj.LocX = mtex.ofs[0]
+                uvmobj.LocY = mtex.ofs[1]
+                uvm=getMatrix(uvmobj)
+                uvm.transpose()
+                self.fTransform.set(uvm)
+    
+                self.fOpacity = mtex.colfac # factor how texture blends with color used as alpha blend value
+    
                 # See if any flags are set to double sided...
                 for mface in mesh.faces:
                     if mface.uv and mface.mode & Blender.Mesh.FaceModes["TWOSIDE"]:

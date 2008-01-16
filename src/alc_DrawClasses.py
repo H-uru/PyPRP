@@ -1514,63 +1514,6 @@ class plDrawInterface(plObjInterface):
         return page.find(0x0016,name,1)
     FindCreate = staticmethod(_FindCreate)
 
-    def IPrepareOrcoCalculation(self,obj):
-        # Prepares generic mesh information used to calculate orco to UV coordinates
-        # get the objects bounding box
-        bbx = obj.getBoundBox()
-
-        l2wMtx = getMatrix(obj)
-        w2lMtx = Blender.Mathutils.Matrix(l2wMtx).invert()
-
-        mworld = []
-        mlocal = []
-        # order the list like this bitwise, and translate to local coords
-        # bit nr   2 1 0
-        # index = [x,y,z] -> z/x/y = 1 indicates hightest value, 0 indicates lowest value
-        for i in [0,1,3,2,4,5,7,6]: 
-            vworld = Blender.Mathutils.Vector(bbx[i][0],bbx[i][1],bbx[i][2],1)
-            vlocal = Blender.Mathutils.Vector(vworld) * w2lMtx
-    
-            mworld.append(vworld)
-            mlocal.append(vlocal)
-    
-        # calculate the objects dimensions and center
-        deltaLX = (mlocal[7].x - mlocal[0].x)
-        deltaLY = (mlocal[7].y - mlocal[0].y)
-        deltaLZ = (mlocal[7].z - mlocal[0].z)
-
-        ctrLX = mlocal[7].x - (deltaLX /2)
-        ctrLY = mlocal[7].y - (deltaLY /2)
-        ctrLZ = mlocal[7].z - (deltaLZ /2)
-
-    
-        sizes = Blender.Mathutils.Vector(deltaLX,deltaLY,deltaLZ)
-        self.MeshBoundBox = [mlocal[0],mlocal[7],sizes]
-    
-    
-    def ICalcOrco(self,vector,Xmap=0,Ymap=1,Zmap=2,mapping=plDrawable.Mapping["Flat"]):
-        # Calculates UV Coordinates from an OrCo Mapping.
-        # mesh: The mesh to use
-        # vertex: The vertex coordinates to calculate
-        # Currently only understands flat mapping
-        
-        # calculate the local relative location 
-        lowest = self.MeshBoundBox[0]
-        hightest = self.MeshBoundBox[1]
-        delta = self.MeshBoundBox[2]
-        
-        relX = (vector.x - lowest.x) / (delta.x)
-        relY = (vector.x - lowest.x) / (delta.x)
-        relZ = (vector.x - lowest.x) / (delta.x)
-        
-        relco = [relX,relY,relZ]
-
-        
-        # For Flat mapping (the only mapping supported now)
-        texture_coordinates = [relco[Xmap],1 - relco[Ymap],0] 
-        
-        return texture_coordinates
-
     def import_obj(self,obj):
         root = self.getRoot()
         print " [DrawInterface %s]"%(str(self.Key.name))
@@ -1647,8 +1590,6 @@ class plDrawInterface(plObjInterface):
         # Calculate the amount of UV Maps
         Count_UvMaps = len(mesh.getUVLayerNames())
     
-        # Preparation for eventual Orco Calculation
-        self.IPrepareOrcoCalculation(obj)
         
 
         # Weight Count is Global....
@@ -1665,18 +1606,15 @@ class plDrawInterface(plObjInterface):
         for mat in mesh.materials:
             if not mat is None:
                 Use_Sticky = 0
-                Use_Orco = 0
                 # Loop through Layers
                 for mtex in mat.getTextures():
                     if not mtex is None:
                         if mtex.texco == Blender.Texture.TexCo["STICK"] and mesh.vertexUV:
                             Use_Sticky = 1
-                        elif mtex.texco == Blender.Texture.TexCo["ORCO"]:
-                            Use_Orco = 1
                 # Add it all up.
-                UVCount = Count_UvMaps + Use_Sticky + Use_Orco
+                UVCount = Count_UvMaps + Use_Sticky
 
-                MaterialGroups.append({ 'faces': [], 'vertices': [], 'mat': mat, 'vtxdict': {}, 'vtxalphacol': False, 'WeightCount': WeightCount, 'UVCount': UVCount, 'Use_Sticky': Use_Sticky, 'Use_Orco': Use_Orco})
+                MaterialGroups.append({ 'faces': [], 'vertices': [], 'mat': mat, 'vtxdict': {}, 'vtxalphacol': False, 'WeightCount': WeightCount, 'UVCount': UVCount, 'Use_Sticky': Use_Sticky })
             else:
                 # Failsafe mechanism....
                 MaterialGroups.append(None)
@@ -1753,11 +1691,6 @@ class plDrawInterface(plObjInterface):
                 if MaterialGroups[mface.mat]["Use_Sticky"]:
                     sticky = [vector.uv[0], 1 - vector.uv[1],0]
                     v.tex.append(sticky)
-                
-                # And Finally the Orco's
-                if MaterialGroups[mface.mat]["Use_Orco"]:
-                    orco = self.ICalcOrco(vector.co)
-                    v.tex.append(orco)
                 
                 # to avoid unneccesary copying of vertices do the following
                 v_idx = -1 # initialize index to invalid value
