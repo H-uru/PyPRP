@@ -827,23 +827,23 @@ class plLayer(plLayerInterface):             # Type 0x06
             #mtex type BLEND
             #Builds a linear AlphaBlend
             elif(tex.type == Blender.Texture.Types.BLEND):
-                if mtex.tex.stype == Blender.Texture.STypes.BLN_LIN :
+                if mtex.tex.stype == Blender.Texture.STypes.BLN_LIN:
                     # now create a blend, depending on whether it is horizontal or vertical:
                     if(tex.flags & Blender.Texture.Flags.FLIPBLEND > 0):
                         #Vertical blend
-                        blendname = "ALPHA_BLEND_FILTER_V2ALPHA_TRANS_4x64"
+                        blendname = "ALPHA_BLEND_FILTER_V_LIN_4x64"
                         
                         blenddata = cStringIO.StringIO()
                         blendwidth = 4
                         blendheight = 64
                         
                         for y in range(blendheight,0,-1):
-                            alpha = (64-y) * 4
+                            alpha = 255 *(float(y)/blendheight)
                             for x in range(0,blendwidth):
                                 blenddata.write(struct.pack("BBBB",255,255,255,alpha))
                     else:
                         #Horizontal blend
-                        blendname = "ALPHA_BLEND_FILTER_U2ALPHA_TRANS_64x4"
+                        blendname = "ALPHA_BLEND_FILTER_U_LIN_64x4"
             
                         blenddata = cStringIO.StringIO()
                         blendwidth = 64
@@ -851,29 +851,170 @@ class plLayer(plLayerInterface):             # Type 0x06
                         
                         for y in range(blendheight,0,-1):
                             for x in range(0,blendwidth):
-                                alpha = x * 4
+                                alpha = 255 * (float(x)/blendwidth)
                                 blenddata.write(struct.pack("BBBB",255,255,255,alpha))
 
-                    # now find or create the object
-                    if alcconfig.export_textures_to_page_prp:
-                        texprp=prp
-                    else:
-                        resmanager=self.getResManager()                    
-                        texprp=resmanager.findPrp("Textures")
-                    if texprp==None:
-                        raise "Textures PRP file not found"
-                    
-                    mipmap=texprp.find(0x04,blendname,1)
-                    
-                    mipmap.data.FromRawImage(blenddata,blendwidth,blendheight,0,\
-                                             Compression=plBitmap.Compression["kDirectXCompression"],\
-                                             CompressionSubType=plBitmap.CompressionType["kDXT5"])
-                    
-                    # and link the mipmap to the layer
-                    self.fTexture = mipmap.data.getRef()
-                    self.fHasTexture = 1
-                    # alphablend layers do not affect blendflags (as far as we know now)
+                elif mtex.tex.stype == Blender.Texture.STypes.BLN_QUAD:
+                    # now create a blend, depending on whether it is horizontal or vertical:
+                    if(tex.flags & Blender.Texture.Flags.FLIPBLEND > 0):
+                        #Vertical blend
+                        blendname = "ALPHA_BLEND_FILTER_V_QUAD_4x64"
                         
+                        blenddata = cStringIO.StringIO()
+                        blendwidth = 4
+                        blendheight = 64
+                        
+                        for y in range(blendheight,0,-1):
+                            alpha = 255 * math.pow(float(y)/blendheight,2)
+                            for x in range(0,blendwidth):
+                                blenddata.write(struct.pack("BBBB",255,255,255,alpha))
+                    else:
+                        #Horizontal blend
+                        blendname = "ALPHA_BLEND_FILTER_U_QUAD_64x4"
+            
+                        blenddata = cStringIO.StringIO()
+                        blendwidth = 64
+                        blendheight = 4
+                        
+                        for y in range(blendheight,0,-1):
+                            for x in range(0,blendwidth):
+                                alpha = 255 * math.pow(float(x)/blendwidth,2)
+                                blenddata.write(struct.pack("BBBB",255,255,255,alpha))
+
+                elif mtex.tex.stype == Blender.Texture.STypes.BLN_EASE:
+                    # now create a blend, depending on whether it is horizontal or vertical:
+                    if(tex.flags & Blender.Texture.Flags.FLIPBLEND > 0):
+                        #Vertical blend
+                        blendname = "ALPHA_BLEND_FILTER_V_EASE_4x64"
+                        
+                        blenddata = cStringIO.StringIO()
+                        blendwidth = 4
+                        blendheight = 64
+                        
+                        for y in range(blendheight,0,-1):
+                            alpha = 255 * (1 - (0.5 + (math.cos((float(y)/blendheight) * math.pi) * 0.5)))
+                            for x in range(0,blendwidth):
+                                blenddata.write(struct.pack("BBBB",255,255,255,alpha))
+                    else:
+                        #Horizontal blend
+                        blendname = "ALPHA_BLEND_FILTER_U_EASE_64x4"
+            
+                        blenddata = cStringIO.StringIO()
+                        blendwidth = 64
+                        blendheight = 4
+                        
+                        for y in range(blendheight,0,-1):
+                            for x in range(0,blendwidth):
+                                alpha = 255 * (1 - (0.5 + (math.cos( (float(x)/blendwidth) * math.pi) * 0.5)))
+                                blenddata.write(struct.pack("BBBB",255,255,255,alpha))
+
+                elif mtex.tex.stype == Blender.Texture.STypes.BLN_DIAG:
+                    # Prepare the data for this object....
+                    blendname = "ALPHA_BLEND_FILTER_DIAG_64x64"
+   
+                    blenddata = cStringIO.StringIO()
+                    blendwidth = 64
+                    blendheight = 64
+                
+                    for y in range(blendheight,0,-1):
+                        for x in range(0,blendwidth):
+                            dist = math.sqrt(math.pow(x ,2) + math.pow(y,2))
+                            alpha = 255 *(dist / math.sqrt(math.pow(blendwidth,2) + math.pow(blendheight,2)))
+                            
+                            blenddata.write(struct.pack("BBBB",255,255,255,alpha))
+
+                elif mtex.tex.stype == Blender.Texture.STypes.BLN_SPHERE:
+                    # Prepare the data for this object....
+                    blendname = "ALPHA_BLEND_FILTER_SPHERE_64x64"
+                    
+                    blenddata = cStringIO.StringIO()
+                    blendwidth = 64
+                    blendheight = 64
+                
+                    for y in range(blendheight,0,-1):
+                        for x in range(0,blendwidth):
+                            dist = math.sqrt(math.pow(x - (blendwidth/2),2) + math.pow(y - (blendheight/2),2))
+                            alpha = 255 *(math.cos((dist / (blendwidth/2) * 0.5 * math.pi )))
+                            if alpha < 0 or dist > (blendwidth/2):
+                                alpha = 0
+                            elif alpha > 255:
+                                alpha = 255
+                            blenddata.write(struct.pack("BBBB",255,255,255,alpha))
+
+                elif mtex.tex.stype == Blender.Texture.STypes.BLN_HALO:
+                    # Prepare the data for this object....
+                    blendname = "ALPHA_BLEND_FILTER_HALO_64x64"
+                    
+                    blenddata = cStringIO.StringIO()
+                    blendwidth = 64
+                    blendheight = 64
+                
+                    for y in range(blendheight,0,-1):
+                        for x in range(0,blendwidth):
+                            dist = math.sqrt( math.pow(x - (blendwidth/2),2) + math.pow(y - (blendheight/2),2) ) 
+                            alpha = 255 *(0.5 + (0.5 * math.cos((dist / (blendwidth/2) * math.pi ))))
+                            if alpha < 0 or dist > (blendwidth/2):
+                                alpha = 0
+                            elif alpha > 255:
+                                alpha = 255
+                            blenddata.write(struct.pack("BBBB",255,255,255,alpha))
+
+                else: ## RADIAL TYPE
+                    #
+                    # Prepare the data for this object....
+                    if(tex.flags & Blender.Texture.Flags.FLIPBLEND > 0):
+                        blendname = "ALPHA_BLEND_FILTER_V_RADIAL_64x64"
+                    else:
+                        blendname = "ALPHA_BLEND_FILTER_U_RADIAL_64x64"
+                    
+                    blenddata = cStringIO.StringIO()
+                    blendwidth = 64
+                    blendheight = 64
+                
+                    for y in range(blendheight,0,-1):
+                        for x in range(0,blendwidth):
+                            if(tex.flags & Blender.Texture.Flags.FLIPBLEND > 0): 
+                                rely = x - (blendwidth/2)
+                                relx = y - (blendheight/2)
+                            else:
+                                relx = x - (blendwidth/2)
+                                rely = y - (blendheight/2)
+                            
+                            angle = math.atan2(rely,relx) + math.pi
+                                
+                            while angle < 0:
+                                angle += 2* math.pi
+                            
+                            while angle > (2*math.pi):
+                                angle -= 2* math.pi
+                            
+                            alpha = 255 *(angle/(2*math.pi))
+                            if alpha < 0:
+                                alpha = 0
+                            blenddata.write(struct.pack("BBBB",255,255,255,alpha))
+                
+                
+                # now find or create the object
+                if alcconfig.export_textures_to_page_prp:
+                    texprp=prp
+                else:
+                    resmanager=self.getResManager()                    
+                    texprp=resmanager.findPrp("Textures")
+                if texprp==None:
+                    raise "Textures PRP file not found"
+                
+                mipmap=texprp.find(0x04,blendname,1)
+                
+                mipmap.data.FromRawImage(blenddata,blendwidth,blendheight,0,\
+                                         Compression=plBitmap.Compression["kDirectXCompression"],\
+                                         CompressionSubType=plBitmap.CompressionType["kDXT5"])
+                
+                # and link the mipmap to the layer
+                self.fTexture = mipmap.data.getRef()
+                self.fHasTexture = 1
+                # alphablend layers do not affect blendflags (as far as we know now)
+                
+                
             elif(tex.type == Blender.Texture.Types.NONE):
                 pass # don't do anything
 
