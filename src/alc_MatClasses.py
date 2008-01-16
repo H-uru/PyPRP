@@ -383,15 +383,16 @@ class hsGMaterial(plSynchedObject):         # Type 0x07
         # Loop through the MTex layers of Blender, and parse every one of them as a layer.
         if (mat): #avoid crashes if we acidentally ref this function without parameters
 
-            if(obj.type == "Mesh" and (obj.data.mode & Blender.Mesh.Modes.TWOSIDED) > 0):
-                self.fCompFlags |= hsGMaterial.hsGCompFlags["kCompTwoSided"] 
+#            if(obj.type == "Mesh" and (obj.data.mode & Blender.Mesh.Modes.TWOSIDED) > 0):
+ #               self.fCompFlags |= hsGMaterial.hsGCompFlags["kCompTwoSided"] 
 
             if mat.getSpec() > 0.0:
                 self.fCompFlags |= hsGMaterial.hsGCompFlags["kCompSpecular"] 
 
 
-
             mtex_list = mat.getTextures()
+            
+            layerlist = []
             for mtex in mtex_list:
                 if(mtex != None):
                     if (mtex.tex.type == Blender.Texture.Types.BLEND or
@@ -402,11 +403,51 @@ class hsGMaterial(plSynchedObject):         # Type 0x07
                         # we hit a problem when two textures are shared, because the mtex is different per material.
                         # because of this. we'll prefix the material name, before the layer name
                         layer = root.find(0x06,mat.name + "-" + mtex.tex.name,1)
+                        layerlist.append({"layer":layer,"mtex":mtex,"stencil":mtex.stencil})
+                        
+
+            i = 0
+            while i < len(layerlist):
+                layer_info = layerlist[i]
+            
+                if not layer_info["stencil"]:
+                    layer = layer_info["layer"]
+                    mtex = layer_info["mtex"]
+                    if(not layer.isProcessed):
+                        layer.data.FromBlenderMTex(mtex,obj,mat)
+                        layer.data.FromBlenderMat(obj,mat)
+                        layer.isProcessed = 1
+                    self.fLayers.append(layer.data.getRef())
+                    i += 1
+                else:
+                    if i < len(layerlist) - 1: # if it's not the last one
+                        # Append the next layer first, and say that it has a stencil
+                        boundlayer_info = layerlist[i+1]
+                        boundlayer = boundlayer_info["layer"]
+                        boundmtex = boundlayer_info["mtex"]
+                        if(not boundlayer.isProcessed):
+                            boundlayer.data.FromBlenderMat(obj,mat)
+                            boundlayer.data.FromBlenderMTex(boundmtex,obj,mat,False,True)
+                            boundlayer.isProcessed = 1
+                        self.fLayers.append(boundlayer.data.getRef())
+ 
+                        # append the stencil layer after that...
+                        layer = layer_info["layer"]
+                        mtex = layer_info["mtex"]
                         if(not layer.isProcessed):
-                            layer.data.FromBlenderMTex(mtex,obj,mat)
-                            layer.data.FromBlenderMat(obj,mat)
+                            layer.data.FromBlenderMTex(mtex,obj,mat,True,False)
+#                            layer.data.FromBlenderMat(obj,mat)
                             layer.isProcessed = 1
                         self.fLayers.append(layer.data.getRef())
+                        self.fCompFlags |= hsGMaterial.hsGCompFlags["kCompNeedsBlendChannel"] 
+                    
+                        # And ofcourse increase by 2 instead of one...
+                        i += 2
+                    else:
+                        # just ignore it...
+                        i += 1
+
+
 
             # Add a default layer if we didn't get and layers from the mtexes
             if(len(self.fLayers) == 0):
@@ -649,7 +690,7 @@ class plLayer(plLayerInterface):             # Type 0x06
 
         pass
 
-    def FromBlenderMTex(self,mtex,obj,mat):
+    def FromBlenderMTex(self,mtex,obj,mat,stencil=False,hasstencil=False):
         print "   [Layer %s]"%(str(self.Key.name))
         #prp is for current prp file... (though that should be obtainable from self.parent.prp)
         resmanager=self.getResManager()
@@ -779,6 +820,9 @@ class plLayer(plLayerInterface):             # Type 0x06
                         #                                  plRenderLevel.MinorLevel["kDefRendMinorLevel"])
                         self.UsesAlpha = True
                 
+                    if tex.extend == Blender.Texture.ExtendModes["CLIP"]:
+                        self.fState.fClampFlags |= hsGMatState.hsGMatClampFlags["kClampTexture"]
+                
                 pass
             #mtex type BLEND
             #Builds a linear AlphaBlend
@@ -811,36 +855,23 @@ class plLayer(plLayerInterface):             # Type 0x06
                                 blenddata.write(struct.pack("BBBB",255,255,255,alpha))
 
                     # now find or create the object
-                    if layer==None:
-                        raise "Layer not found!"
                     if alcconfig.export_textures_to_page_prp:
                         texprp=prp
                     else:
-                        texprp=self.resmanager.findPrp("Textures")
+                        resmanager=self.getResManager()                    
+                        texprp=resmanager.findPrp("Textures")
                     if texprp==None:
                         raise "Textures PRP file not found"
                     
                     mipmap=texprp.find(0x04,blendname,1)
                     
-                    mipmap.data.FromRawImage(blenddata,blendWidth,blendheight,MipMap=0,
-                                             Compression=plBitmap.Compression["kDirectXCompression"],
+                    mipmap.data.FromRawImage(blenddata,blendwidth,blendheight,0,\
+                                             Compression=plBitmap.Compression["kDirectXCompression"],\
                                              CompressionSubType=plBitmap.CompressionType["kDXT5"])
                     
                     # and link the mipmap to the layer
                     self.fTexture = mipmap.data.getRef()
                     self.fHasTexture = 1
-                    
-                    # now set the various layer properties specific to alphablendmaps
-                    self.fState.fBlendFlags |= ( hsGMatState.hsGMatBlendFlags["kBlendAlpha"]
-                                                | hsGMatState.hsGMatBlendFlags["kBlendAlphaMult"]
-                                                | hsGMatState.hsGMatBlendFlags["kBlendNoTexColor"]
-                                                )
-                    self.fState.fClampFlags |= hsGMatState.hsGMatClampFlags["kClampTexture"]
-                    #self.fState.fShadeFlags |= hsGMatState.hsGMatShadeFlags[""]
-                    self.fState.fZFlags     |= hsGMatState.hsGMatZFlags["kZNoZWrite"]
-                    self.fState.fMiscFlags  |= 0 # | hsGMatState.hsGMatMiscFlags[""] 
-                                                
-
                     # alphablend layers do not affect blendflags (as far as we know now)
                         
             elif(tex.type == Blender.Texture.Types.NONE):
@@ -848,37 +879,30 @@ class plLayer(plLayerInterface):             # Type 0x06
 
             
             # now process additional mtex settings
-            if(tex.type != Blender.Texture.Types.BLEND): # don't do this for alphablend layers
-                # find the texture object, so we can get some values from it
-                
-                # first make a calculation of the uv transformation matrix.
-                uvmobj = Blender.Object.New ('Empty')
-                
-                trickscale = mtex.size[2]
-                # now set the scale (and rotation) to the object
-                uvmobj.SizeX = mtex.size[0] * trickscale
-                uvmobj.SizeY = mtex.size[1] * trickscale
-                uvmobj.LocX = mtex.ofs[0]
-                uvmobj.LocY = mtex.ofs[1]
-                uvm=getMatrix(uvmobj)
-                uvm.transpose()
-                self.fTransform.set(uvm)
-    
-                self.fOpacity = mtex.colfac # factor how texture blends with color used as alpha blend value
+            # find the texture object, so we can get some values from it
+            
+            # first make a calculation of the uv transformation matrix.
+            uvmobj = Blender.Object.New ('Empty')
+            
+            trickscale = mtex.size[2]
+            # now set the scale (and rotation) to the object
+            uvmobj.SizeX = mtex.size[0] * trickscale
+            uvmobj.SizeY = mtex.size[1] * trickscale
+            uvmobj.LocX = mtex.ofs[0]
+            uvmobj.LocY = mtex.ofs[1]
+            uvm=getMatrix(uvmobj)
+            uvm.transpose()
+            self.fTransform.set(uvm)
 
-#                self.fState.fBlendFlags |= ( hsGMatState.hsGMatBlendFlags[""]
-#                                            | hsGMatState.hsGMatBlendFlags[""]
-#                                            | hsGMatState.hsGMatBlendFlags[""]
-#                                            )
-#                self.fState.fClampFlags |= hsGMatState.hsGMatClampFlags[""]
-#                self.fState.fShadeFlags |= hsGMatState.hsGMatShadeFlags[""]
-#                self.fState.fZFlags     |= hsGMatState.hsGMatZFlags[""]
-#                self.fState.fMiscFlags  |= 0 # | hsGMatState.hsGMatMiscFlags[""] 
+            self.fOpacity = mtex.colfac # factor how texture blends with color used as alpha blend value
 
-                
-                if(obj.type == "Mesh" and (obj.data.mode & Blender.Mesh.Modes.TWOSIDED) > 0):
-                    self.fState.fMiscFlags  |= hsGMatState.hsGMatMiscFlags["kMiscTwoSided"] 
 
+            if not stencil:
+                # See if any flags are set to double sided...
+                for mface in mesh.faces:
+                    if mface.uv and mface.mode & Blender.Mesh.FaceModes["TWOSIDE"]:
+                        self.fState.fMiscFlags  |= hsGMatState.hsGMatMiscFlags["kMiscTwoSided"] 
+                        break
                 
                                                 
                 if(mtex.blendmode == Blender.Texture.BlendModes.ADD): 
@@ -906,7 +930,23 @@ class plLayer(plLayerInterface):             # Type 0x06
 
                 if(mtex.neg): # set the negate colors flag if it is so required
                     self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendInvertColor"]
-
+                    
+        if stencil:
+            # now set the various layer properties specific to alphablendmaps
+            self.fState.fBlendFlags |= ( hsGMatState.hsGMatBlendFlags["kBlendAlpha"]
+                                        | hsGMatState.hsGMatBlendFlags["kBlendAlphaMult"]
+                                        | hsGMatState.hsGMatBlendFlags["kBlendNoTexColor"]
+                                        )
+            self.fState.fClampFlags |= hsGMatState.hsGMatClampFlags["kClampTexture"]
+            #self.fState.fShadeFlags |= hsGMatState.hsGMatShadeFlags[""]
+            self.fState.fZFlags     |= hsGMatState.hsGMatZFlags["kZNoZWrite"]
+            self.fState.fMiscFlags  |= 0 # | hsGMatState.hsGMatMiscFlags[""] 
+            self.fAmbientColor = RGBA(1.0,1.0,1.0,1.0)
+            
+        if hasstencil:
+            self.fState.fMiscFlags  |= hsGMatState.hsGMatMiscFlags["kMiscBindNext"]  | hsGMatState.hsGMatMiscFlags["kMiscRestartPassHere"] 
+            self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlpha"]
+            
 
     def FromBlenderMat(self,obj,mat):
         # Now Copy Settings from the material...

@@ -29,6 +29,7 @@ Blender: 245
 Group: 'Wizards'
 Submenu: 'Upgrade Book (Keep old objects)' i_book_keepold
 Submenu: 'Upgrade Book (Delete old objects)' i_book_delold
+Submenu: 'Add missing Blender materials and textures' i_mattex
 Submenu: 'Upgrade properties' i_props
 Submenu: 'Assign default bounds to selected objects' i_bounds
 Tooltip: 'Alcugs PyPRP Upgrade'
@@ -73,9 +74,11 @@ def do_main():
         else:
             upgrade_book(False)
     elif w[1]=="props":
-        Wizard_alctype_update()
+        Wizard_property_update()
     elif w[1]=="bounds":
         setbounds()
+    elif w[1]=="mattex":
+        Wizard_mattex_create()
     else:
         raise "Unknown options %s" %(w)
 
