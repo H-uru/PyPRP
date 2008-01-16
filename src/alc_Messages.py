@@ -80,6 +80,8 @@ class PrpMessage:
                 self.data = plOneShotMsg(self)
             elif self.msgtype == 0x0255:
                 self.data = plSoundMsg(self)
+            elif self.msgtype == 0x024F:
+                self.data = plEnableMsg(self)
             else:
                 raise ValueError, "Unsupported message type %04X %s" % (self.msgtype,MsgKeyToMsgName(self.msgtype))
         elif self.version == 6:
@@ -857,7 +859,44 @@ class plSoundMsg(plMessageWithCallbacks):
         plMessage.export_script(self,script,refparser)
 
 
+class plEnableMsg(plMessage):
+    ModCmds = \
+    { \
+        "kDisable"   : 0, \
+        "kEnable"    : 1, \
+        "kDrawable"  : 2, \
+        "kPhysical"  : 3, \
+        "kAudible"   : 4, \
+        "kAll"       : 5, \
+        "kByType"    : 6, \
+    }
+    def __init__(self,parent=None,type=0x0255):
+        plMessage.__init__(self,parent,type)
+        self.fBCastFlags |= plMessage.plBCastFlags["kLocalPropagate"]
+        self.fCmd = hsBitVector()
+        self.fTypes = hsBitVector()
+        
+    def read(self,stream):
+        self.IMsgRead(stream);
 
+        self.fCmd.read(stream)
+        self.fTypes.read(stream)   
+        
+    def write(self,stream):
+        self.IMsgWrite(stream);
+
+        self.fCmd.write(stream)
+        self.fTypes.write(stream)    
+
+    def export_script(self,script,refparser):
+        plMessage.export_script(self,script,refparser)
+        
+        enable = bool(FindInDict(script,"enable","true"))
+        if(enable):
+            self.fCmd.SetBit(plEnableMsg.ModCmds["kEnable"])
+        else:
+            self.fCmd.SetBit(plEnableMsg.ModCmds["kDisable"])
+        
 
 def MsgKeyToMsgName(type):
     if   type == 0x0200:

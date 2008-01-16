@@ -1398,7 +1398,7 @@ class plOneShotMod(plMultiModifier):
             # in case it won't be exported beyond this, add an empty coordinateinterface...
             # but only if no other coordinateinterface was set...
             if ext_scnobj.data.coordinate.isNull():
-                co_itf = plCoordinateInterface.FindCreate(page,remote)
+                co_itf = plCoordinateInterface.FindCreate(self.getRoot(),remote)
                 co_itf.data.parentref=ext_scnobj.data.getRef()
                 ext_scnobj.data.coordinate = co_itf.data.getRef()
 
@@ -1933,6 +1933,7 @@ class plResponderCmd:
         "armatureeffectmsg" : 0x038E, \
         "oneshotmsg"        : 0x0302, \
         "cameramsg"         : 0x020A, \
+        "enablemsg"         : 0x024F, \
     }
 
     def __init__(self,parent):

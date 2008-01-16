@@ -1275,7 +1275,7 @@ class plDrawableSpans(plDrawable):
             print "   Material",MatGroup["mat"].name
 
             if len(MatGroup["vertices"]) > 0x8000:
-                raise RunTimeError, "Vertex count on this material is too high, consider breaking up your object into several materials...."
+                raise RuntimeError, "Vertex count on this material is too high, consider breaking up your object into several materials...."
         
             # Find the correct buffer group to store this, depending on 
             # having skin indices, nr of vertex weights, nr of uvmaps and amount of vertices
@@ -1717,20 +1717,18 @@ class plDrawInterface(plObjInterface):
                     
                     if len(ColorLayers) > 0:
                         try:
-                            # select first layer as color layer
-                            mesh.activeColorLayer = ColorLayers[0]
-                            col_r=mface.col[index].r
-                            col_g=mface.col[index].g
-                            col_b=mface.col[index].b
                             col_a=1.0
-                            
-                            if len(ColorLayers) > 1:
-                                # select second layer as alpha layer.
-                                mesh.activeColorLayer = ColorLayers[1]
-                                col_a=mface.col[index].g
-                                MaterialGroups[mface.mat]["vtxalphacol"] = True
-                            else:
-                                col_a=1.0
+                            for vc in range(len(ColorLayers)):
+                                if(ColorLayers[vc].lower() == "col"):
+                                    # select first layer as color layer
+                                    mesh.activeColorLayer = ColorLayers[vc]
+                                    col_r=mface.col[index].r
+                                    col_g=mface.col[index].g
+                                    col_b=mface.col[index].b
+                                elif(ColorLayers[vc].lower() == "alpha"):
+                                    mesh.activeColorLayer = ColorLayers[vc]
+                                    col_a=mface.col[index].g
+                                    MaterialGroups[mface.mat]["vtxalphacol"] = True
                             
                             v.color = RGBA(col_r,col_g,col_b,col_a)
                         except IndexError:

@@ -161,7 +161,7 @@ def QuickScript_Footstep(obj):
             else:
                 actscript.append(myactscript)
             
-            modscript = FindInDict(objscript,"logic.modifierss",None)
+            modscript = FindInDict(objscript,"logic.modifiers",None)
             if actscript is None or type(modscript) != list:
                 StoreInDict(objscript,"logic.modifiers",mymodscript)
             else:
