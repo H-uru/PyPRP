@@ -32,6 +32,7 @@ Submenu: 'Upgrade Book (Delete old objects)' i_book_delold
 Submenu: 'Add missing Blender materials and textures' i_mattex
 Submenu: 'Upgrade properties' i_props
 Submenu: 'Assign default bounds to selected objects' i_bounds
+Submenu: 'Developers Text Function (functionality changes every snapshot)' i_devtest
 Tooltip: 'Alcugs PyPRP Upgrade'
 """
 
@@ -65,6 +66,16 @@ def setbounds():
         print Object.RBShapes
         sobject.rbShapeBoundType = Blender.Object.RBShapes["POLYHEDERON"]
     
+def devtest():
+    print "Running..."
+    for tex in Blender.Texture.Get():
+        if tex.type == Blender.Texture.Types["IMAGE"] and not tex.image == None:
+            print "Texture: %s"%(tex.name)
+            print "Flags: %#x"%(tex.flags)
+            print "ImageFlags: %#x"%(tex.imageFlags)
+    print "End..."
+    
+    print Blender.Texture.ImageFlags
 def do_main():
     args = __script__['arg']
     w = args.split("_")
@@ -79,8 +90,10 @@ def do_main():
         setbounds()
     elif w[1]=="mattex":
         Wizard_mattex_create()
+    elif w[1]=="devtest":
+        devtest()
     else:
-        raise "Unknown options %s" %(w)
+        raise RuntimeError,"Unknown options %s" %(w)
 
 
 #Main code

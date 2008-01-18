@@ -796,7 +796,13 @@ class plLayer(plLayerInterface):             # Type 0x06
                     
                         
                     mipmap.data.SetConfig(plMipMap.Color["kARGB32Config"])
-                    mipmap.data.FromBlenderImage(tex.image,MipMap=1)
+                    
+                    # Calculate alpha instead of using it if its either stencil mode, or 
+                    # we have the calcalpha button set
+                    calcalpha = (stencil or bool(tex.imageFlags & Blender.Texture.ImageFlags["CALCALPHA"]))
+                    print "   Calculating alpha: ",calcalpha
+                    domipmap = True
+                    mipmap.data.FromBlenderImage(tex.image,domipmap,calcalpha=calcalpha)
                     
                     self.fTexture = mipmap.data.getRef()
                     self.fHasTexture = 1
@@ -980,6 +986,9 @@ class plLayer(plLayerInterface):             # Type 0x06
                                 alpha = 0
                             blenddata.write(struct.pack("BBBB",255,255,255,alpha))
                 
+                # Set clipping (clamping)
+                self.fState.fClampFlags |= hsGMatState.hsGMatClampFlags["kClampTexture"]
+
                 
                 # now find or create the object
                 if alcconfig.export_textures_to_page_prp:
@@ -1066,7 +1075,8 @@ class plLayer(plLayerInterface):             # Type 0x06
                                         | hsGMatState.hsGMatBlendFlags["kBlendAlphaMult"]
                                         | hsGMatState.hsGMatBlendFlags["kBlendNoTexColor"]
                                         )
-            self.fState.fClampFlags |= hsGMatState.hsGMatClampFlags["kClampTexture"]
+            
+            #self.fState.fClampFlags |= hsGMatState.hsGMatClampFlags["kClampTexture"]
             #self.fState.fShadeFlags |= hsGMatState.hsGMatShadeFlags[""]
             self.fState.fZFlags     |= hsGMatState.hsGMatZFlags["kZNoZWrite"]
             self.fState.fMiscFlags  |= 0 # | hsGMatState.hsGMatMiscFlags[""] 
@@ -1391,6 +1401,115 @@ class plBitmap(hsKeyedObject):               # Type 0x03
         stream.Write32(self.fLowModifiedTime)
         stream.Write32(self.fHighModifiedTime)
 
+class blMipMapInfo:
+
+    def __init__(self):
+        self.fImageName = ""
+        self.fMipMaps = True
+        self.fCalcAlpha = False
+        self.fGauss = False
+        self.fGaussLevel = 1.0
+        self.fCompressionType = plBitmap.Compression["kDirectXCompression"]
+        self.fBitmapInfo = plBitmap.Info()
+        self.fBitmapInfo.fDirectXInfo.fCompressionType = plBitmap.CompressionType["kDXT1"]
+            
+    def read(self,stream):
+        self.fImageName = stream.ReadSafeString(0)
+        self.fMipMaps = stream.ReadBool()
+        self.fCalcAlpha = stream.ReadBool()
+        self.fGauss = stream.ReadBool()
+        self.fGaussLevel = stream.ReadFloat()
+        self.fCompressionType = stream.ReadByte()
+
+        if (self.fCompressionType != plBitmap.Compression["kUncompressed"]  and  self.fCompressionType != plBitmap.Compression["kJPEGCompression"]):
+            self.fBitmapInfo.fDirectXInfo.fBlockSize = stream.ReadByte()
+            self.fBitmapInfo.fDirectXInfo.fCompressionType = stream.ReadByte()
+        else:
+            self.fBitmapInfo.fUncompressedInfo.fType = stream.ReadByte()
+        
+    def write(self,stream):
+        # Set compression types correctly
+        if self.fBitmapInfo.fDirectXInfo.fCompressionType == plBitmap.CompressionType["kDXT1"]:
+            self.BitmapInfo.fDirectXInfo.fBlockSize = 8
+        elif self.fBitmapInfo.fDirectXInfo.fCompressionType == plBitmap.CompressionType["kDXT5"]:
+            self.BitmapInfo.fDirectXInfo.fBlockSize = 16
+
+        stream.WriteSafeString(self.fImageName,0)
+        stream.WriteBool(self.fMipMaps)
+        stream.WriteBool(self.fCalcAlpha)
+        stream.WriteBool(self.fGauss)
+        stream.WriteFloat(self.fGaussLevel)
+        stream.WriteByte(self.fCompressionType)
+        
+        if (self.fCompressionType != plBitmap.Compression["kUncompressed"]  and  self.fCompressionType != plBitmap.Compression["kJPEGCompression"]):
+            stream.WriteByte(self.BitmapInfo.fDirectXInfo.fBlockSize)
+            stream.WriteByte(self.BitmapInfo.fDirectXInfo.fCompressionType)
+        else:
+            stream.WriteByte(self.BitmapInfo.fUncompressedInfo.fType)
+    
+    def compare(self,ext):
+        
+        if not self.fImageName == ext.fImageName:
+            return False
+        if not self.fMipMaps == ext.fMipMaps:
+            return False
+        if not self.fGauss == ext.fGauss:
+            return False
+        
+        if self.fGauss and not self.fGaussLevel == ext.fGaussLevel:
+            return False
+
+        if not self.fCompressionType == ext.fCompressionType:
+            return False
+
+        if self.fCompressionType == plBitmap.Compression["kDirectXCompression"]:
+            if not self.fBitmapInfo.fDirectXInfo.fCompressionType == ext.fBitmapInfo.fDirectXInfo.fCompressionType:
+                return False
+        
+        elif self.fCompressionType == plBitmap.Compression["kUncompressed"]:
+            if not self.fBitmapInfo.fUncompressedInfo.fType == ext.fBitmapInfo.fUncompressedInfo.fType:
+                return False
+
+        if not self.fCalcAlpha == ext.fCalcAlpha:
+            return False
+
+        
+        return True
+    
+
+    def export_tex(self,tex):
+        # This is only valid for image textures :)
+        if not tex is None and tex.type == Blender.Texture.Types["IMAGE"] and not tex.image == None:
+            
+            self.fImageName = tex.image.filename
+        
+            if tex.flags & Blender.Texture.Flags["NEGALPHA"]:
+                pass
+
+            if tex.imageFlags & Blender.Texture.ImageFlags["INTERPOL"]:
+                self.fCompressionType = plBitmap.Compression["kDirectXCompression"]
+                if tex.imageFlags & Blender.Texture.ImageFlags["USEALPHA"]:
+                    self.fBitmapInfo.fDirectXInfo.fCompressionType = plBitmap.CompressionType["kDXT5"]
+                else:
+                    self.fBitmapInfo.fDirectXInfo.fCompressionType = plBitmap.CompressionType["kDXT1"]
+            else:
+                if self.fImageName[-4:] == ".jpg" or self.fImageName[-5:] == ".jpeg":
+                    self.fCompressionType = plBitmap.Compression["kJPEGCompression"]
+                else:
+                    self.fCompressionType = plBitmap.Compression["kUncompressed"]
+                    self.fBitmapInfo.fUncompressedInfo.fType = plBitmap.Uncompressed["kRGB8888"] # The only format we support
+
+            if tex.imageFlags & 0x1000: #Blender.Texture.ImageFlags["GAUSS"] doesn't work... :/
+                self.fGauss = True
+            else:
+                self.fGauss = False
+                
+            self.fGaussLevel = tex.filterSize
+            
+            if tex.imageFlags & Blender.Texture.ImageFlags["CALCALPHA"]:
+                self.fCalcAlpha = True
+            else:
+                self.fCalcAlpha = False            
  
 class plMipMap(plBitmap):                    # Type 0x04
 
@@ -1652,7 +1771,7 @@ class plMipMap(plBitmap):                    # Type 0x04
 
     def FromBlenderImage(self,BlenderImage,MipMap=1, \
                             Compression=plBitmap.Compression["kDirectXCompression"], \
-                            CompressionSubType=plBitmap.CompressionType["kError"]):
+                            CompressionSubType=plBitmap.CompressionType["kError"],calcalpha=False):
         if(self.Processed):
             return
 
@@ -1669,7 +1788,12 @@ class plMipMap(plBitmap):                    # Type 0x04
             ImWidth, ImHeight = BlenderImage.getSize()
             ImageBuffer=cStringIO.StringIO()
 
-            
+            if calcalpha:
+                print "      Doing Alpha Calculation"
+            else:
+                print "      Alpha From Image Channel"
+                
+            print "       CalcAlpha:",calcalpha
             
             self.FullAlpha = 0
             self.OnOffAlpha = 0
@@ -1683,22 +1807,25 @@ class plMipMap(plBitmap):                    # Type 0x04
             for y in range(ImHeight,0,-1):
                 for x in range(ImWidth):
                     r,g,b,a = BlenderImage.getPixelF(x,y-1)
-                    if isGIF: # ignora alpha info, and always put it to opaque
-                        a=1.0
+                    if calcalpha:
+                        a = (r+g+b)/3
                     else:
-                        #print "Color: %f %f %f - Alpha: %f" % (r,g,b,a)
-                        if a == 0 and not self.FullAlpha:
-                            self.OnOffAlpha = 1
-                        if a > 0.0 and a < 1.0:
-                            OnOffAlpha = 0
-                            self.FullAlpha = 1
+                        if isGIF: # ignora alpha info, and always put it to opaque
+                            a=1.0
+                        else:
+                            #print "Color: %f %f %f - Alpha: %f" % (r,g,b,a)
+                            if a == 0 and not self.FullAlpha:
+                                self.OnOffAlpha = 1
+                            if a > 0.0 and a < 1.0:
+                                OnOffAlpha = 0
+                                self.FullAlpha = 1
 
                     ImageBuffer.write(struct.pack("BBBB",r*255,g*255,b*255,a*255))
             
             
             # see if we should automatically determine compression type
             if CompressionSubType == plBitmap.CompressionType["kError"]:
-                if self.FullAlpha: # Full Alpha requires DXT5
+                if self.FullAlpha or calcalpha: # Full Alpha requires DXT5
                     print "     Image uses full alpha channel, compressing DXT5"
                     CompressionSubType = plBitmap.CompressionType["kDXT5"]
                 elif self.OnOffAlpha: # DXT1 supports On/Off Alpha
