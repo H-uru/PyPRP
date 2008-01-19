@@ -1036,32 +1036,22 @@ class plLayer(plLayerInterface):             # Type 0x06
                     self.fState.fBlendFlags |= ( hsGMatState.hsGMatBlendFlags["kBlendAdd"])
                     if mtex.mtAlpha != 0:
                         self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlphaAdd"]
-                        self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlpha"]
 
                 elif(mtex.blendmode == Blender.Texture.BlendModes.MULTIPLY):
                     self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendMult"]
                     if mtex.mtAlpha != 0:
                         self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlphaMult"]
-                        self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlpha"]
                                                 
                 elif(mtex.blendmode == Blender.Texture.BlendModes.SUBTRACT):
                     self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendSubtract"]
-                    if mtex.mtAlpha != 0:
-                        self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlpha"]
 
                 else: #(mtex.blendmode == Blender.Texture.BlendModes.MIX):
-                    if (mipmap != None and (mipmap.data.FullAlpha or mipmap.data.OnOffAlpha)) or mtex.mtAlpha != 0:
-                        self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlpha"]
-                    elif(qmap != None and (qmap.data.FullAlpha or qmap.data.OnOffAlpha)) or mtex.mtAlpha != 0:
-                        self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlpha"]
-                    elif(tex.type == Blender.Texture.Types.BLEND):
-                        self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlpha"]
-
-                if(mtex.colfac < 1):
-                    self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlpha"]
-
+                    pass
                 if(mtex.neg): # set the negate colors flag if it is so required
                     self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendInvertColor"]
+
+        # Enable use of alpha
+        self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlpha"]
                     
         if stencil:
             # now set the various layer properties specific to alphablendmaps
@@ -1070,15 +1060,13 @@ class plLayer(plLayerInterface):             # Type 0x06
                                         | hsGMatState.hsGMatBlendFlags["kBlendNoTexColor"]
                                         )
             
-            #self.fState.fClampFlags |= hsGMatState.hsGMatClampFlags["kClampTexture"]
-            #self.fState.fShadeFlags |= hsGMatState.hsGMatShadeFlags[""]
             self.fState.fZFlags     |= hsGMatState.hsGMatZFlags["kZNoZWrite"]
             self.fState.fMiscFlags  |= 0 # | hsGMatState.hsGMatMiscFlags[""] 
             self.fAmbientColor = RGBA(1.0,1.0,1.0,1.0)
             
         if hasstencil:
             self.fState.fMiscFlags  |= hsGMatState.hsGMatMiscFlags["kMiscBindNext"]  | hsGMatState.hsGMatMiscFlags["kMiscRestartPassHere"] 
-            self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlpha"]
+            
             
 
     def FromBlenderMat(self,obj,mat):
@@ -1162,8 +1150,8 @@ class plLayer(plLayerInterface):             # Type 0x06
 
         self.fTexture = mipmap.data.getRef()
 
-        if mipmap.data.FullAlpha or mipmap.data.OnOffAlpha:
-            self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlpha"]
+        # allow use of alpha
+        self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlpha"]
                 
         if obj.type == "Mesh":
             mesh = obj.getData(False,True)
@@ -1183,66 +1171,7 @@ class plLayer(plLayerInterface):             # Type 0x06
         resmanager=self.getResManager()
         root=self.getRoot()
 
-        tex = mtex.tex
-        #mtex type ENVMAP
-        if(tex.type == Blender.Texture.Types.IMAGE):
-            # find or create the mipmap
-            if(tex.image):
-
-                mipmapinfo = blMipMapInfo()
-                mipmapinfo.export_tex(tex)
-                
-                mipmap=plMipMap.Export(root,tex.image.getName(),tex.image,mipmapinfo)
-                
-                self.fTexture = mipmap.data.getRef()
-
-                self.fUVWSrc = plLayerInterface.plUVWSrcModifiers["kUVWNormal"]
-
-                # first make a calculation of the uv transformation matrix.
-                uvmobj = Blender.Object.New ('Empty')
-                
-                trickscale = mtex.size[2]
-                # now set the scale (and rotation) to the object
-                uvmobj.SizeX = mtex.size[0] * trickscale
-                uvmobj.SizeY = mtex.size[1] * trickscale
-                uvmobj.LocX = mtex.ofs[0]
-                uvmobj.LocY = mtex.ofs[1]
-                uvm=getMatrix(uvmobj)
-                uvm.transpose()
-                self.fTransform.set(uvm)
-    
-                self.fOpacity = mtex.colfac # factor how texture blends with color used as alpha blend value
-               
-                if(obj.type == "Mesh" and (obj.data.mode & Blender.Mesh.Modes.TWOSIDED) > 0):
-                    self.fState.fMiscFlags  |= hsGMatState.hsGMatMiscFlags["kMiscTwoSided"] 
-
-                
-                                                
-                if(mtex.blendmode == Blender.Texture.BlendModes.ADD): 
-                    self.fState.fBlendFlags |= ( hsGMatState.hsGMatBlendFlags["kBlendAdd"]
-                                                | hsGMatState.hsGMatBlendFlags["kBlendAlphaAdd"]
-                                                )
-                elif(mtex.blendmode == Blender.Texture.BlendModes.MULTIPLY):
-                    self.fState.fBlendFlags |= ( hsGMatState.hsGMatBlendFlags["kBlendMult"]
-                                                | hsGMatState.hsGMatBlendFlags["kBlendAlphaMult"]
-                                                )
-                elif(mtex.blendmode == Blender.Texture.BlendModes.SUBTRACT):
-                    self.fState.fBlendFlags |= ( hsGMatState.hsGMatBlendFlags["kBlendSubtract"]
-                                                | hsGMatState.hsGMatBlendFlags["kBlendAlpha"]
-                                                )
-                else:
-                    if(mipmap != None and (mipmap.data.FullAlpha or mipmap.data.OnOffAlpha)):
-                        self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlpha"]
-                    elif(qmap != None and (qmap.data.FullAlpha or qmap.data.OnOffAlpha)):
-                        self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlpha"]
-                    elif(tex.type == Blender.Texture.Types.BLEND):
-                        self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlpha"]
-
-                if(mtex.colfac < 1):
-                    self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlpha"]
-
-                if(mtex.neg): # set the negate colors flag if it is so required
-                    self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendInvertColor"]
+        pass
 
 
 class plBitmap(hsKeyedObject):               # Type 0x03   
