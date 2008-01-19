@@ -1025,7 +1025,7 @@ class plLayer(plLayerInterface):             # Type 0x06
     
                 self.fOpacity = mtex.colfac # factor how texture blends with color used as alpha blend value
     
-                # See if any flags are set to double sided...
+                # See if any faces are set to double sided...
                 for mface in mesh.faces:
                     if mface.uv and mface.mode & Blender.Mesh.FaceModes["TWOSIDE"]:
                         self.fState.fMiscFlags  |= hsGMatState.hsGMatMiscFlags["kMiscTwoSided"] 
@@ -1033,21 +1033,26 @@ class plLayer(plLayerInterface):             # Type 0x06
                 
                                                 
                 if(mtex.blendmode == Blender.Texture.BlendModes.ADD): 
-                    self.fState.fBlendFlags |= ( hsGMatState.hsGMatBlendFlags["kBlendAdd"]
-                                                | hsGMatState.hsGMatBlendFlags["kBlendAlphaAdd"]
-                                                )
-                elif(mtex.blendmode == Blender.Texture.BlendModes.MULTIPLY):
-                    self.fState.fBlendFlags |= ( hsGMatState.hsGMatBlendFlags["kBlendMult"]
-                                                | hsGMatState.hsGMatBlendFlags["kBlendAlphaMult"]
-                                                )
-                elif(mtex.blendmode == Blender.Texture.BlendModes.SUBTRACT):
-                    self.fState.fBlendFlags |= ( hsGMatState.hsGMatBlendFlags["kBlendSubtract"]
-                                                | hsGMatState.hsGMatBlendFlags["kBlendAlpha"]
-                                                )
-                else: #(mtex.blendmode == Blender.Texture.BlendModes.MIX):
-                    if(mipmap != None and (mipmap.data.FullAlpha or mipmap.data.OnOffAlpha)):
+                    self.fState.fBlendFlags |= ( hsGMatState.hsGMatBlendFlags["kBlendAdd"])
+                    if mtex.mtAlpha != 0:
+                        self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlphaAdd"]
                         self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlpha"]
-                    elif(qmap != None and (qmap.data.FullAlpha or qmap.data.OnOffAlpha)):
+
+                elif(mtex.blendmode == Blender.Texture.BlendModes.MULTIPLY):
+                    self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendMult"]
+                    if mtex.mtAlpha != 0:
+                        self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlphaMult"]
+                        self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlpha"]
+                                                
+                elif(mtex.blendmode == Blender.Texture.BlendModes.SUBTRACT):
+                    self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendSubtract"]
+                    if mtex.mtAlpha != 0:
+                        self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlpha"]
+
+                else: #(mtex.blendmode == Blender.Texture.BlendModes.MIX):
+                    if (mipmap != None and (mipmap.data.FullAlpha or mipmap.data.OnOffAlpha)) or mtex.mtAlpha != 0:
+                        self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlpha"]
+                    elif(qmap != None and (qmap.data.FullAlpha or qmap.data.OnOffAlpha)) or mtex.mtAlpha != 0:
                         self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlpha"]
                     elif(tex.type == Blender.Texture.Types.BLEND):
                         self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlpha"]
