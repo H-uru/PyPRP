@@ -1819,8 +1819,6 @@ class plMipMap(plBitmap):                    # Type 0x04
         if ((alcconfig.texture_cache) and self.TexCache_Exists()): # unless disabled, check for the texture's cache file
             self.TexCache_Load()
         else:
-            print processing
-            
             # Read in the texture filename from blender (for the name),
             # and convert the texture to an image buffer
             
