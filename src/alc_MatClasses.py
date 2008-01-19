@@ -1627,8 +1627,8 @@ class plMipMap(plBitmap):                    # Type 0x04
         
         self.Processed = 0
 
-        self.FullAlpha = 0
-        self.OnOffAlpha = 0
+        self.FullAlpha = False
+        self.OnOffAlpha = False
         
         self.Cached_BlenderImage = None
         
@@ -1826,8 +1826,8 @@ class plMipMap(plBitmap):                    # Type 0x04
             ImWidth, ImHeight = BlenderImage.getSize()
             ImageBuffer=cStringIO.StringIO()
             
-            self.FullAlpha = 0
-            self.OnOffAlpha = 0
+            self.FullAlpha = False
+            self.OnOffAlpha = False
             
             if str(BlenderImage.getFilename())[-4:]==".gif":
                 isGIF=1
@@ -1839,17 +1839,17 @@ class plMipMap(plBitmap):                    # Type 0x04
                 for x in range(ImWidth):
                     r,g,b,a = BlenderImage.getPixelF(x,y-1)
                     if self.MipMapInfo.fCalcAlpha:
-                        a = (r+g+b)/3
+                        a = (float(r)+float(g)+float(b))/3.0
                     else:
                         if isGIF: # ignora alpha info, and always put it to opaque
                             a=1.0
             
                     #print "Color: %f %f %f - Alpha: %f" % (r,g,b,a)
                     if a == 0 and not self.FullAlpha:
-                        self.OnOffAlpha = 1
+                        self.OnOffAlpha = True
                     if a > 0.0 and a < 1.0:
                         OnOffAlpha = 0
-                        self.FullAlpha = 1
+                        self.FullAlpha = True
 
                     ImageBuffer.write(struct.pack("BBBB",r*255,g*255,b*255,a*255))
             
