@@ -739,10 +739,10 @@ class plLayer(plLayerInterface):             # Type 0x06
                 self.fUVWSrc = UVSticky
             elif mtex.texco == Blender.Texture.TexCo["UV"]:
                 try:
-                    self.fUVWSrc = UVLayers[mtex.uvlayer]
                     print "    -> Using UV map '%s'"%(mtex.uvlayer)
+                    self.fUVWSrc = UVLayers[mtex.uvlayer]
                 except:
-                    print "    -> Using first UV map"
+                    print "    -> Err, Using first UV map"
                     self.fUVWSrc = 0
             else:
                 print "    -> Using default first UV map"
@@ -762,11 +762,14 @@ class plLayer(plLayerInterface):             # Type 0x06
                 
                 #find or create the qmap
 
-                qmap=texprp.find(0x05,tex.image.getName(),1)
-                
-                if(not qmap.isProcessed): # make sure that we only process it once per reference to the image
-                    qmap.data.FromBlenderCubicMap(tex.image,MipMap=1)
-                    qmap.isProcessed = 1
+                mipmapinfo = blMipMapInfo()
+                mipmapinfo.fName = tex.image.getName()
+                mipmapinfo.fMipMaps = True
+                mipmapinfo.fGauss = True
+                mipmapinfo.fResize = True
+
+                qmap = plCubicEnvironMap.Export(root,tex.image.getName(),tex.image,mipmapinfo)
+
                 self.fTexture = qmap.data.getRef()
                 self.fHasTexture = 1
                 
@@ -792,25 +795,17 @@ class plLayer(plLayerInterface):             # Type 0x06
                 # find or create the mipmap
                 
                 if(tex.image):
-                    mipmap=texprp.find(0x04,tex.image.getName(),1)
+
+                    mipmapinfo = blMipMapInfo()
+                    mipmapinfo.export_tex(tex)
                     
-                        
-                    mipmap.data.SetConfig(plMipMap.Color["kARGB32Config"])
-                    
-                    # Calculate alpha instead of using it if its either stencil mode, or 
-                    # we have the calcalpha button set
-                    calcalpha = (stencil or bool(tex.imageFlags & Blender.Texture.ImageFlags["CALCALPHA"]))
-                    print "   Calculating alpha: ",calcalpha
-                    domipmap = True
-                    mipmap.data.FromBlenderImage(tex.image,domipmap,calcalpha=calcalpha)
-                    
+                    mipmap=plMipMap.Export(root,tex.image.getName(),tex.image,mipmapinfo)
+                                        
                     self.fTexture = mipmap.data.getRef()
                     self.fHasTexture = 1
                     
                     # set the blendflags for this layer to the alphaflags, if it has alhpa
-                    if(mipmap.data.FullAlpha | mipmap.data.OnOffAlpha):
-                        #self.fRenderLevel = plRenderLevel(plRenderLevel.MajorLevel["kDefRendMajorLevel"], 
-                        #                                  plRenderLevel.MinorLevel["kDefRendMinorLevel"])
+                    if (mipmap.data.FullAlpha or mipmap.data.OnOffAlpha):
                         self.UsesAlpha = True
                 
                     if tex.extend == Blender.Texture.ExtendModes["CLIP"]:
@@ -990,20 +985,14 @@ class plLayer(plLayerInterface):             # Type 0x06
                 self.fState.fClampFlags |= hsGMatState.hsGMatClampFlags["kClampTexture"]
 
                 
-                # now find or create the object
-                if alcconfig.export_textures_to_page_prp:
-                    texprp=prp
-                else:
-                    resmanager=self.getResManager()                    
-                    texprp=resmanager.findPrp("Textures")
-                if texprp==None:
-                    raise "Textures PRP file not found"
+                mipmapinfo = blMipMapInfo()
+                mipmapinfo.fName = blendname
+                mipmapinfo.fMipMaps = False
+                mipmapinfo.fGauss = False
+                mipmapinfo.fCompressionType = plBitmap.Compression["kDirectXCompression"]
+                mipmapinfo.fBitmapInfo.fDirectXInfo.fCompressionType = plBitmap.CompressionType["kDXT5"]
                 
-                mipmap=texprp.find(0x04,blendname,1)
-                
-                mipmap.data.FromRawImage(blenddata,blendwidth,blendheight,0,\
-                                         Compression=plBitmap.Compression["kDirectXCompression"],\
-                                         CompressionSubType=plBitmap.CompressionType["kDXT5"])
+                mipmap = plMipMap.Export_Raw(root,blendname,blenddata,blendwidth,blendheight,mipmapinfo)
                 
                 # and link the mipmap to the layer
                 self.fTexture = mipmap.data.getRef()
@@ -1154,30 +1143,29 @@ class plLayer(plLayerInterface):             # Type 0x06
         resmanager=self.getResManager()
         root=self.getRoot()
 
-        # determine what the texture prp must be
-        if alcconfig.export_textures_to_page_prp:
-            texprp=root
-        else:
-            texprp=resmanager.findPrp("Textures")
-        if texprp==None:
-            raise "Textures PRP file not found"
+        # Use default settings here...
+        mipmapinfo = blMipMapInfo()
+        mipmapinfo.fImageName = image.getName()
+        mipmapinfo.fMipMaps = True
+        mipmapinfo.fGauss = False
+        mipmapinfo.fResize = True
+        
+        print "  Exporting Mipmap image",image.getName()
+        mipmap=plMipMap.Export(root,image.getName(),image,mipmapinfo)
 
-        # find or create the mipmap
-        
-        mipmap=texprp.find(0x04,image.getName(),1)
-        
-        if(not mipmap.isProcessed): # make sure that we only do this once per reference to the image
-            mipmap.data.FromBlenderImage(image,MipMap=1)
-            self.fHasTexture = 1
-            mipmap.isProcessed = 1;
-        
+        print "  Processes Mipmap image",mipmap.data.Key.name
+
         self.fTexture = mipmap.data.getRef()
 
-        if(mipmap.data.FullAlpha | mipmap.data.OnOffAlpha):
+        if mipmap.data.FullAlpha or mipmap.data.OnOffAlpha:
             self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlpha"]
                 
-        if(obj.type == "Mesh" and (obj.data.mode & Blender.Mesh.Modes.TWOSIDED) > 0):
-            self.fState.fMiscFlags  |= hsGMatState.hsGMatMiscFlags["kMiscTwoSided"] 
+        if obj.type == "Mesh":
+            mesh = obj.getData(False,True)
+            for mface in mesh.faces:
+                if mface.uv and mface.mode & Blender.Mesh.FaceModes["TWOSIDE"]:
+                    self.fState.fMiscFlags  |= hsGMatState.hsGMatMiscFlags["kMiscTwoSided"] 
+                    break
         
         # set the blendflags for this layer to the alphaflags, if it has alhpa
         if(mipmap.data.FullAlpha | mipmap.data.OnOffAlpha):
@@ -1190,23 +1178,16 @@ class plLayer(plLayerInterface):             # Type 0x06
         resmanager=self.getResManager()
         root=self.getRoot()
 
-        # determine what the texture prp must be
-        if alcconfig.export_textures_to_page_prp:
-            texprp=root
-        else:
-            texprp=resmanager.findPrp("Textures")
-        if texprp==None:
-            raise "Textures PRP file not found"
-
         tex = mtex.tex
         #mtex type ENVMAP
         if(tex.type == Blender.Texture.Types.IMAGE):
             # find or create the mipmap
             if(tex.image):
-                mipmap=texprp.find(0x04,tex.image.getName(),1)
+
+                mipmapinfo = blMipMapInfo()
+                mipmapinfo.export_tex(tex)
                 
-                mipmap.data.SetConfig(plMipMap.Color["kARGB32Config"])
-                mipmap.data.FromBlenderImage(tex.image,MipMap=1)
+                mipmap=plMipMap.Export(root,tex.image.getName(),tex.image,mipmapinfo)
                 
                 self.fTexture = mipmap.data.getRef()
 
@@ -1406,19 +1387,21 @@ class blMipMapInfo:
     def __init__(self):
         self.fImageName = ""
         self.fMipMaps = True
+        self.fResize = True
         self.fCalcAlpha = False
         self.fGauss = False
-        self.fGaussLevel = 1.0
+        self.fAlphaMult = 1.0
         self.fCompressionType = plBitmap.Compression["kDirectXCompression"]
         self.fBitmapInfo = plBitmap.Info()
-        self.fBitmapInfo.fDirectXInfo.fCompressionType = plBitmap.CompressionType["kDXT1"]
+        self.fBitmapInfo.fDirectXInfo.fCompressionType = plBitmap.CompressionType["kError"]
             
     def read(self,stream):
         self.fImageName = stream.ReadSafeString(0)
         self.fMipMaps = stream.ReadBool()
+        self.fResize = stream.ReadBool()
         self.fCalcAlpha = stream.ReadBool()
         self.fGauss = stream.ReadBool()
-        self.fGaussLevel = stream.ReadFloat()
+        self.fAlphaMult = stream.ReadFloat()
         self.fCompressionType = stream.ReadByte()
 
         if (self.fCompressionType != plBitmap.Compression["kUncompressed"]  and  self.fCompressionType != plBitmap.Compression["kJPEGCompression"]):
@@ -1430,24 +1413,25 @@ class blMipMapInfo:
     def write(self,stream):
         # Set compression types correctly
         if self.fBitmapInfo.fDirectXInfo.fCompressionType == plBitmap.CompressionType["kDXT1"]:
-            self.BitmapInfo.fDirectXInfo.fBlockSize = 8
+            self.fBitmapInfo.fDirectXInfo.fBlockSize = 8
         elif self.fBitmapInfo.fDirectXInfo.fCompressionType == plBitmap.CompressionType["kDXT5"]:
-            self.BitmapInfo.fDirectXInfo.fBlockSize = 16
+            self.fBitmapInfo.fDirectXInfo.fBlockSize = 16
 
         stream.WriteSafeString(self.fImageName,0)
         stream.WriteBool(self.fMipMaps)
+        stream.WriteBool(self.fResize)
         stream.WriteBool(self.fCalcAlpha)
         stream.WriteBool(self.fGauss)
-        stream.WriteFloat(self.fGaussLevel)
+        stream.WriteFloat(self.fAlphaMult)
         stream.WriteByte(self.fCompressionType)
         
         if (self.fCompressionType != plBitmap.Compression["kUncompressed"]  and  self.fCompressionType != plBitmap.Compression["kJPEGCompression"]):
-            stream.WriteByte(self.BitmapInfo.fDirectXInfo.fBlockSize)
-            stream.WriteByte(self.BitmapInfo.fDirectXInfo.fCompressionType)
+            stream.WriteByte(self.fBitmapInfo.fDirectXInfo.fBlockSize)
+            stream.WriteByte(self.fBitmapInfo.fDirectXInfo.fCompressionType)
         else:
-            stream.WriteByte(self.BitmapInfo.fUncompressedInfo.fType)
+            stream.WriteByte(self.fBitmapInfo.fUncompressedInfo.fType)
     
-    def compare(self,ext):
+    def equals(self,ext):
         
         if not self.fImageName == ext.fImageName:
             return False
@@ -1456,15 +1440,18 @@ class blMipMapInfo:
         if not self.fGauss == ext.fGauss:
             return False
         
-        if self.fGauss and not self.fGaussLevel == ext.fGaussLevel:
+        if not self.fAlphaMult == ext.fAlphaMult:
             return False
 
         if not self.fCompressionType == ext.fCompressionType:
             return False
 
         if self.fCompressionType == plBitmap.Compression["kDirectXCompression"]:
-            if not self.fBitmapInfo.fDirectXInfo.fCompressionType == ext.fBitmapInfo.fDirectXInfo.fCompressionType:
-                return False
+            # Ignore the dxt setting if it is set to kError (used as autodetect)....
+            if not self.fBitmapInfo.fDirectXInfo.fCompressionType == plBitmap.CompressionType["kError"]:
+                if not ext.fBitmapInfo.fDirectXInfo.fCompressionType == plBitmap.CompressionType["kError"]:
+                    if not self.fBitmapInfo.fDirectXInfo.fCompressionType == ext.fBitmapInfo.fDirectXInfo.fCompressionType:
+                        return False
         
         elif self.fCompressionType == plBitmap.Compression["kUncompressed"]:
             if not self.fBitmapInfo.fUncompressedInfo.fType == ext.fBitmapInfo.fUncompressedInfo.fType:
@@ -1481,7 +1468,7 @@ class blMipMapInfo:
         # This is only valid for image textures :)
         if not tex is None and tex.type == Blender.Texture.Types["IMAGE"] and not tex.image == None:
             
-            self.fImageName = tex.image.filename
+            self.fImageName = tex.image.getName()
         
             if tex.flags & Blender.Texture.Flags["NEGALPHA"]:
                 pass
@@ -1491,7 +1478,8 @@ class blMipMapInfo:
                 if tex.imageFlags & Blender.Texture.ImageFlags["USEALPHA"]:
                     self.fBitmapInfo.fDirectXInfo.fCompressionType = plBitmap.CompressionType["kDXT5"]
                 else:
-                    self.fBitmapInfo.fDirectXInfo.fCompressionType = plBitmap.CompressionType["kDXT1"]
+                    # Let it be auto determined....
+                    self.fBitmapInfo.fDirectXInfo.fCompressionType = plBitmap.CompressionType["kError"]
             else:
                 if self.fImageName[-4:] == ".jpg" or self.fImageName[-5:] == ".jpeg":
                     self.fCompressionType = plBitmap.Compression["kJPEGCompression"]
@@ -1504,12 +1492,62 @@ class blMipMapInfo:
             else:
                 self.fGauss = False
                 
-            self.fGaussLevel = tex.filterSize
+            self.fAlphaMult = tex.filterSize
             
             if tex.imageFlags & Blender.Texture.ImageFlags["CALCALPHA"]:
                 self.fCalcAlpha = True
             else:
                 self.fCalcAlpha = False            
+
+            if tex.imageFlags & Blender.Texture.ImageFlags["MIPMAP"]:
+                self.fMipMaps = True
+            else:
+                self.fMipMaps = False            
+                
+    def clone(self):
+        new = blMipMapInfo()
+
+        new.fImageName = self.fImageName
+        new.fMipMaps = self.fMipMaps 
+        new.fResize = self.fResize 
+        new.fCalcAlpha = self.fCalcAlpha 
+        new.fGauss = self.fGauss 
+        new.fAlphaMult = self.fAlphaMult 
+        new.fCompressionType = self.fCompressionType 
+
+        new.fBitmapInfo.fDirectXInfo.fBlockSize = self.fBitmapInfo.fDirectXInfo.fBlockSize
+        new.fBitmapInfo.fDirectXInfo.fCompressionType = self.fBitmapInfo.fDirectXInfo.fCompressionType
+
+        new.fBitmapInfo.fUncompressedInfo.fType = self.fBitmapInfo.fUncompressedInfo.fType
+
+        return new
+
+
+    def __str__(self):
+        return self.__repr__()
+
+    def __repr__(self):
+        s  = "---------------"
+        s += "\nImagename:" + str(self.fImageName)
+        s += "\nResize Image: " + str(self.fResize)
+        s += "\nMake MipMaps: " + str(self.fMipMaps)
+        s += "\nCalculate Alpha:" + str(self.fCalcAlpha)
+        s += "\nMipMap Gauss:" + str(self.fGauss)
+        s += "\nMipmap AlphaMult:" + str(self.fAlphaMult)
+        if self.fCompressionType == plBitmap.Compression["kDirectXCompression"]:
+            s += "\nCompressionType: DXT"
+            if self.fBitmapInfo.fDirectXInfo.fCompressionType == plBitmap.CompressionType["kDXT1"]:
+                s += "\n SubType: DXT1"
+            elif self.fBitmapInfo.fDirectXInfo.fCompressionType == plBitmap.CompressionType["kDXT5"]:
+                s += "\n SubType: DXT5"
+        elif self.fCompressionType == plBitmap.Compression["kJPEGCompression"]:
+            s += "\nCompressionType: JPEG"
+        elif self.fCompressionType == plBitmap.Compression["kUncompressed"]:
+            s += "\nCompressionType: Uncompressed"
+        s += "\n---------------\n"
+        
+        return s
+
  
 class plMipMap(plBitmap):                    # Type 0x04
 
@@ -1573,14 +1611,14 @@ class plMipMap(plBitmap):                    # Type 0x04
     def __init__(self,parent,name="unnamed",type=0x0004):
         plBitmap.__init__(self,parent,name,type)
 
-        self.fImages = [] # byte[] 
-        self.fWidth = 0 # UInt32 
-        self.fHeight = 0 # UInt32 
-        self.fRowBytes = 0 # UInt32 #Formerly stride
+        self.fImages = [] 
+        self.fWidth = 0 
+        self.fHeight = 0 
+        self.fRowBytes = 0 
 
-        self.fTotalSize = 0 # UInt32 
-        self.fNumLevels = 0 # Byte #Formerly mipCount
-        self.fLevelSizes = [] # UInt32[] 
+        self.fTotalSize = 0 
+        self.fNumLevels = 0
+        self.fLevelSizes = [] 
 
         # setting of fields from plBitmap
         self.fPixelSize = 32
@@ -1593,6 +1631,8 @@ class plMipMap(plBitmap):                    # Type 0x04
         self.OnOffAlpha = 0
         
         self.Cached_BlenderImage = None
+        
+        self.MipMapInfo = blMipMapInfo()
 
     def _Find(page,name):
         return page.find(0x0004,name,0)
@@ -1601,7 +1641,6 @@ class plMipMap(plBitmap):                    # Type 0x04
     def _FindCreate(page,name):
         return page.find(0x0004,name,1)
     FindCreate = staticmethod(_FindCreate)
-
 
     def read(self, stream, really=1,silent=0):
         plBitmap.read(self,stream,really)
@@ -1769,17 +1808,18 @@ class plMipMap(plBitmap):                    # Type 0x04
 
         return Tex
 
-    def FromBlenderImage(self,BlenderImage,MipMap=1, \
-                            Compression=plBitmap.Compression["kDirectXCompression"], \
-                            CompressionSubType=plBitmap.CompressionType["kError"],calcalpha=False):
+    def FromBlenderImage(self,BlenderImage):
         if(self.Processed):
             return
 
         print "    [MipMap %s]"%str(self.Key.name)
+        print "     MipMapInfo:"
+        print self.MipMapInfo
 
         if ((alcconfig.texture_cache) and self.TexCache_Exists()): # unless disabled, check for the texture's cache file
             self.TexCache_Load()
         else:
+            print processing
             
             # Read in the texture filename from blender (for the name),
             # and convert the texture to an image buffer
@@ -1787,13 +1827,6 @@ class plMipMap(plBitmap):                    # Type 0x04
             print "     Converting texture %s..." %str(self.Key.name)
             ImWidth, ImHeight = BlenderImage.getSize()
             ImageBuffer=cStringIO.StringIO()
-
-            if calcalpha:
-                print "      Doing Alpha Calculation"
-            else:
-                print "      Alpha From Image Channel"
-                
-            print "       CalcAlpha:",calcalpha
             
             self.FullAlpha = 0
             self.OnOffAlpha = 0
@@ -1807,40 +1840,40 @@ class plMipMap(plBitmap):                    # Type 0x04
             for y in range(ImHeight,0,-1):
                 for x in range(ImWidth):
                     r,g,b,a = BlenderImage.getPixelF(x,y-1)
-                    if calcalpha:
+                    if self.MipMapInfo.fCalcAlpha:
                         a = (r+g+b)/3
                     else:
                         if isGIF: # ignora alpha info, and always put it to opaque
                             a=1.0
-                        else:
-                            #print "Color: %f %f %f - Alpha: %f" % (r,g,b,a)
-                            if a == 0 and not self.FullAlpha:
-                                self.OnOffAlpha = 1
-                            if a > 0.0 and a < 1.0:
-                                OnOffAlpha = 0
-                                self.FullAlpha = 1
+            
+                    #print "Color: %f %f %f - Alpha: %f" % (r,g,b,a)
+                    if a == 0 and not self.FullAlpha:
+                        self.OnOffAlpha = 1
+                    if a > 0.0 and a < 1.0:
+                        OnOffAlpha = 0
+                        self.FullAlpha = 1
 
                     ImageBuffer.write(struct.pack("BBBB",r*255,g*255,b*255,a*255))
             
-            
             # see if we should automatically determine compression type
-            if CompressionSubType == plBitmap.CompressionType["kError"]:
-                if self.FullAlpha or calcalpha: # Full Alpha requires DXT5
+            if self.MipMapInfo.fCompressionType == plBitmap.Compression["kDirectXCompression"] and \
+                self.MipMapInfo.fBitmapInfo.fDirectXInfo.fCompressionType == plBitmap.CompressionType["kError"]:
+                if self.FullAlpha: # Full Alpha requires DXT5
                     print "     Image uses full alpha channel, compressing DXT5"
-                    CompressionSubType = plBitmap.CompressionType["kDXT5"]
+                    self.MipMapInfo.fBitmapInfo.fDirectXInfo.fCompressionType = plBitmap.CompressionType["kDXT5"]
                 elif self.OnOffAlpha: # DXT1 supports On/Off Alpha
-                    CompressionSubType = plBitmap.CompressionType["kDXT1"]
+                    self.MipMapInfo.fBitmapInfo.fDirectXInfo.fCompressionType = plBitmap.CompressionType["kDXT1"]
                     print "     Image uses on/off alpha , compressing DXT1"
                 else: # anything else is ok on the DXT1
-                    CompressionSubType = plBitmap.CompressionType["kDXT1"]
+                    self.MipMapInfo.fBitmapInfo.fDirectXInfo.fCompressionType = plBitmap.CompressionType["kDXT1"]
                     print "     Image uses no alpha, compressing DXT1"
 
-
+            # Reset the image buffer
             ImageBuffer.seek(0)
             
             # And use the FromRawImage function to set this texture data.
             
-            self.FromRawImage(ImageBuffer,ImWidth,ImHeight,MipMap,Compression,CompressionSubType)
+            self.FromRawImage(ImageBuffer,ImWidth,ImHeight)
 
             # now store the data in a file if texture_cache is enabled
             if (alcconfig.texture_cache):
@@ -1848,10 +1881,7 @@ class plMipMap(plBitmap):                    # Type 0x04
 
         self.Processed = 1
 
-    def FromRawImage(self, ImageBuffer, Width, Height, MipMap=1, \
-                        Compression=plBitmap.Compression["kDirectXCompression"], \
-                        CompressionSubType=plBitmap.CompressionType["kDXT5"] \
-                        ):
+    def FromRawImage(self, ImageBuffer, Width, Height):
 
         # Copy basic parameters
         self.fWidth     = Width
@@ -1864,7 +1894,7 @@ class plMipMap(plBitmap):                    # Type 0x04
         # Resize images to make width and height be powers of two
         # Makes it easier on the graphics card.
         # Don't do this on JPEG compression
-        if alcconfig.texture_resize and Compression != plBitmap.Compression["kJPEGCompression"]:    
+        if self.MipMapInfo.fResize and self.MipMapInfo.fCompressionType != plBitmap.Compression["kJPEGCompression"]:    
         
             new_w=2 ** int(math.log(self.fWidth,2))
             new_h=2 ** int(math.log(self.fHeight,2))
@@ -1886,42 +1916,45 @@ class plMipMap(plBitmap):                    # Type 0x04
         # Compress the image to the desired compression, 
         # either DXT compression, JPEG Compression or Uncompressed (only RGB8888 colorspace supported)
     
-        if (Compression == plBitmap.Compression["kDirectXCompression"]):
+        if (self.MipMapInfo.fCompressionType == plBitmap.Compression["kDirectXCompression"]):
             print "      DXT Compressing texture .... this can take a few minutes"
             
-            if(CompressionSubType == plBitmap.CompressionType["kDXT1"]):
+            if(self.MipMapInfo.fBitmapInfo.fDirectXInfo.fCompressionType == plBitmap.CompressionType["kDXT1"]):
                 print "     Compressing DXT1"
-            elif(CompressionSubType == plBitmap.CompressionType["kDXT5"]):
+            elif(self.MipMapInfo.fBitmapInfo.fDirectXInfo.fCompressionType == plBitmap.CompressionType["kDXT5"]):
                 print "     Compressing DXT5"
-            elif(CompressionSubType == plBitmap.CompressionType["kError"]):
+            elif(self.MipMapInfo.fBitmapInfo.fDirectXInfo.fCompressionType == plBitmap.CompressionType["kError"]):
                 print "     Compressing kError"
+                raise RuntimeError, "Hmm, wait a second, we can't compress \"kError\", you'd better fix this somewhere :P"
             else:
                 print "     DXT Compression unknown"
+                raise RuntimeError, "Okay, don't know what went wrong here... Probably you're a really smart person to be able to get this exception that should never be given...."
 
-            myimg=tDxtImage(self.fWidth,self.fHeight,CompressionSubType)
+            myimg=tDxtImage(self.fWidth,self.fHeight,self.MipMapInfo.fBitmapInfo.fDirectXInfo.fCompressionType)
             myimg.data=ImageBuffer  # input the buffer into the image
             myimg.fromRGBA()        # tell it to process
             self.fImages=[myimg,]
-            self.fCompressionType = Compression
-            self.BitmapInfo.fDirectXInfo.fCompressionType = CompressionSubType
-            if CompressionSubType == plBitmap.CompressionType["kDXT1"]:
+            self.fCompressionType = plBitmap.Compression["kDirectXCompression"]
+            self.BitmapInfo.fDirectXInfo.fCompressionType = self.MipMapInfo.fBitmapInfo.fDirectXInfo.fCompressionType
+
+            if self.MipMapInfo.fBitmapInfo.fDirectXInfo.fCompressionType == plBitmap.CompressionType["kDXT1"]:
                 self.BitmapInfo.fDirectXInfo.fBlockSize = 8
-            elif CompressionSubType == plBitmap.CompressionType["kDXT5"]:
+            elif self.MipMapInfo.fBitmapInfo.fDirectXInfo.fCompressionType == plBitmap.CompressionType["kDXT5"]:
                 self.BitmapInfo.fDirectXInfo.fBlockSize = 16
             else:
                 raise ValueError, "Can only support DXT1 and DXT5 Compression"
             
-        elif (Compression == plBitmap.Compression["kJPEGCompression"]):
+        elif (self.MipMapInfo.fCompressionType == plBitmap.Compression["kJPEGCompression"]):
             print "     JPEG Compressing texture ...."
 
             myimg=tJpgImage(self.fWidth,self.fHeight)
             myimg.data=ImageBuffer  # input the buffer into the image
             myimg.fromRGBA()        # tell it to process
             self.fImages=[myimg,]
-            self.fCompressionType = Compression
+            self.fCompressionType = plBitmap.Compression["kJPEGCompression"]
             self.BitmapInfo.fUncompressedInfo.fType = plBitmap.Uncompressed["kRGB8888"];
 
-        elif (Compression == plBitmap.Compression["kUncompressed"]):
+        elif (self.MipMapInfo.fCompressionType == plBitmap.Compression["kUncompressed"]):
             print "     Not Compressing texture"
 
             myimg=tImage(self.fWidth,self.fHeight)
@@ -1935,8 +1968,12 @@ class plMipMap(plBitmap):                    # Type 0x04
         # Make the mipmaps
         # this works by copying the image that was compressed before, resizing it to half it's size, and 
         # adding it to the queue - this repeats until the lowest texture...
-        if (alcconfig.texture_mipmaps) and MipMap and Compression != plBitmap.Compression["kJPEGCompression"]:
+        # ofcourse, no mipmapping for jpeg uncompressed textures :)
+        
+        if self.MipMapInfo.fCompressionType != plBitmap.Compression["kJPEGCompression"] and self.MipMapInfo.fMipMaps:
             print "     MipMapping...."
+#            print "     MipMapinfo:\n",self.MipMapInfo
+            
             print "      Level 0 %ix%i" %(self.fWidth,self.fHeight)
             i=1
             mw=self.fWidth>>i
@@ -1944,14 +1981,74 @@ class plMipMap(plBitmap):                    # Type 0x04
             while mw!=0 and mh!=0:
                 print "      Level %i %ix%i" %(i,mw,mh)
                 img=copy.copy(myimg)    # copy the previous image
-                img.resize(mw,mh)       # apply the new size
+                img.resize_alphamult(mw,mh,self.MipMapInfo.fAlphaMult,self.MipMapInfo.fGauss)       # apply the new size
+
                 img.fromRGBA()          # and reprocess/recompress
                 self.fImages.append(img) # add to the list
                 myimg=img
                 i=i+1
                 mw=self.fWidth>>i
                 mh=self.fHeight>>i
+        
+        print "Done"
 
+    UniquePrefix = 1
+
+    def _FindCreateByMipMapInfo(page,name,mipmapinfo):
+        resmgr = page.resmanager
+        if not alcconfig.export_textures_to_page_prp:
+            page=resmgr.findPrp("Textures")
+            if page==None:
+                raise "    Textures PRP file not found"
+        
+        
+#        print "Locating mipmap for mipmapinfo:"
+#        print mipmapinfo
+        nameExists = False
+        # See if we have already got one of these....
+        idx = page.findidx(0x0004)
+        for plobj in idx.listobjects():
+#            print "-- MIPMAP:",plobj.data.Key.name
+#            print "   MipmapInfo:"
+#            print plobj.data.MipMapInfo
+            
+            if plobj.data.MipMapInfo.equals(mipmapinfo):
+                return plobj
+            if plobj.data.Key.name==name:
+                nameExists = True
+                
+                
+
+        # else, create one        
+        
+        # make sure we have a unique name....
+        if nameExists:
+            name = str(plMipMap.UniquePrefix) +"-" + name
+            plMipMap.UniquePrefix += 1
+        
+        plobj = plMipMap.FindCreate(page,name)
+        plobj.data.MipMapInfo = mipmapinfo
+        
+        return plobj
+        
+
+    FindCreateByMipMapInfo = staticmethod(_FindCreateByMipMapInfo)
+
+    def _Export(page,name,blenderimage,mipmapinfo):
+        mipmap = plMipMap.FindCreateByMipMapInfo(page,name,mipmapinfo)
+        mipmap.data.SetConfig(plMipMap.Color["kARGB32Config"])
+        mipmap.data.FromBlenderImage(blenderimage)
+        return mipmap
+        
+    Export = staticmethod(_Export)
+    
+    def _Export_Raw(page,name,imbuffer, imwidth, imheight, mipmapinfo):
+        mipmap = plMipMap.FindCreateByMipMapInfo(page,name,mipmapinfo)
+        mipmap.data.SetConfig(plMipMap.Color["kARGB32Config"])
+        mipmap.data.FromRawImage(imbuffer,imwidth,imheight)
+        return mipmap
+
+    Export_Raw = staticmethod(_Export_Raw)
 
     def TexCache_GetFilename(self):
 
@@ -1972,30 +2069,62 @@ class plMipMap(plBitmap):                    # Type 0x04
         return CacheFile
 
     def TexCache_Exists(self):
-        return os.path.isfile(self.TexCache_GetFilename())
+        if os.path.isfile(self.TexCache_GetFilename()):
+            mipmapinfo = self.TexCache_LoadMipMapInfo()
+            
+            if not mipmapinfo is None:
+                if self.MipMapInfo.equals(mipmapinfo):
+#                    print "TEXCACHE DEBUG:"
+#                    print "Mipmapinfo's match"
+                    return True
+#                else:
+#                    print "TEXCACHE DEBUG:"
+#                    print "Self's mipmapinfo:"
+#                    print self.MipMapInfo
+#                    print "Cachefile's mipmapinfo:"
+#                    print mipmapinfo
+#            else:
+#                print "TEXCACHE DEBUG:"
+#                print "Could not read mipmapinfo from cachefile...."
+                
+        return False
         
-    def TexCache_Store(self):
+    def TexCache_Store(self,mipmapinfo=None):
         CacheFile = self.TexCache_GetFilename()
         stream=hsStream(CacheFile,"wb")
-        self.write(stream)
         
-        stream.Write32(self.FullAlpha)
-        stream.Write32(self.OnOffAlpha)
+        if mipmapinfo is None:
+            self.MipMapInfo.write(stream)
+        else:
+            mipmapinfo.write(stream)
+        self.write(stream)
         stream.close()
+    
+    def TexCache_LoadMipMapInfo(self):
+        # load in the data from the file
+        CacheFile = self.TexCache_GetFilename()
+        stream=hsStream(CacheFile,"rb")
+        try:
+            mipmapinfo = blMipMapInfo()
+            mipmapinfo.read(stream)
+            return mipmapinfo
+        except:
+            print "    WARNING: Problem reading Texture Cache"
+            print "             PLEASE REMOVE YOUR OLD TEXTURE CACHE FILES"
+            return None
+    
     
     def TexCache_Load(self):
         # load in the data from the file
         CacheFile = self.TexCache_GetFilename()
         print "     Reading mipmap %s from cache" % (str(self.Key.name) + ".tex")
         stream=hsStream(CacheFile,"rb")
-        self.read(stream)
         try:
-            self.FullAlpha = stream.Read32()
-            self.OnOffAlpha = stream.Read32()
+            self.MipMapInfo.read(stream)
+            self.read(stream)
         except:
-            print "    WARNING: Problem reading Alpha level from cache"
+            print "    WARNING: Problem reading Texture Cache"
             print "             PLEASE REMOVE YOUR OLD TEXTURE CACHE FILES"
-            self.fUseAlpha = 0
         
         stream.close()
         
@@ -2003,7 +2132,6 @@ class plMipMap(plBitmap):                    # Type 0x04
         CacheFile = self.TexCache_GetFilename()
         return os.remove(CacheFile)
     
-
     
 class plCubicEnvironMap(plBitmap):          # Type 0x05
 
@@ -2145,9 +2273,7 @@ class plCubicEnvironMap(plBitmap):          # Type 0x05
 
         return Tex
         
-    def FromBlenderCubicMap(self,cubicmap,MipMap=1, \
-                               Compression=plBitmap.Compression["kDirectXCompression"], \
-                               CompressionSubType=plBitmap.CompressionType["kError"]):
+    def FromBlenderCubicMap(self,cubicmap):
         # if we are already set up and ready, don't continue....
         if(self.Processed):
             return
@@ -2213,26 +2339,34 @@ class plCubicEnvironMap(plBitmap):          # Type 0x05
                 for y in range(ystart,yend,-1):
                     for x in range(xstart,xend):
                         r,g,b,a = cubicmap.getPixelF(x,y-1)
-                        if isGIF: # ignora alpha info, and always put it to opaque
-                            a=1.0
+
+                        if self.MipMapInfo.fCalcAlpha:
+                            a = (r+g+b)/3
                         else:
-                            if a == 0 and not self.FullAlpha:
-                                self.OnOffAlpha = 1
-                            if a > 0 and a < 1:
-                                OnOffAlpha = 0
-                                self.FullAlpha = 1
+                            if isGIF: # ignora alpha info, and always put it to opaque
+                                a=1.0
+
+                        if a == 0 and not self.FullAlpha:
+                            self.OnOffAlpha = 1
+                        if a > 0 and a < 1:
+                            OnOffAlpha = 0
+                            self.FullAlpha = 1
     
                         ImageBuffer.write(struct.pack("BBBB",r*255,g*255,b*255,a*255))
                 
                 
-                # see if we should automatically determine compression type (based only on the first image)
-                if CompressionSubType == plBitmap.CompressionType["kError"]:
+                # see if we should automatically determine compression type
+                if self.MipMapInfo.fCompressionType == plBitmap.Compression["kDirectXCompression"] and \
+                    self.MipMapInfo.fBitmapInfo.fDirectXInfo.fCompressionType == plBitmap.CompressionType["kError"]:
                     if self.FullAlpha: # Full Alpha requires DXT5
-                        CompressionSubType = plBitmap.CompressionType["kDXT5"]
+                        print "     Image uses full alpha channel, compressing DXT5"
+                        self.MipMapInfo.fBitmapInfo.fDirectXInfo.fCompressionType = plBitmap.CompressionType["kDXT5"]
                     elif self.OnOffAlpha: # DXT1 supports On/Off Alpha
-                        CompressionSubType = plBitmap.CompressionType["kDXT1"]
+                        self.MipMapInfo.fBitmapInfo.fDirectXInfo.fCompressionType = plBitmap.CompressionType["kDXT1"]
+                        print "     Image uses on/off alpha , compressing DXT1"
                     else: # anything else is ok on the DXT1
-                        CompressionSubType = plBitmap.CompressionType["kDXT1"]
+                        self.MipMapInfo.fBitmapInfo.fDirectXInfo.fCompressionType = plBitmap.CompressionType["kDXT1"]
+                        print "     Image uses no alpha, compressing DXT1"
     
                 print " Setting EnvMap side %i" % CubeSide
                 CubeSide += 1
@@ -2241,8 +2375,9 @@ class plCubicEnvironMap(plBitmap):          # Type 0x05
                 MipMappedFace = plMipMap(self.parent)
                 MipMappedFace.Key.name = str(self.Key.name) + "+%i"%(i)
                 
+                MipMappedFace.MipMapInfo = self.MipMapInfo
                 # assign the texture
-                MipMappedFace.FromRawImage(ImageBuffer,xpart,ypart,MipMap,Compression,CompressionSubType)
+                MipMappedFace.FromRawImage(ImageBuffer,xpart,ypart)
                 
                 self.fFaces.append(MipMappedFace)
                 
@@ -2262,6 +2397,24 @@ class plCubicEnvironMap(plBitmap):          # Type 0x05
         # now set that we processed it all
         self.Processed = 1
         
+        
+    def _Export(page,name,image,mipmapinfo):
+        resmgr = page.resmanager
+        if not alcconfig.export_textures_to_page_prp:
+            page=resmgr.findPrp("Textures")
+            if page==None:
+                raise "    Textures PRP file not found"
+        
+        qmap=plCubicEnvironMap.FindCreate(page,name)
+        qmap.data.MipMapInfo = mipmapinfo
+        
+        qmap.data.FromBlenderCubicMap(image)
+        
+        return qmap
+
+
+    Export = staticmethod(_Export)
+
     def TexCache_GetFilename(self):
 
         resmanager=self.getResManager()
@@ -2281,30 +2434,62 @@ class plCubicEnvironMap(plBitmap):          # Type 0x05
         return CacheFile
 
     def TexCache_Exists(self):
-        return os.path.isfile(self.TexCache_GetFilename())
+        if os.path.isfile(self.TexCache_GetFilename()):
+            mipmapinfo = self.TexCache_LoadMipMapInfo()
+            
+            if not mipmapinfo is None:
+                if self.MipMapInfo.equals(mipmapinfo):
+#                    print "TEXCACHE DEBUG:"
+#                    print "Mipmapinfo's match"
+                    return True
+#                else:
+#                    print "TEXCACHE DEBUG:"
+#                    print "Self's mipmapinfo:"
+#                    print self.MipMapInfo
+#                    print "Cachefile's mipmapinfo:"
+#                    print mipmapinfo
+#            else:
+#                print "TEXCACHE DEBUG:"
+#                print "Could not read mipmapinfo from cachefile...."
+                
+        return False
         
-    def TexCache_Store(self):
+    def TexCache_Store(self,mipmapinfo=None):
         CacheFile = self.TexCache_GetFilename()
         stream=hsStream(CacheFile,"wb")
-        self.write(stream)
         
-        stream.Write32(self.FullAlpha)
-        stream.Write32(self.OnOffAlpha)
+        if mipmapinfo is None:
+            self.MipMapInfo.write(stream)
+        else:
+            mipmapinfo.write(stream)
+        self.write(stream)
         stream.close()
+    
+    def TexCache_LoadMipMapInfo(self):
+        # load in the data from the file
+        CacheFile = self.TexCache_GetFilename()
+        stream=hsStream(CacheFile,"rb")
+        try:
+            mipmapinfo = blMipMapInfo()
+            mipmapinfo.read(stream)
+            return mipmapinfo
+        except:
+            print "    WARNING: Problem reading Texture Cache"
+            print "             PLEASE REMOVE YOUR OLD TEXTURE CACHE FILES"
+            return None
+    
     
     def TexCache_Load(self):
         # load in the data from the file
         CacheFile = self.TexCache_GetFilename()
-        print "  Reading mipmap %s from cache" %(str(self.Key.name) + ".qmap")
+        print "     Reading mipmap %s from cache" % (str(self.Key.name) + ".tex")
         stream=hsStream(CacheFile,"rb")
-        self.read(stream)
         try:
-            self.FullAlpha = stream.Read32()
-            self.OnOffAlpha = stream.Read32()
+            self.MipMapInfo.read(stream)
+            self.read(stream)
         except:
-            print "  WARNING: Problem reading Alpha level from cache"
-            print "           PLEASE REMOVE YOUR OLD TEXTURE CACHE FILES"
-            self.fUseAlpha = 0
+            print "    WARNING: Problem reading Texture Cache"
+            print "             PLEASE REMOVE YOUR OLD TEXTURE CACHE FILES"
         
         stream.close()
         

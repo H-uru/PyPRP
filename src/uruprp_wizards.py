@@ -27,12 +27,10 @@
 Name: 'PyPRP Wizards'
 Blender: 245
 Group: 'Wizards'
-Submenu: 'Upgrade Book (Keep old objects)' i_book_keepold
-Submenu: 'Upgrade Book (Delete old objects)' i_book_delold
+Submenu: 'Upgrade Book' i_book
 Submenu: 'Add missing Blender materials and textures' i_mattex
 Submenu: 'Upgrade properties' i_props
 Submenu: 'Assign default bounds to selected objects' i_bounds
-Submenu: 'Developers Text Function (functionality changes every snapshot)' i_devtest
 Tooltip: 'Alcugs PyPRP Upgrade'
 """
 
@@ -55,10 +53,24 @@ from os.path import *
 import alc_Wizards
 from alc_Wizards import *
     
-def upgrade_book(RemoveOld):
+def upgrade_book():
+    REMOVE_OLD = Blender.Draw.Create(1)
+    pup_block = [\
+    ('Delete old book objects',REMOVE_OLD,'After converting them to AlcScript, delete the old book objects.'),\
+    ]
+
+    if not Blender.Draw.PupBlock('Upgrade books...', pup_block):
+        return
+    RemoveOld = (REMOVE_OLD.val == 1)
+
     print "Upgrading Book Settings"
     Wizard_BookUpgrade(RemoveOld)
-    
+    if RemoveOld:
+        message = "Upgraded books and deleted the old objects."
+    else:
+        message = "Upgraded books and kept the old objects."
+    Blender.Draw.PupMenu(message)
+
 def setbounds():
     objects = Blender.Scene.GetCurrent().objects.selected
     for sobject in objects:
@@ -66,34 +78,19 @@ def setbounds():
         print Object.RBShapes
         sobject.rbShapeBoundType = Blender.Object.RBShapes["POLYHEDERON"]
     
-def devtest():
-    print "Running..."
-    for tex in Blender.Texture.Get():
-        if tex.type == Blender.Texture.Types["IMAGE"] and not tex.image == None:
-            print "Texture: %s"%(tex.name)
-            print "Flags: %#x"%(tex.flags)
-            print "ImageFlags: %#x"%(tex.imageFlags)
-    print "End..."
-    
-    print Blender.Texture.ImageFlags
 def do_main():
     args = __script__['arg']
     w = args.split("_")
     if w[1]=="book":
-        if w[2] == "delold":
-            upgrade_book(True)
-        else:
-            upgrade_book(False)
+        upgrade_book()
     elif w[1]=="props":
         Wizard_property_update()
     elif w[1]=="bounds":
         setbounds()
     elif w[1]=="mattex":
         Wizard_mattex_create()
-    elif w[1]=="devtest":
-        devtest()
     else:
-        raise RuntimeError,"Unknown options %s" %(w)
+        raise "Unknown options %s" %(w)
 
 
 #Main code

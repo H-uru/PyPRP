@@ -157,7 +157,7 @@ class ScriptRefParser:
                     try:
                         keytype = ScriptRefParser.NameTypeDecode(type_id)
                     except:
-                        print "Error decoding keytype:",type_id
+ #                       print "Error decoding keytype:",type_id
                         return None
 
                     return { 'type': keytype, "name": name,"pagename": None }
@@ -183,7 +183,7 @@ class ScriptRefParser:
                     # type needs to be in base 16 coding
                     return int(_type,16)
                 except:
-                    print "WARNING: Could not decode %s to an object type code. Type of object:"%(_type),type(_type)
+#                    print "WARNING: Could not decode %s to an object type code. Type of object:"%(_type),type(_type)
                     raise ValueError, "Decoding error"   
     NameTypeDecode = staticmethod(_NameTypeDecode)
 
@@ -211,7 +211,7 @@ class ScriptRefParser:
             try:
                 keytype = ScriptRefParser.NameTypeDecode(self.defaulttype)
             except ValueError,detail:
-                print "Error:",detail,"on keystring",keystring,"and basetype",self.defaulttype
+#                print "Error:",detail,"on keystring",keystring,"and basetype",self.defaulttype
                 return None                
         
             refname = ScriptRefParser.TagString_ParseName(keystring,self.basename)
@@ -287,7 +287,7 @@ class ScriptRefParser:
 
     
     def MixedRef_FindCreate(self,keystring,create=True):
-        print " Decoding MixedRef:",keystring
+#        print " Decoding MixedRef:",keystring
         reftype = ScriptRefParser.MixedRef_GetType(keystring)
 
         plobj = None

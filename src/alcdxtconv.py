@@ -23,7 +23,7 @@
 #
 
 import struct,StringIO,cStringIO,time
-import Image
+import Image,ImageFilter
 from alchexdump import *
 
 class tColor:
@@ -60,18 +60,63 @@ class tImage:
         im.fromstring(self.data.read())
         im.show()
 
-
-    def resize(self,w,h):
+    def resize(self,w,h,blur=False):
         im = Image.new("RGBA",(self.w,self.h))
         self.data.seek(0)
         im.fromstring(self.data.read())
         im2=im.resize((w,h),Image.ANTIALIAS)
+        
+        if blur:
+            im3 = im2.filter(ImageFilter.SMOOTH)
+        else:
+            im3 = im2
         self.data=cStringIO.StringIO()
-        self.data.write(im2.tostring())
+        self.data.write(im3.tostring())
         #print self.data.tell(),w,h
         self.w=w
         self.h=h
 
+    def resize_alphamult(self,w,h,alphamult=1.0,blur=False):
+        im = Image.new("RGBA",(self.w,self.h))
+        self.data.seek(0)
+        im.fromstring(self.data.read())
+        im2=im.resize((w,h),Image.ANTIALIAS)
+        if blur and w > 2 and h > 2: 
+            # No point in blurring if there's only 2 pixels left :) 
+            # Besides that, it gives trouble if you do it with less than 2 pixels
+            im3 = im2.filter(ImageFilter.BLUR)
+        else:
+            im3 = im2
+
+        self.data=cStringIO.StringIO()
+        self.data.write(im3.tostring())
+        self.w=w
+        self.h=h
+        
+        if not float(alphamult) == 1.0: # No point in doing this for alphamults of 1.0 exactly....
+            self.alphamult(alphamult)
+
+
+    def alphamult(self,value):
+        # Multiplies the alpha value for all pixels in this image with the given value
+    
+        if float(value) < 0.0:
+            value = 0.0
+    
+        aux=cStringIO.StringIO()
+        self.data.seek(0)
+        w = self.data.read(4)
+        while w!="":                #RGBA
+            r,g,b,a = struct.unpack("BBBB",w)
+
+            a = float(a) * float(value)
+                                  #RGBA
+            if a > 255:
+                a = 255
+             
+            aux.write(struct.pack("BBBB",r,g,b,a))
+            w = self.data.read(4)
+        self.data=aux
 
     def save(self,name):
         self.toRGBA()
