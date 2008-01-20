@@ -774,7 +774,7 @@ class plLayer(plLayerInterface):             # Type 0x06
                 self.fHasTexture = 1
                 
                 # set default settings for qmaps:
-                self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlpha"]
+                # self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlpha"]
                 self.fState.fClampFlags |= 0 # | hsGMatState.hsGMatClampFlags[""]
                 self.fState.fShadeFlags |= hsGMatState.hsGMatShadeFlags["kShadeEnvironMap"]
                 self.fState.fZFlags     |= 0 # | hsGMatState.hsGMatZFlags[""]
@@ -1034,6 +1034,7 @@ class plLayer(plLayerInterface):             # Type 0x06
                                                 
                 if(mtex.blendmode == Blender.Texture.BlendModes.ADD): 
                     self.fState.fBlendFlags |= ( hsGMatState.hsGMatBlendFlags["kBlendAdd"])
+		    self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAddColorTimesAlpha"]
                     if mtex.mtAlpha != 0:
                         self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlphaAdd"]
 
@@ -1046,12 +1047,11 @@ class plLayer(plLayerInterface):             # Type 0x06
                     self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendSubtract"]
 
                 else: #(mtex.blendmode == Blender.Texture.BlendModes.MIX):
-                    pass
+		    # Enable Normal Alpha Blending ONLY if the other alpha blend flags are not enabled
+                    self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlpha"]
                 if(mtex.neg): # set the negate colors flag if it is so required
                     self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendInvertColor"]
 
-        # Enable use of alpha
-        self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlpha"]
                     
         if stencil:
             # now set the various layer properties specific to alphablendmaps
