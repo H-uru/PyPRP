@@ -32,9 +32,6 @@ Submenu: 'Create a New SpawnPoint' i_swpoint
 Submenu: 'Add a (Generic) Logic Region' i_region
 Submenu: 'Add a Footstep Sound Region' i_footstepregion
 Submenu: 'Add a Panic Link Region' i_paniclnkregion
-Submenu: 'Add a Swim Region' i_swimregion
-Submenu: 'Add a Swim Surface' i_swimsurface
-Submenu: 'Add a Climbing Region' i_climbregion
 Submenu: 'Set Default age fni settings' i_init
 Submenu: 'Add Default AlcScript' i_alcscript
 Tooltip: 'alcugs pyprp'
@@ -100,31 +97,6 @@ def new_footstepregion():
 def new_paniclnkregion():
     print "Adding a new Panic Link Region"
     alcCreatePanicLnkRegion()
-    Blender.Redraw()
-
-def new_swimregion():
-    print "Adding a new Swim Detector Region"
-    alcCreateSwimRegion()
-    Blender.Redraw()
-
-def new_swimsurface():
-    print "Adding a new swimming surface"
-    alcCreateSwimSurface()
-    Blender.Redraw()
-
-def new_climbregion():
-    print "Adding a new Climb Region"
-    alcCreateClimbRegion()
-    Blender.Redraw()
-
-def new_clickregion():
-    print "Adding a new Clickable Region"
-    alcCreateClickableRegion()
-    Blender.Redraw()
-
-def new_cameraregion():
-    print "Adding a new Camera Region"
-    alcCreateCameraRegion()
     Blender.Redraw()
 
 def new_alcscript():

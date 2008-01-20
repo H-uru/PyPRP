@@ -140,7 +140,6 @@ def alcUniqueName(name,seed1=0,seed2=0,key="x"):
         mname = name[:10] + "%s%06X" %(key[:1],rid)
         return mname
 
-
 def alcCreateLinkInPoint(name="LinkInPointDefault",where=None,page=0):
     obj = Blender.Object.New('Empty',name)
     scene = Blender.Scene.GetCurrent()
@@ -164,14 +163,12 @@ def alcCreateLinkInPoint(name="LinkInPointDefault",where=None,page=0):
     #Blender.Redraw()
     return obj
 
-
 def alcCreateRegion(name="Region",where=None,page=0):
     #tempname = alcUniqueName(name,0,0,'X')
     rgnsize = 4
     rgnoffset = 0 - (rgnsize/2)
     obj = alcCreateBox(name,rgnsize,rgnoffset,rgnoffset,rgnoffset)
     obj.addProperty("type","region")
-    obj.addProperty("prpregion","unknown")
 
     if page!=0:
         obj.addProperty("page_num",str(page))
@@ -186,61 +183,16 @@ def alcCreateRegion(name="Region",where=None,page=0):
     #Blender.Redraw()
     return obj
 
-
-def alcCreatePanicLnkRegion(name="PanicLnk",where=None,page=0):
+def alcCreatePanicLnkRegion(name="PanicLnkRgn",where=None,page=0):
     obj = alcCreateRegion(name,where,page)
     obj.addProperty("regiontype","panic")
     return obj
 
-def alcCreateFootstepRegion(name="FootStep",where=None,page=0):
-    obj = alcCreateRegion(name,where,page)
-    obj.addProperty("regiontype","footstep")
-    obj.addProperty("footstepsound","dirt")
-    return obj
-
-def alcCreateClickableRegion(where=None,page=0):
-    obj = alcCreateRegion("ClickRegion",where,page)
-    return obj
-
-def alcCreateCameraRegion(name="CameraRgn",where=None,page=0):
-    obj = alcCreateRegion(name,where,page)
-    return obj
-
-def alcCreateClimbRegion(name="ClimbRgn",where=None,page=0):
-    obj = alcCreateRegion("ClimbRegion",where,page)
-    obj.addProperty("regiontype","climbing")
-
-    return obj
-
-def alcCreateSwimRegion(name="SwimDetRgn",where=None,page=0):
-    obj = alcCreateRegion(name,where,page)
-    obj.addProperty("regiontype","swimdetect")
-    return obj
-
-def alcCreateSwimSurface(name="SwimSfc",where=None,page=0):
-    tempname = alcUniqueName(name,0,0,'sfc')
-    rgnsize = 4
-    rgnoffset = 0 - (rgnsize/2)
-    obj = alcCreatePlane(tempname,rgnsize,rgnoffset,rgnoffset,0)
-    scene = Blender.Scene.GetCurrent()
-    #scene.link(obj)
-    obj.addProperty("type","region")
-    obj.addProperty("regiontype","swim")
-
-    if page!=0:
-        obj.addProperty("page_num",str(page))
-    if where==None:
-        obj.setLocation(Blender.Window.GetCursorPos())
-    else:
-        matrix=where.get()
-        matrix.transpose()
-        obj.setMatrix(matrix)
-    obj.layers = [2,]
-    obj.drawType = 2
-    #Blender.Redraw()
-    return obj
-
-
+def alcCreateFootstepRegion(name="FootStepRgn",where=None,page=0):
+	obj = alcCreateRegion(name,where,page)
+	obj.addProperty("regiontype","footstep")
+	obj.addProperty("surface","grass")
+	return obj
 
 def alcCreateMesh(name,vertices,faces):
     obj = Blender.Mesh.New(name)
