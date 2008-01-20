@@ -438,8 +438,8 @@ class plSound(plSynchedObject):
         plSynchedObject.__init__(self,parent,name,type)
         self.fPlaying = 0
         self.fTime = 0.0
-        self.fMaxFalloff = 0
-        self.fMinFalloff = 0
+        self.fMaxFalloff = 10
+        self.fMinFalloff = 5
         self.fCurrVolume = 0.0
         self.fOuterVol = 0
         self.fInnerCone = 360
@@ -603,7 +603,13 @@ class plWin32StreamingSound(plWin32Sound):
         sname = FindInDict(objscript,"sound.file")
         print "File: %s" % sname
         assert sname != None #We can't create a null SoundBuffer
-        
+	
+	maxFallDist = FindInDict(objscript,"sound.maxfdist", 10)
+	self.fMaxFalloff = int(maxFallDist)
+	
+	minFallDist = FindInDict(objscript,"sound.minfdist", 5)
+	self.fMinFalloff = int(minFallDist)
+	
         wavobj = Blender.Sound.Get(sname+'.wav')
         if wavobj:
             #Export a SoundBuffer
