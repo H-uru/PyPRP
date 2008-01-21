@@ -1033,8 +1033,8 @@ class plLayer(plLayerInterface):             # Type 0x06
                 
                                                 
                 if(mtex.blendmode == Blender.Texture.BlendModes.ADD): 
-                    self.fState.fBlendFlags |= ( hsGMatState.hsGMatBlendFlags["kBlendAdd"])
-		    self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAddColorTimesAlpha"]
+                    # self.fState.fBlendFlags |= ( hsGMatState.hsGMatBlendFlags["kBlendAdd"])
+		    self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAddColorTimesAlpha"] # This is better and more intuitive
                     if mtex.mtAlpha != 0:
                         self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlphaAdd"]
 
