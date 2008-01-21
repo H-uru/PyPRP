@@ -32,8 +32,6 @@ Submenu: 'Create a New SpawnPoint' i_swpoint
 Submenu: 'Add a (Generic) Logic Region' i_region
 Submenu: 'Add a Footstep Sound Region' i_footstepregion
 Submenu: 'Add a Panic Link Region' i_paniclnkregion
-Submenu: 'Set Default age fni settings' i_init
-Submenu: 'Add Default AlcScript' i_alcscript
 Tooltip: 'alcugs pyprp'
 """
 
@@ -57,27 +55,48 @@ from alc_AlcScript import *
 from alc_Functions import *
 
 def new_book():
-    print "Creating a book"
+	print "Creating default Book..."
+	txt=alcFindBlenderText("Book")
+	txt.clear()
+	txt.write("""age:
+	sequenceprefix: 100
+	daylength: 24.0
+	maxcapacity: 10
+	starttime: 0
+	lingertime: 180
 
-    print "Setting default Funny settings"
-    txt=alcFindBlenderText("Book")
-    txt.clear()
-    txt.write("""
-age:
-    sequenceprefix: 100
-    daylength: 24.0
-    maxcapacity: 10
-    starttime: 0
-    lingertime: 180
-    
-    pages:
-        - index: 0
-          name: mainRoom
+	pages:
+		- index: 0
+		  name: mainRoom
 
 config:
-    agesdlhook: true
-    """)    
+	agesdlhook: true
+	""")
+	print "Done."
+	print "Setting default Funny settings..."
+	txt=alcFindBlenderText("init")
+	txt.clear()
+	txt.write("""#Fog settings
+#Graphics.Renderer.SetYon float yon
+Graphics.Renderer.SetYon 100000
 
+#Graphics.Renderer.Fog.SetDefLinear float start, float end, float density
+Graphics.Renderer.Fog.SetDefLinear 1 1000 1
+
+#Graphics.Renderer.Fog.SetDefExp2 float end, float density
+#Graphics.Renderer.Fog.SetDefExp2 100000 20
+
+#Graphics.Renderer.Fog.SetDefColor float r, float g, float b
+Graphics.Renderer.Fog.SetDefColor 0 0 0
+
+#Graphics.Renderer.SetClearColor float r, float g, float b
+Graphics.Renderer.SetClearColor 0 0 0""")
+	print "Done."
+	print "Setting default AlcScript settings..."
+	txt=alcFindBlenderText("AlcScript")
+	txt.clear()
+	txt.write("""# insert AlcScript code here""")
+	print "Done. Book successfully created!"
 
 def new_point():
     print "Adding a new SpawnPoint"
@@ -99,29 +118,6 @@ def new_paniclnkregion():
     alcCreatePanicLnkRegion()
     Blender.Redraw()
 
-def new_alcscript():
-    print "Setting basic alcscript settings"
-    txt=alcFindBlenderText("AlcScript")
-    txt.clear()
-    txt.write("""# insert AlcScript code here""")
-
-def new_init():
-    print "Setting default Funny settings"
-    txt=alcFindBlenderText("init")
-    txt.clear()
-    txt.write("#Fog settings\n\n")
-    txt.write("#Graphics.Renderer.SetYon float yon\n")
-    txt.write("Graphics.Renderer.SetYon 100000\n\n")
-    txt.write("#Graphics.Renderer.Fog.SetDefLinear float start, float end, float density\n")
-    txt.write("Graphics.Renderer.Fog.SetDefLinear 1 1000 1\n\n")
-    txt.write("#Graphics.Renderer.Fog.SetDefExp2 float end, float density\n")
-    txt.write("#Graphics.Renderer.Fog.SetDefExp2 100000 20\n\n")
-    txt.write("#Graphics.Renderer.Fog.SetDefColor float r, float g, float b\n")
-    txt.write("Graphics.Renderer.Fog.SetDefColor 0 0 0\n\n")
-    txt.write("#Graphics.Renderer.SetClearColor float r, float g, float b\n")
-    txt.write("Graphics.Renderer.SetClearColor 0 0 0\n")
-
-
 def do_main():
     args = __script__['arg']
     w = args.split("_")
@@ -129,26 +125,13 @@ def do_main():
         new_book()
     elif w[1]=="swpoint":
         new_point()
-    elif w[1]=="init":
-        new_init()
-    elif w[1]=="alcscript":
-        new_alcscript()
     elif w[1]=="region":
         new_region()
     elif w[1]=="footstepregion":
         new_footstepregion()
     elif w[1]=="paniclnkregion":
         new_paniclnkregion()
-    elif w[1]=="swimregion":
-        new_swimregion()
-    elif w[1]=="swimsurface":
-        new_swimsurface()
-    elif w[1]=="climbregion":
-        new_climbregion()
-    elif w[1]=="clickregion":
-        new_clickregion()
-    elif w[1]=="cameraregion":
-        new_cameraregion()
+
     else:
         raise "Unknown options %s" %(w)
 
