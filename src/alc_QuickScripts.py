@@ -64,6 +64,7 @@ def RunQuickScripts(obj):
     
     result = False
     result |= QuickScript_Footstep(obj)
+    result |= QuickScript_SoundRegion(obj)
     result |= QuickScript_SimpleClickable(obj)
     # this needs to be added lastly
     result |= QuickScript_SelfAnimationRegion(obj)
@@ -149,6 +150,111 @@ def QuickScript_Footstep(obj):
             acttxt += "  curstate: 0\n"
             acttxt += "  flags:\n"
             acttxt += "    - detect_trigger\n"
+        
+            # Parse the code
+            myactscript = AlcScript(acttxt).GetRootScript()
+            mymodscript = AlcScript(modtxt).GetRootScript()
+
+            # Add the parsed script to the correct space in the dictionary, or create that space
+            actscript = FindInDict(objscript,"logic.actions",None)
+            if actscript is None or type(actscript) != list:
+                StoreInDict(objscript,"logic.actions",[myactscript])
+            else:
+                actscript.append(myactscript)
+            
+            modscript = FindInDict(objscript,"logic.modifiers",None)
+            if actscript is None or type(modscript) != list:
+                StoreInDict(objscript,"logic.modifiers",mymodscript)
+            else:
+                for script in mymodscript:
+                    modscript.append(script)
+            
+            return True
+            
+    return False
+    
+    
+def QuickScript_SoundRegion(obj):
+    objscript = AlcScript.objects.FindOrCreate(obj.name)
+    alctype = FindInDict(objscript,"type","object")
+    alctype = getTextPropertyOrDefault(obj,"type",alctype)
+
+    rgntype = FindInDict(objscript,"region.type","logic")
+    rgntype = getTextPropertyOrDefault(obj,"regiontype",rgntype)
+    
+    if rgntype == "soundregion":
+    
+        emitters = FindInDict(objscript,"region.soundemitters",None)
+        if emitters is None:
+            emitter = FindInDict(objscript,"region.soundemitter",None)
+            emitter = getTextPropertyOrDefault(obj,"soundemitter",emitter)
+            if not emitter is None:
+                emitters = [emitter,]
+        
+        if not emitters is None and type(emitters) == list:
+            print "  [QuickScript - SoundRegion]"
+    
+            # Build up the required script
+            
+            modtxt  = "- tag: Enter_SndRgn\n"
+            modtxt += "  flags:\n"
+            modtxt += "    - multitrigger\n"
+            modtxt += "  activators:\n"
+            modtxt += "    - type: objectinvolume\n"
+            modtxt += "  conditions:\n"
+            modtxt += "    - type: volumesensor\n"
+            modtxt += "      satisfied: true\n"
+            modtxt += "      direction: enter\n"
+            modtxt += "  actions:\n"
+            modtxt += "    - type: responder\n"
+            modtxt += "      ref: $SndRgn\n"
+            modtxt += "\n"
+            modtxt += "- tag: Exit_SndRgn\n"
+            modtxt += "  flags:\n"
+            modtxt += "    - multitrigger\n"
+            modtxt += "  activators:\n"
+            modtxt += "    - type: objectinvolume\n"
+            modtxt += "  conditions:\n"
+            modtxt += "    - type: volumesensor\n"
+            modtxt += "      satisfied: true\n"
+            modtxt += "      direction: exit\n"
+            modtxt += "  actions:\n"
+            modtxt += "    - type: responder\n"
+            modtxt += "      ref: $SndRgn\n"
+            modtxt += "\n"
+
+            acttxt  = "type: responder\n"
+            acttxt += "tag: SndRgn\n"
+            acttxt += "responder:\n"
+            acttxt += "  states:\n"
+            acttxt += "    - cmds:\n"
+            acttxt += "        - type: soundmsg\n"
+            acttxt += "          params:\n"
+            acttxt += "              receivers:\n"  
+	    for emitter in list(emitters):
+		acttxt += "                - 0011:" + str(emitter) + "\n" 
+	    acttxt += "              cmds:\n"  
+	    acttxt += "                - play\n" 
+	    acttxt += "                - setvolume\n" 
+	    acttxt += "              volume: 1\n"  
+            acttxt += "          waiton: -1\n"
+            acttxt += "      nextstate: 1\n"
+            acttxt += "      waittocmd: 0\n"
+	    acttxt += "    - cmds:\n"
+            acttxt += "        - type: soundmsg\n"
+            acttxt += "          params:\n"
+            acttxt += "              receivers:\n"  
+	    for emitter in list(emitters):
+		acttxt += "                - 0011:" + str(emitter) + "\n" 
+	    acttxt += "              cmds:\n"  
+	    acttxt += "                - stop\n"
+            acttxt += "          waiton: -1\n"
+            acttxt += "      nextstate: 0\n"
+            acttxt += "      waittocmd: 0\n"
+            acttxt += "  curstate: 0\n"
+            acttxt += "  flags:\n"
+            acttxt += "    - detect_trigger\n"
+	    
         
             # Parse the code
             myactscript = AlcScript(acttxt).GetRootScript()
