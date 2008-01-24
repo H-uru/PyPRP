@@ -592,6 +592,8 @@ class plWin32StreamingSound(plWin32Sound):
                 self.fProperties |= plSound.Properties["kPropLooping"]
             if(prop == "start"):
                 self.fProperties |= plSound.Properties["kPropAutoStart"]
+            if(prop == "local"):
+                self.fProperties |= plSound.Properties["kPropLocalOnly"]
         
         chan = FindInDict(objscript,"sound.channel")
         print "Channel: %s" % chan
