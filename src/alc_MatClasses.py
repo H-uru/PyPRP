@@ -799,6 +799,9 @@ class plLayer(plLayerInterface):             # Type 0x06
                     mipmapinfo = blMipMapInfo()
                     mipmapinfo.export_tex(tex)
                     
+                    if stencil:
+                        mipmapinfo.fCalcAlpha = True
+                    
                     mipmap=plMipMap.Export(root,tex.image.getName(),tex.image,mipmapinfo)
                                         
                     self.fTexture = mipmap.data.getRef()
