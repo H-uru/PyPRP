@@ -577,13 +577,11 @@ class plWin32StreamingSound(plWin32Sound):
     # Interface Functions #
     #######################
     
-    def exportObj(self, obj, softVolumeParser): #This is the very last function in the file
-        print "Getting alcScript for object with name %s" % obj.getName()
+    def exportObj(self, obj, softVolumeParser):
         objscript = AlcScript.objects.Find(obj.getName())
         
         flags = FindInDict(objscript,"sound.flags", "")
         flags = flags.replace(" ","")
-        print "Flags: %s" % flags
         f = flags.split('|')
         for prop in f:
             if(prop == "3d"):
@@ -596,14 +594,12 @@ class plWin32StreamingSound(plWin32Sound):
                 self.fProperties |= plSound.Properties["kPropLocalOnly"]
         
         chan = FindInDict(objscript,"sound.channel")
-        print "Channel: %s" % chan
         if(chan == "right"):
             self.fChannelSelect = plWin32Sound.ChannelSelect["kRightChannel"]
         else:
             self.fChannelSelect = plWin32Sound.ChannelSelect["kLeftChannel"]
         
         sname = FindInDict(objscript,"sound.file")
-        print "File: %s" % sname
         assert sname != None #We can't create a null SoundBuffer
 	
 	maxFallDist = FindInDict(objscript,"sound.maxfdist", 10)

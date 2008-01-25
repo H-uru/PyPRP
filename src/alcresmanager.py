@@ -427,6 +427,24 @@ class alcUruPage:
                     plAudioInterface.Export(self,obj,scnobj,name,SceneNodeRef,softVolumeParser)
                     # Logical Export
                     AlcLogicHelper.Export(self,obj,scnobj,name)
+                
+                if alctype=="oneshot":
+                    print "" 
+                    print "[OneShot Seek Point %s]" % name
+                    
+                    #find the sceneobject or create it
+                    scnobj = plSceneObject.FindCreate(self.prp,name)
+                    scnobj.data.scene=SceneNodeRef
+                    
+                    plCoordinateInterface.Export(self,obj,scnobj,name,1,objlist)
+                    
+                    plobj = plOneShotMod.FindCreate(self.prp,name)
+                    objscript = AlcScript.objects.Find(name)
+                    pscript = FindInDict(objscript,"oneshot",{})
+                    plobj.data.export_script(pscript,scnobj)
+                    
+                    # Logical Export
+                    AlcLogicHelper.Export(self,obj,scnobj,name)
 
                 elif alctype=="swpoint": #A spawnPoint
                     print "" 

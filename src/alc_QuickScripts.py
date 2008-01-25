@@ -231,30 +231,30 @@ def QuickScript_SoundRegion(obj):
             acttxt += "        - type: soundmsg\n"
             acttxt += "          params:\n"
             acttxt += "              receivers:\n"  
-	    for emitter in list(emitters):
-		acttxt += "                - 0011:" + str(emitter) + "\n" 
-	    acttxt += "              cmds:\n"  
-	    acttxt += "                - play\n" 
-	    acttxt += "                - setvolume\n" 
-	    acttxt += "              volume: 1\n"  
+            for emitter in list(emitters):
+                acttxt += "                - 0011:" + str(emitter) + "\n" 
+            acttxt += "              cmds:\n"  
+            acttxt += "                - play\n" 
+            acttxt += "                - setvolume\n" 
+            acttxt += "              volume: 1\n"  
             acttxt += "          waiton: -1\n"
             acttxt += "      nextstate: 1\n"
             acttxt += "      waittocmd: 0\n"
-	    acttxt += "    - cmds:\n"
+            acttxt += "    - cmds:\n"
             acttxt += "        - type: soundmsg\n"
             acttxt += "          params:\n"
             acttxt += "              receivers:\n"  
-	    for emitter in list(emitters):
-		acttxt += "                - 0011:" + str(emitter) + "\n" 
-	    acttxt += "              cmds:\n"  
-	    acttxt += "                - stop\n"
+            for emitter in list(emitters):
+                acttxt += "                - 0011:" + str(emitter) + "\n" 
+            acttxt += "              cmds:\n"  
+            acttxt += "                - stop\n"
             acttxt += "          waiton: -1\n"
             acttxt += "      nextstate: 0\n"
             acttxt += "      waittocmd: 0\n"
             acttxt += "  curstate: 0\n"
             acttxt += "  flags:\n"
             acttxt += "    - detect_trigger\n"
-	    
+        
         
             # Parse the code
             myactscript = AlcScript(acttxt).GetRootScript()

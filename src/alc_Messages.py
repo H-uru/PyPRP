@@ -686,7 +686,7 @@ class plOneShotCallback:
         self.fMarker = str(FindInDict(script,"marker",""))
         ref = FindInDict(script,"receiver","/")
         if ref == "/":
-            self.fReceiver = self.parent.parent.fSender
+            self.fReceiver = self.parent.fSender
         else:
             refparser.SetDefaultType("respondermod")
             refparser.SetAllowList([]) # Type of OneShotMod
@@ -716,7 +716,7 @@ class plOneShotCallbacks:
             
     def export_script(self,script,refparser):
         for cbscript in script:
-            cb = plOneShotCallback()
+            cb = plOneShotCallback(self.parent)
             cb.export_script(cbscript,refparser)
             
 class plOneShotMsg(plMessage):

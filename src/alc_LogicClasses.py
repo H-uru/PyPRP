@@ -1485,7 +1485,6 @@ class plOneShotMod(plMultiModifier):
         self.fNoSeek     = bool( str(FindInDict(script,'noseek'     ,str(self.fNoSeek)     ) ).lower() == 'true')
 
 
-
 class plPythonFileMod(plMultiModifier):
     
     def __init__(self,parent,name="unnamed",type=0x00A2):
@@ -2002,7 +2001,7 @@ class plResponderCmd:
         "oneshotmsg"        : 0x0302, \
         "cameramsg"         : 0x020A, \
         "enablemsg"         : 0x024F, \
-	"soundmsg"	    : 0x0255, \
+        "soundmsg"          : 0x0255, \
     }
 
     def __init__(self,parent):
