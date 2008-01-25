@@ -170,24 +170,6 @@ class plConvexPlane:
         meshObj.verts.extend([v0,v1,v2,v3])
         startIndex = len(meshObj.verts)-4
         meshObj.faces.extend([startIndex,startIndex+1,startIndex+3,startIndex+2])
-
-
-    def setFromFace(self,face,matrix):
-        oneMinusEpsilon = 0.998047
-        self.Normal = Blender.Mathutils.Vector(face.no)
-        # Invert the normal - Uru space is backwards
-        self.Normal *= -1
-        # set the point to the midpoint of the face
-        for v in face.v:
-            vert = Vertex(v.co.x, v.co.y, v.co.z)
-            vert.transform(matrix)
-            self.Point.x += vert.x
-            self.Point.y += vert.y
-            self.Point.z += vert.z
-        self.Point = self.Point * 0.25
-        self.Distance = self.Point.length
-        self.ScaledNormal = self.Normal * oneMinusEpsilon
-        self.ScaledDist = Blender.Mathutils.DotVecs(self.Point,self.ScaledNormal)
                 
     
 class plConvexIsect(plVolumeIsect):
@@ -234,13 +216,29 @@ class plConvexIsect(plVolumeIsect):
     def export_object(self, obj):
         tmatrix = getMatrix(obj)
         tmatrix.transpose()
-        matrix=hsMatrix44()
-        matrix.set(tmatrix)
         for face in obj.data.faces:
             if (len(face.v) > 0):
-                plane = plConvexPlane()
-                plane.setFromFace(face,matrix)
-                self.vPlanes.append(plane)
+		# reversed uru space
+		Nor = Blender.Mathutils.Vector(face.no) * -1
+		# transform verts into world space (transposed for uru's reversed space)
+		Pos = tmatrix * Blender.Mathutils.Vector(face.v[0].co.x, face.v[0].co.y, face.v[0].co.z)
+                self.AddPlane(Nor, Pos)
+		
+    def AddPlane(self, Nor, Pos):
+	    for curPlane in self.vPlanes:
+		    if Blender.Mathutils.DotVecs(curPlane.Normal, Nor) >= 0.9999:
+			    dist = Blender.Mathutils.DotVecs(Nor, Pos)
+			    if dist > curPlane.Distance:
+				    curPlane.Distance = dist
+				    curPlane.Point = Pos
+			    return
+	    plane = plConvexPlane()
+            plane.Normal = Nor
+	    plane.Point = Pos
+	    plane.Distance = Blender.Mathutils.DotVecs(Nor, Pos)
+	    plane.ScaledNormal = plane.Normal
+	    plane.ScaledDist = plane.Distance
+            self.vPlanes.append(plane)
 
 
 class alcSoftVolumeParser:
