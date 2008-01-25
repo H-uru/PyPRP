@@ -78,7 +78,8 @@ class AlcLogicHelper:
     def _CreateLadderRegions(page,obj):
         
         # don't process any further until we reviewed this
-        return
+        # return
+	# Reviewed. Updated. Works. -Nadnerb 01/24/08
 
         # creates a set of ladder regions from the bounding box of an object
 
@@ -213,6 +214,14 @@ class AlcLogicHelper:
         climbHeight = int((deltaWZ - 5.42)/2)
         climbOffset = 0
         
+	print "[AutoLadder Script]"
+	print "    Calculated Ladder:"
+	print "    Bottom Region Matrix:"
+	print btmMtx
+	print "    Top Region Matrix:"
+	print topMtx
+	print "    climbHeight: %d" % climbHeight
+	print "    Attempting to create objects:"
 
         # construct the objects:
         SceneNodeRef=page.prp.getSceneNode().data.getRef()
@@ -231,9 +240,9 @@ class AlcLogicHelper:
         btmScnobj.data.simulation=btmSimi.data.getRef()
         btmSimi.data.parentref=btmScnobj.data.getRef()
         btmPhysical=page.prp.find(0x3F,obj.name + "_bottom",1)
-        btmSimi.data.physical=btmPhysical.data.getRef()
-        btmPhysical.data.scene=SceneNodeRef
-        btmPhysical.data.sceneobject=btmScnobj.data.getRef()
+        btmSimi.data.fPhysical=btmPhysical.data.getRef()
+        btmPhysical.data.fScene=SceneNodeRef
+        btmPhysical.data.fSceneObject=btmScnobj.data.getRef()
         btmPhysical.data.export_raw(btmMtx,btmMsh,rgnFcs,4,1)
         # set the ladder specific settings
         btmClimbRegion = page.prp.find(0x00B2,obj.name + "_bottom",1)
@@ -241,8 +250,9 @@ class AlcLogicHelper:
             btmClimbRegion.data.parentref = btmScnobj.data.getRef()
             # calculate the correct settings
             
-            btmClimbRegion.data.export_raw(btmMtx,climbHeight,climbOffset,1)
-            
+            btmClimbRegion.data.export_raw(btmMtx,0,climbHeight,1)
+            print "Loops: %d" % climbHeight
+	    print "GoingUp: 1"
 
             # End calculate the right settings
             btmScnobj.data.data2.append(btmClimbRegion.data.getRef())
@@ -263,9 +273,9 @@ class AlcLogicHelper:
         topScnobj.data.simulation=topSimi.data.getRef()
         topSimi.data.parentref=topScnobj.data.getRef()
         topPhysical=page.prp.find(0x3F,obj.name + "_top",1)
-        topSimi.data.physical=topPhysical.data.getRef()
-        topPhysical.data.scene=SceneNodeRef
-        topPhysical.data.sceneobject=topScnobj.data.getRef()
+        topSimi.data.fPhysical=topPhysical.data.getRef()
+        topPhysical.data.fScene=SceneNodeRef
+        topPhysical.data.fSceneObject=topScnobj.data.getRef()
         topPhysical.data.export_raw(topMtx,topMsh,rgnFcs,4,1)
 
         # set the ladder specific settings
@@ -274,8 +284,10 @@ class AlcLogicHelper:
             topClimbRegion.data.parentref = topScnobj.data.getRef()
             # calculate the correct settings
 
-            topClimbRegion.data.export_raw(topMtx,climbHeight,climbOffset,0)
-
+            topClimbRegion.data.export_raw(topMtx,0,climbHeight,0)
+	    print "Loops: %d" % climbHeight
+	    print "GoingUp: 0"
+	    
             # End calculate the right settings
             topScnobj.data.data2.append(topClimbRegion.data.getRef())
     
@@ -1304,6 +1316,62 @@ class plFacingConditionalObject(plConditionalObject):
 ##             ##
 #################
 
+class plAnimStageVec:
+	def __init__(self, parent, name="unnamed", type=0x0000):
+		self.fAnimStages = []
+		
+	def read(self, stream):
+		count = stream.Read16()
+		for i in range(count):
+			s = plAnimStage()
+			s.read(self, stream)
+			self.fAnimStages.append(s)
+			
+	def write(self, stream):
+		stream.Write16(len(self.fAnimStages))
+		for s in self.fAnimStages:
+			s.write(self, stream)
+		
+
+class plMultistageBehMod(plSingleModifier):
+	def __init__(self,parent,name="unnamed",type=0x00C1):
+		plSingleModifier.__init__(self,parent,name,type)
+		
+		self.fStages = plAnimStageVec() #this+0x6C #Implemented Directly above
+		self.fFreezePhys = True #this+0x70
+		self.fSmartSeek = True #this+0x71
+		self.fReverseFBControlsOnRelease = False #this+0x72
+		self.fReceivers = [] #std.vector<plKey,std.allocator<plKey>>  #this+0x74
+		
+	def read(self, stream):
+		plSingleModifier.read(self, stream)
+		
+		self.fStages.read(self, stream)
+		
+		self.fFreezePhys = stream.ReadBool()
+		self.fSmartSeek = stream.ReadBool()
+		self.fReverseFBControlsOnRelease = stream.ReadBool()
+		
+		count = stream.Read16()
+		for i in range(count):
+			s = stream.ReadSafeString(self.getVersion())
+			self.fReceivers.append(s)
+		
+	def write(self, stream):
+		plSingleModifier.read(self, stream)
+		
+		self.fStages.write(self, stream)
+		
+		stream.WriteBool(self.fFreezePhys)
+		stream.WriteBool(self.fSmartSeek)
+		stream.WriteBool(self.fReverseFBControlsOnRelease)
+		
+		stream.Write16(len(self.fReceivers))
+		for s in self.fReceivers:
+			stream.WriteSafeString(s, 0)
+		
+	
+
 class plSittingModifier(plSingleModifier):
     Flags = \
     { \
@@ -2013,6 +2081,14 @@ class plAvLadderMod(plSingleModifier):
         stream.WriteBool(self.fGoingUp)
         stream.WriteBool(self.fEnabled)
         self.fLadderView.write(stream)
+	
+	# print "*writing ladder mod*"
+	# print "Type: %d" % self.fType
+	# print "Loops: %d" % self.fLoops
+	# print "GoingUp: %s" % self.fGoingUp
+	# print "Enabled: %s" % self.fEnabled
+	# print "LadderView: "
+	# print self.fLadderView
         
     def import_obj(self,obj):
         try:
@@ -2078,11 +2154,15 @@ class plAvLadderMod(plSingleModifier):
         if str(FindInDict(objscript,"region.ladder.direction","down")).lower() == "up":
             print "   Direction: Up"
             self.fGoingUp = True
+	elif str(getTextPropertyOrDefault(obj,"direction","down")).lower() == "up":
+            print "   Direction: Up"
+            self.fGoingUp = True
         else:
             print "   Direction: Down"
             self.fGoingUp = False
             
         style = str(FindInDict(objscript,"region.ladder.style","big")).lower()
+	style = str(getTextPropertyOrDefault(obj,"style",style)).lower()
         if style == "fourfeet":
             print "   Style: Four Feet"
             self.fType == plAvLadderMod.fTypeField["kFourFeet"]
@@ -2094,6 +2174,7 @@ class plAvLadderMod(plSingleModifier):
             self.fType = plAvLadderMod.fTypeField["kBig"]
 
         self.fLoops = FindInDict(objscript,"region.ladder.loops",self.fLoops)
+	self.fLoops = getIntPropertyOrDefault(obj,"loops",self.fLoops)
         print "   Number of loops:",self.fLoops
 
     
@@ -2103,6 +2184,9 @@ class plAvLadderMod(plSingleModifier):
         v = Blender.Mathutils.Vector(0,-1,0,1) # vector describing -Y axis
         v = v * rotMatrix  # transform the vector accoring to object matrix
         self.fLadderView.setVector(v) # assign to Direction Vector
+	self.fLoops = Loops
+	self.fGoingUp = GoingUp
+	self.fType = Type
 
     def _Export(page,obj,scnobj,name):
         #set the coordinate interface

@@ -42,7 +42,7 @@ class ScriptRefParser:
         "agmastermod"   : 0x006D, \
         "msgfwder"      : 0x00A8, \
         "oneshotmod"    : 0x0077, \
-        "mstagebehMod"  : 0x00C1, \
+        "mstagebehmod"  : 0x00C1, \
         "mipmap"        : 0x0004, \
         "waveset"       : 0x00FB, \
         "swimcircular"  : 0x0134, \

@@ -41,12 +41,12 @@ import alcconfig, alchexdump, alc_GeomClasses
 # Message Type: 0x0330 - plExcludeRegionMsg
 # Message Type: 0x020A - plCameraMsg
 # Message Type: 0x0302 - plOneShotMsg
+# Message Type: 0x0255 - plSoundMsg
 
 ## Still Needed at the moment:
 # Message Type: 0x0206 - plAnimCmdMsg
 # Message Type: 0x024A - plTimerCallbackMsg
 # Message Type: 0x024F - plEnableMsg
-# Message Type: 0x0255 - plSoundMsg
 # Message Type: 0x02E1 - plLinkToAgeMsg
 # Message Type: 0x02FD - plResponderEnableMsg
 # Message Type: 0x03BA - plSubWorldMsg
