@@ -1,7 +1,7 @@
 #
 # $Id: alcGObjects.py 876 2007-12-15 22:15:11Z Paradox $
 #
-#    Copyright (C) 2005-2006  Alcugs pyprp Project Team
+#    Copyright (C) 2005-2008  Alcugs PyPRP Project Team and 2008 GoW PyPRP Project Team
 #    See the file AUTHORS for more info about the team
 #
 #    This program is free software; you can redistribute it and/or modify

@@ -1,7 +1,7 @@
 #
 # $Id: alcm5crypt.py 539 2006-07-19 17:17:06Z Robert The Rebuilder $
 #
-#    Copyright (C) 2005-2006  Alcugs pyprp Project Team
+#    Copyright (C) 2005-2008  Alcugs PyPRP Project Team and 2008 GoW PyPRP Project Team
 #    See the file AUTHORS for more info about the team
 #
 #    This program is free software; you can redistribute it and/or modify

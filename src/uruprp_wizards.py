@@ -2,7 +2,7 @@
 #
 # $Id: uruprp_addbook.py 813 2007-04-27 03:16:10Z Robert The Rebuilder $
 #
-#    Copyright (C) 2005-2006  Alcugs pyprp Project Team
+#    Copyright (C) 2005-2008  Alcugs PyPRP Project Team and 2008 GoW PyPRP Project Team
 #    See the file AUTHORS for more info about the team
 #
 #    This program is free software; you can redistribute it and/or modify
@@ -31,16 +31,16 @@ Submenu: 'Upgrade Book' i_book
 Submenu: 'Add missing Blender materials and textures' i_mattex
 Submenu: 'Upgrade properties' i_props
 Submenu: 'Assign default bounds to selected objects' i_bounds
-Tooltip: 'Alcugs PyPRP Upgrade'
+Tooltip: 'GoW PyPRP Upgrade'
 """
 
-__author__ = "Almlys"
+__author__ = "GoW PyPRP Team"
 __url__ = ("blender", "elysiun",
-"Author's homepage, http://alcugs.almlys.org")
-__version__ = "Alcugs PRP exporter 2.45 $Revision: 859 $"
+"Author's homepage, http://www.guildofwriters.com")
+__version__ = "GoW PRP Exporter"
 
 __bpydoc__ = """\
-This script attempts to upgrade used styles from the PRP format
+This script attempts to upgrade outdated styles from the PRP format
 used in URU.
 """
 

@@ -2,7 +2,7 @@
 #
 # $Id: uruprp_objectopts.py 425 2006-03-15 20:52:43Z Robert The Rebuilder $
 #
-#    Copyright (C) 2005-2006  Alcugs pyprp Project Team
+#    Copyright (C) 2005-2008  Alcugs PyPRP Project Team and 2008 GoW PyPRP Project Team
 #    See the file AUTHORS for more info about the team
 #
 #    This program is free software; you can redistribute it and/or modify
@@ -32,16 +32,16 @@ Blender: 245
 Group: 'Object'
 Submenu: 'Copy Logic Properties from main selection to secondary selection' i_CopyProperties
 
-Tooltip: 'alcugs pyprp'
+Tooltip: 'GoW PyPRP'
 """
 
-__author__ = "Almlys"
+__author__ = "GoW PyPRP Team"
 __url__ = ("blender", "elysiun",
-"Author's homepage, http://alcugs.almlys.dyns.net")
-__version__ = "Alcugs PRP exporter 1.3a"
+"Author's homepage, http://www.guildofwriters.com")
+__version__ = "GoW PRP Exporter"
 
 __bpydoc__ = """\
-This script modifies/adds certain object properties of URU prp objects
+This script modifies/adds certain object properties of URU PRP objects.
 """
 
 import alcconfig

@@ -2,7 +2,7 @@
 #
 # $Id: uruprp_import.py 861 2007-11-05 23:03:39Z trylon $
 #
-#    Copyright (C) 2005-2006  Alcugs pyprp Project Team
+#    Copyright (C) 2005-2008  Alcugs PyPRP Project Team and 2008 GoW PyPRP Project Team
 #    See the file AUTHORS for more info about the team
 #
 #    This program is free software; you can redistribute it and/or modify
@@ -29,16 +29,16 @@ Blender: 237
 Group: 'Import'
 Submenu: 'Full age (.age)' i_age
 Submenu: 'Single prp (.prp)' i_prp
-Tooltip: 'UruPrp importer'
+Tooltip: 'GoW PyPRP Importer'
 """
 
 #temporany removed options
 #Submenu: 'Raw span (.raw)' i_raw_span
 
-__author__ = "Almlys"
+__author__ = "GoW PyPRP Team"
 __url__ = ("blender", "elysiun",
-"Author's homepage, http://alcugs.almlys.dyns.net")
-__version__ = "Alcugs PRP exporter $Revision: 861 $"
+"Author's homepage, http://www.guildofwriters.com")
+__version__ = "GoW PRP Exporter"
 
 __bpydoc__ = """\
 This script attempts to import scenes from the PRP format

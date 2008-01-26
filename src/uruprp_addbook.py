@@ -2,7 +2,7 @@
 #
 # $Id: uruprp_addbook.py 813 2007-04-27 03:16:10Z Robert The Rebuilder $
 #
-#    Copyright (C) 2005-2006  Alcugs pyprp Project Team
+#    Copyright (C) 2005-2008  Alcugs PyPRP Project Team and 2008 GoW PyPRP Project Team
 #    See the file AUTHORS for more info about the team
 #
 #    This program is free software; you can redistribute it and/or modify
@@ -35,14 +35,13 @@ Submenu: 'Add a Panic Link Region' i_paniclnkregion
 Tooltip: 'GoW PyPRP'
 """
 
-__author__ = "Almlys"
+__author__ = "GoW PyPRP Team"
 __url__ = ("blender", "elysiun",
-"Author's homepage, http://alcugs.almlys.org")
-__version__ = "Alcugs PRP exporter 2.44 $Revision: 859 $"
+"Author's homepage, http://www.guildofwriters.com")
+__version__ = "GoW PRP Exporter"
 
 __bpydoc__ = """\
-This script attempts to import scenes from the PRP format
-used in URU.
+This script attempts to provide easy Age Writing options to be used in URU.
 """
 
 import alcconfig

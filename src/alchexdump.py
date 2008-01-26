@@ -1,7 +1,7 @@
 #
 # $Id: alchexdump.py 431 2006-04-02 02:10:02Z AdamJohnso $
 #
-#    Copyright (C) 2005-2006  Alcugs pyprp Project Team
+#    Copyright (C) 2005-2008  Alcugs PyPRP Project Team and 2008 GoW PyPRP Project Team
 #    See the file AUTHORS for more info about the team
 #
 #    This program is free software; you can redistribute it and/or modify

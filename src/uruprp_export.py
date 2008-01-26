@@ -2,7 +2,7 @@
 #
 # $Id: uruprp_export.py 859 2007-11-04 20:13:11Z trylon $
 #
-#    Copyright (C) 2005-2006  Alcugs pyprp Project Team
+#    Copyright (C) 2005-2008  Alcugs PyPRP Project Team and 2008 GoW PyPRP Project Team
 #    See the file AUTHORS for more info about the team
 #
 #    This program is free software; you can redistribute it and/or modify
@@ -35,17 +35,17 @@ Submenu: 'Generate single PRP with Release settings (.prp)' e_prp_final
 Submenu: 'All as single prp (.prp)' e_prp
 Submenu: 'All as single prp, per-page textures (.prp)' et_prp
 Submenu: 'Selection as single prp (.prp)' es_prp
-Tooltip: 'UruPrp exporter'
+Tooltip: 'GoW PyPRP Exporter'
 """
 
 #temporany removed options
 #Submenu: 'Selection as raw span (.raw)' es_raw_span
 #Submenu: 'Selection as raw span (merge) (.raw)' esm_raw_span
 
-__author__ = "Almlys"
+__author__ = "GoW PyPRP Team"
 __url__ = ("blender", "elysiun",
-"Author's homepage, http://alcugs.almlys.dyns.net")
-__version__ = "Alcugs PRP exporter $Revision: 859 $"
+"Author's homepage, http://www.guildofwriters.com")
+__version__ = "GoW PRP Exporter"
 
 __bpydoc__ = """\
 This script attempts to export scenes to the PRP format
