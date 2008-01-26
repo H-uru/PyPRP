@@ -428,7 +428,7 @@ class alcUruPage:
                     # Logical Export
                     AlcLogicHelper.Export(self,obj,scnobj,name)
                 
-                if alctype=="oneshot":
+                elif alctype=="oneshot":
                     print "" 
                     print "[OneShot Seek Point %s]" % name
                     
