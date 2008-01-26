@@ -635,6 +635,8 @@ class plWin32Sound(plSound):
         
         wavobj = Blender.Sound.Get(sname+'.wav')
         if wavobj:
+            #HACK - Save the sound so that Blender doesn't eat it >.<
+            wavobj.fakeUser = 1
             #Export a SoundBuffer
             root=self.getRoot()
             sbuff = root.find(0x0029, wavobj.getName(), 1)
