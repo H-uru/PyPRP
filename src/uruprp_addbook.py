@@ -32,7 +32,7 @@ Submenu: 'Create a New SpawnPoint' i_swpoint
 Submenu: 'Add a (Generic) Logic Region' i_region
 Submenu: 'Add a Footstep Sound Region' i_footstepregion
 Submenu: 'Add a Panic Link Region' i_paniclnkregion
-Tooltip: 'alcugs pyprp'
+Tooltip: 'GoW PyPRP'
 """
 
 __author__ = "Almlys"
@@ -49,10 +49,16 @@ import alcconfig
 alcconfig.startup()
 
 import Blender, time, sys, os
+from Blender import NMesh
+from Blender.BGL import *
+from Blender.Draw import *
 from os.path import *
 from alcresmanager import *
 from alc_AlcScript import *
 from alc_Functions import *
+
+import math
+from math import *
 
 def new_book():
 	print "Creating default Book..."
@@ -76,13 +82,13 @@ config:
 	print "Setting default Funny settings..."
 	txt=alcFindBlenderText("init")
 	txt.clear()
-	txt.write("""#Fog settings
-#Graphics.Renderer.SetYon float yon
+	txt.write("""#--Fog settings--
+#Graphics.Renderer.Setyon float yon
 #Visibility distance
-Graphics.Renderer.SetYon 100000
+Graphics.Renderer.SetYon 100000000000000000000000000000
 
 #Graphics.Renderer.Fog.SetDefLinear float start, float end, float density
-#The first 2 numbers are start and end distance of fog depth, the 3rd is density.
+#Fog depth
 Graphics.Renderer.Fog.SetDefLinear 1 1000 1
 
 #Graphics.Renderer.Fog.SetDefExp2 float end, float density
@@ -140,4 +146,3 @@ def do_main():
 
 #Main code
 do_main()
-
