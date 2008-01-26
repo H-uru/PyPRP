@@ -385,7 +385,7 @@ def alcCreateSoftVolumePlane():
     rgnoffset = 0 - (rgnsize/2)
     obj = alcCreatePlane(tempname,rgnsize,rgnoffset,rgnoffset,0)
     scene = Blender.Scene.GetCurrent()
-    obj.addProperty("alctype","svconvex")
+    obj.addProperty("type","softvolume")
     obj.setLocation(Blender.Window.GetCursorPos())
     obj.layers = [6,]
     obj.drawType = 2
@@ -397,7 +397,7 @@ def alcCreateSoftVolumeCube():
     rgnsize = 4
     rgnoffset = 0 - (rgnsize/2)
     obj = alcCreateBox(tempname,rgnsize,rgnoffset,rgnoffset,rgnoffset,True)
-    obj.addProperty("alctype","svconvex")
+    obj.addProperty("type","softvolume")
     obj.setLocation(Blender.Window.GetCursorPos())
     obj.layers = [6,]
     obj.drawType = 2

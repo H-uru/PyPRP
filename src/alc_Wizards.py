@@ -203,6 +203,8 @@ def Wizard_property_update():
                 print p
                 numProps += 1
                 alctype=str(p.getData())
+                if alctype == "svconvex":
+                    alctype = "softvolume"
                 obj.removeProperty(p)
                 obj.addProperty("type",alctype)
             except (AttributeError, RuntimeError):

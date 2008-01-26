@@ -798,7 +798,7 @@ class plSoundMsg(plMessageWithCallbacks):
         "kIsLocalOnly"       : 17, \
         "kSelectFromGroup"   : 18, \
         "kNumCmds"           : 19, \
-        "kFastForwardPlay"   : 10, \
+        "kFastForwardPlay"   : 20, \
         "kFastForwardToggle" : 21 \
     }
     
@@ -824,7 +824,7 @@ class plSoundMsg(plMessageWithCallbacks):
         "islocalonly"       : 17, \
         "selectfromgroup"   : 18, \
         "numcmds"           : 19, \
-        "fastforwardplay"   : 10, \
+        "fastforwardplay"   : 20, \
         "fastforwardtoggle" : 21 \
     }
     
@@ -885,34 +885,49 @@ class plSoundMsg(plMessageWithCallbacks):
     def export_script(self,script,refparser):
         plMessage.export_script(self,script,refparser)
 	
-	volume = FindInDict(script, "volume", None)
-	if volume != None:
-		self.fVolume = float(volume)
-		print "    plSoundMsg: volume: %f" % float(volume)
-		
-	loop = FindInDict(script, "loop", None)
-	if loop != None:
-		self.fLoop = bool(loop)
-		print "    plSoundMsg: loop: %s" % loop
-		
-	repeats = FindInDict(script, "repeats", None)
-	if repeats != None:
-		self.fRepeats = int(repeats)
-		print "    plSoundMsg: repeats: %d" % int(repeats)
-		
-	end = FindInDict(script, "end", None)
-	if end != None:
-		self.fEnd = float(end)
-		print "    plSoundMsg: end: %f" % float(end)
-	
-	cmdlist = FindInDict(script, "cmds", None)
+        volume = FindInDict(script, "volume", None)
+        if volume != None:
+            self.fVolume = float(volume)
+            print "    plSoundMsg: volume: %f" % float(volume)
+            
+        loop = FindInDict(script, "loop", None)
+        if loop != None:
+            self.fLoop = bool(loop)
+            print "    plSoundMsg: loop: %s" % loop
+            
+        play = FindInDict(script, "playing", None)
+        if play != None:
+            self.fPlaying = bool(play)
+            print "    plSoundMsg: playing: %s" % play
+        
+        speed = FindInDict(script, "speed", None)
+        if speed != None:
+            self.fSpeed = float(speed)
+            print "    plSoundMsg: speed: %f" % speed
+        
+        time = FindInDict(script, "time", None)
+        if time != None:
+            self.fTime = float(time)
+            print "    plSoundMsg: time: %f" % time
+            
+        repeats = FindInDict(script, "repeats", None)
+        if repeats != None:
+            self.fRepeats = int(repeats)
+            print "    plSoundMsg: repeats: %d" % int(repeats)
+            
+        end = FindInDict(script, "end", None)
+        if end != None:
+            self.fEnd = float(end)
+            print "    plSoundMsg: end: %f" % float(end)
+        
+        cmdlist = FindInDict(script, "cmds", None)
         if type(cmdlist) == list:
             self.fCmd = hsBitVector()
             for cmd in cmdlist:
                 if cmd.lower() in plSoundMsg.ScriptModSoundCmds:
                     cidx = plSoundMsg.ScriptModSoundCmds[cmd.lower()]
                     self.fCmd.SetBit(cidx)
-		    print "    plSoundMsg: Set command: %s" % cmd.lower()
+            print "    plSoundMsg: Set command: %s" % cmd.lower()
 
 
 class plEnableMsg(plMessage):

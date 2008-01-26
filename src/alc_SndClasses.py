@@ -385,6 +385,20 @@ class plEAXSourceSettings:
             stream.WriteFloat(fOcclusionSoftValue)
 
 class plFadeParams:
+    Type = \
+    { \
+        "kLinear"       : 0x0, \
+        "kLogarithmic"  : 0x1, \
+        "kExponential"  : 0x2 \
+    }
+    
+    ScriptType = \
+    { \
+        "linear"       : 0x0, \
+        "logarithmic"  : 0x1, \
+        "exponential"  : 0x2 \
+    }
+    
     def __init__(self):
         self.fLengthInSecs = 0
         self.fVolStart = 0.0
@@ -411,6 +425,33 @@ class plFadeParams:
         self.fCurrTime = stream.ReadFloat()
         self.fStopWhenDone = stream.Read32()
         self.fFadeSoftVol = stream.Read32()
+    
+    def export_script(self, script):
+        length = FindInDict(script, "length", None)
+        if length != None:
+            self.fLengthInSecs = float(length)
+            print "    plFadeParams: length: %f" % float(length)
+        
+        start = FindInDict(script, "start", None)
+        if start != None:
+            self.fVolStart = float(start)
+            print "    plFadeParams: start: %f" % float(start)
+        
+        end = FindInDict(script, "end", None)
+        if end != None:
+            self.fVolEnd = float(end)
+            print "    plFadeParams: end: %f" % float(end)
+        
+        stop = FindInDict(script, "stop", None)
+        if stop != None:
+            self.fStopWhenDone = bool(stop)
+            print "    plFadeParams: stop: %s" % stop
+        
+        type = FindInDict(script, "type", "linear")
+        if type in plFadeParams.ScriptType:
+            self.fType = plFadeParams.ScriptType[type]
+        else:
+            self.fType = plFadeParams.ScriptType["linear"]
 
 class plSound(plSynchedObject):
     
@@ -620,6 +661,16 @@ class plWin32Sound(plSound):
             self.fType = plSound.Type["kNPCVoices"]
         else:
             self.fType = plSound.Type["kAmbience"]
+        
+        #FadeIn params
+        fIn = FindInDict(objscript,"sound.fadein",None)
+        if fIn != None:
+            self.fFadeInParams.export_script(fIn)
+        
+        #FadeOut params
+        fOut = FindInDict(objscript,"sound.fadeout",None)
+        if fOut != None:
+            self.fFadeOutParams.export_script(fOut)
         
         # Set the soft volume
         propString = FindInDict(objscript,"sound.softvolume")
