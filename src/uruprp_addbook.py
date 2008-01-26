@@ -81,23 +81,7 @@ config:
 	print "Setting default Funny settings..."
 	txt=alcFindBlenderText("init")
 	txt.clear()
-	txt.write("""#--Fog settings--
-#Graphics.Renderer.Setyon float yon
-#Visibility distance
-Graphics.Renderer.SetYon 100000000000000000000000000000
-
-#Graphics.Renderer.Fog.SetDefLinear float start, float end, float density
-#Fog depth
-Graphics.Renderer.Fog.SetDefLinear 1 1000 1
-
-#Graphics.Renderer.Fog.SetDefExp2 float end, float density
-#Graphics.Renderer.Fog.SetDefExp2 100000 20
-
-#Graphics.Renderer.Fog.SetDefColor float r, float g, float b
-Graphics.Renderer.Fog.SetDefColor 0 0 0
-
-#Graphics.Renderer.SetClearColor float r, float g, float b
-Graphics.Renderer.SetClearColor 0 0 0""")
+	txt.write("#--Fog settings--\n#Graphics.Renderer.SetYon float yon\nVisibility distance\nGraphics.Renderer.SetYon 100000\n\n#Graphics.Renderer.Fog.SetDefLinear float start, float end, float density\nFog depth\nGraphics.Renderer.Fog.SetDefLinear 1 1000 1\n\n#Graphics.Renderer.Fog.SetDefExp2 float end, float density\n#Graphics.Renderer.Fog.SetDefExp2 100000 20\n\n#Graphics.Renderer.Fog.SetDefColor float r, float g, float b\nGraphics.Renderer.Fog.SetDefColor 0 0 0\n\n#Graphics.Renderer.SetClearColor float r, float g, float b\nGraphics.Renderer.SetClearColor 0 0 0\n")
 	print "Done."
 	print "Setting default AlcScript settings..."
 	txt=alcFindBlenderText("AlcScript")
