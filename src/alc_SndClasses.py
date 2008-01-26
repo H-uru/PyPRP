@@ -95,7 +95,11 @@ class plAudioInterface(plObjInterface):             #Type 0x11
         audioIface.data.parentref = scnobj.data.getRef()
         
         #Generate all of the fun plSound stuff >.<
-        win32snd = plWin32StreamingSound.FindCreate(page, name)#Create the Win32 streaming sound
+        if string.lower(FindInDict(objscript, "sound.buffer", "stream")) == "static":
+            win32snd = plWin32StaticSound.FindCreate(page, name)
+        else:
+            win32snd = plWin32StreamingSound.FindCreate(page, name)#Create the Win32 streaming sound
+        
         win32snd.data.exportObj(obj, softVolumeParser) #We need to pass the parser                    
 
         #Generate the Audible
@@ -520,7 +524,8 @@ class plSound(plSynchedObject):
     
     def dump(self,buf):
         print "Dump() deprecated on Audio and Sound classes"
-        
+
+
 class plWin32Sound(plSound):
     ChannelSelect = \
     { \
@@ -548,27 +553,6 @@ class plWin32Sound(plSound):
         plSound.write(self, stream)
         stream.WriteByte(self.fChannelSelect)
     
-    
-    def dump(self,buf):
-        print "Dump() deprecated on Audio and Sound classes"
-
-class plWin32StreamingSound(plWin32Sound):
-    def __init__(self,parent,name="unnamed",type=0x0084):
-        plWin32Sound.__init__(self,parent,name,type)
-    
-    def _Find(page,name):
-        return page.find(0x0084,name,0)
-    Find = staticmethod(_Find)
-
-    def _FindCreate(page,name):
-        return page.find(0x0084,name,1)
-    FindCreate = staticmethod(_FindCreate)
-
-    def read(self, stream):
-        plWin32Sound.read(self, stream)
-    
-    def write(self, stream):
-        plWin32Sound.write(self, stream)
     
     def dump(self,buf):
         print "Dump() deprecated on Audio and Sound classes"
@@ -601,13 +585,13 @@ class plWin32StreamingSound(plWin32Sound):
         
         sname = FindInDict(objscript,"sound.file")
         assert sname != None #We can't create a null SoundBuffer
-	
-	maxFallDist = FindInDict(objscript,"sound.maxfdist", 10)
-	self.fMaxFalloff = int(maxFallDist)
-	
-	minFallDist = FindInDict(objscript,"sound.minfdist", 5)
-	self.fMinFalloff = int(minFallDist)
-	
+        
+        maxFallDist = FindInDict(objscript,"sound.maxfdist", 10)
+        self.fMaxFalloff = int(maxFallDist)
+        
+        minFallDist = FindInDict(objscript,"sound.minfdist", 5)
+        self.fMinFalloff = int(minFallDist)
+        
         wavobj = Blender.Sound.Get(sname+'.wav')
         if wavobj:
             #Export a SoundBuffer
@@ -642,3 +626,53 @@ class plWin32StreamingSound(plWin32Sound):
         if (propString != None and softVolumeParser != None):
             self.fSoftRegion = softVolumeParser.parseProperty(str(propString),str(self.Key.name))
         
+
+
+class plWin32StaticSound(plWin32Sound):
+    def __init__(self,parent,name="unnamed",type=0x0096):
+        plWin32Sound.__init__(self,parent,name,type)
+    
+    def _Find(page,name):
+        return page.find(0x0096,name,0)
+    Find = staticmethod(_Find)
+
+    def _FindCreate(page,name):
+        return page.find(0x0096,name,1)
+    FindCreate = staticmethod(_FindCreate)
+
+    def read(self, stream):
+        plWin32Sound.read(self, stream)
+    
+    def write(self, stream):
+        plWin32Sound.write(self, stream)
+    
+    def dump(self,buf):
+        print "Dump() deprecated on Audio and Sound classes"
+    
+    def exportObj(self, obj, softVolumeParser):
+        plWin32Sound.exportObj(self, obj, softVolumeParser)
+
+
+class plWin32StreamingSound(plWin32Sound):
+    def __init__(self,parent,name="unnamed",type=0x0084):
+        plWin32Sound.__init__(self,parent,name,type)
+    
+    def _Find(page,name):
+        return page.find(0x0084,name,0)
+    Find = staticmethod(_Find)
+
+    def _FindCreate(page,name):
+        return page.find(0x0084,name,1)
+    FindCreate = staticmethod(_FindCreate)
+
+    def read(self, stream):
+        plWin32Sound.read(self, stream)
+    
+    def write(self, stream):
+        plWin32Sound.write(self, stream)
+    
+    def dump(self,buf):
+        print "Dump() deprecated on Audio and Sound classes"
+    
+    def exportObj(self, obj, softVolumeParser):
+        plWin32Sound.exportObj(self, obj, softVolumeParser)

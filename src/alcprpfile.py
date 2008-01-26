@@ -22,6 +22,7 @@
 #    Please see the file DISCLAIMER for more details, before doing nothing.
 #
 
+from alc_AnimClasses import *
 from alc_AbsClasses import *
 from alc_Classes import *
 from alc_hsStream import *
@@ -153,7 +154,7 @@ class PrpObject:
             elif self.type==0x008C:
                 self.data=plSoftVolumeInvert(self)
             elif self.type==0x0096:
-                self.data=plWin32Sound(self) #Hack
+                self.data=plWin32StaticSound(self)
             elif self.type==0x0099:
                 self.data=plCameraBrain1(self)
             elif self.type==0x009B:
@@ -194,6 +195,10 @@ class PrpObject:
                self.data=plDirectShadowMaster(self) 
             elif self.type==0x00E7:
                 self.data=plObjectInVolumeAndFacingDetector(self)
+            elif self.type==0x00E8:
+                self.data=plDynaFootMgr(self)
+            elif self.type==0x00EA:
+                self.data=plDynaBulletMgr(self) 
             elif self.type==0x00FC:
                 self.data=plPanicLinkRegion(self)
             elif self.type==0x0111:

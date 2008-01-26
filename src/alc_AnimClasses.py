@@ -45,6 +45,162 @@ from alc_CamClasses import *
 from alc_ObjClasses import *
 from alc_AlcScript import *
 
+###Dynamic Decal###
+class plDynaDecalMgr(plSynchedObject):
+    def __init__(self,parent,name="unnamed",type=0x00E6):
+        plSynchedObject.__init__(self,parent,name,type)
+        
+        self.fMatPreShade = UruObjectRef(self.getVersion())
+        self.fMatRTShade = UruObjectRef(self.getVersion())
+        self.fTargets = hsTArray()
+        self.fPartyObjects = hsTArray()
+        self.fMaxNumVerts = 0
+        self.fMaxNumIdx = 0
+        self.fWaitOnEnable = 0
+        self.fIntensity = 0.0
+        self.fWetLength = 0.0
+        self.fRampEnd = 0.0
+        self.fDecayStart = 0.0
+        self.fLifeSpan = 0.0
+        self.fGridSizeU = 0.0
+        self.fGridSizeV = 0.0
+        self.fScale = Vertex()
+        self.fPartyTime = 0.0
+        self.fNotifies = hsTArray()
+    
+    def _Find(page,name):
+        return page.find(0x00E6,name,0)
+    Find = staticmethod(_Find)
+
+    def _FindCreate(page,name):
+        return page.find(0x00E6,name,1)
+    FindCreate = staticmethod(_FindCreate)
+    
+    
+    def read(self, buf):
+        plSynchedObject.read(self,buf)
+        
+        self.fMatPreShade.read(buf)
+        self.fMatRTShade.read(buf)
+        self.fTargets.ReadVector(buf)
+        self.fPartyObjects.ReadVector(buf)
+        self.fMaxNumVerts = buf.Read32()
+        self.fMaxNumIdx = buf.Read32()
+        self.fWaitOnEnable = buf.ReadFloat()
+        self.fIntensity = buf.ReadFloat()
+        self.fWetLength = buf.ReadFloat()
+        self.fRampEnd = buf.ReadFloat()
+        self.fDecayStart = buf.ReadFloat()
+        self.fLifeSpan = buf.ReadFloat()
+        self.fGridSizeU = buf.ReadFloat()
+        self.fGridSizeV = buf.ReadFloat()
+        self.fScale.read(buf)
+        self.fPartyTime = buf.ReadFloat()
+        self.fNotifies.ReadVector(buf)
+    
+    
+    def write(self,s):
+        plSynchedObject.write(self,s)
+        
+        self.fMatPreShade.write(s)
+        self.fMatRTShade.write(s)
+        self.fTargets.WriteVector(s)
+        self.fPartyObjects.WriteVector(s)
+        s.Write32(self.fMaxNumVerts)
+        s.Write32(self.fMaxNumIdx)
+        s.WriteFloat(self.fWaitOnEnable)
+        s.WriteFloat(self.fIntensity)
+        s.WriteFloat(self.fWetLength)
+        s.WriteFloat(self.fRampEnd)
+        s.WriteFloat(self.fDecayStart)
+        s.WriteFloat(self.fLifeSpan)
+        s.WriteFloat(self.fGridSizeU)
+        s.WriteFloat(self.fGridSizeV)
+        self.fScale.write(s)
+        s.WriteFloat(self.fPartyTime)
+        self.fNotifies.WriteVector(s)
+    
+    
+    def import_obj(self, obj):
+        script = AlcScript.objects.FindOrCreate(obj.name)
+        
+        if self.fMatPreShade.flag:
+            StoreInDict(script, "decal.preshademat", self.fMatPreShade.Key.name)
+        
+        if self.fMatRTShade.flag:
+            StoreInDict(script, "decal.rtshademat", self.fMatRTShade.Key.name)
+        
+        targets = []
+        for i in range(len(self.fTargets)):
+            if self.fTargets[i].flag:
+                targets.append("scnobj:" + self.fTargets[i].Key.name)
+        StoreInDict(script, "decal.targets", targets)
+        
+        objects = []
+        for i in range(len(self.fPartyObjects)):
+            if self.fPartyObjects[i].flag:
+                objects.append("scnobj:" + self.fPartyObjects[i].Key.name)
+        StoreInDict(script, "decal.objects", objects)
+        
+        rcvrs = []
+        for i in range(len(self.fNotifies)):
+            if self.fNotifies[i].flag:
+                objects.append("0x%04X:" % self.fNotifies[i].object_type + self.fNotifies[i].Key.name)
+        StoreInDict(script, "decal.notifies", rcvrs)
+        
+        #Cut the crap.
+        StoreInDict(script, "decal.maxverts", self.fMaxNumVerts)
+        StoreInDict(script, "decal.maxidx", self.fMaxNumIdx)
+        StoreInDict(script, "decal.waitenable", self.fWaitOnEnable)
+        StoreInDict(script, "decal.intensity", self.fIntensity)
+        StoreInDict(script, "decal.wetlen", self.fWetLength)
+        StoreInDict(script, "decal.rampend", self.fRampEnd)
+        StoreInDict(script, "decal.decaystart", self.fDecayStart)
+        StoreInDict(script, "decal.lifespan", self.fLifeSpan)
+        StoreInDict(script, "decal.sizeu", self.fGridSizeU)
+        StoreInDict(script, "decal.sizev", self.fGridSizeV)
+        StoreInDict(script, "decal.partytime", self.fPartyTime)
+
+
+class plDynaFootMgr(plDynaDecalMgr):
+    def __init__(self,parent,name="unnamed",type=0x00E8):
+        plDynaDecalMgr.__init__(self,parent,name,type)
+        pass
+    
+    def _Find(page,name):
+        return page.find(0x00E8,name,0)
+    Find = staticmethod(_Find)
+
+    def _FindCreate(page,name):
+        return page.find(0x00E8,name,1)
+    FindCreate = staticmethod(_FindCreate)
+    
+    def import_obj(self, obj):
+        plDynaDecalMgr.import_obj(self, obj)
+        
+        script = AlcScript.objects.FindOrCreate(obj.name)
+        StoreInDict(script, "decal.type", "DynaFoot")
+
+
+class plDynaBulletMgr(plDynaDecalMgr):
+    def __init__(self,parent,name="unnamed",type=0x00E8):
+        plDynaDecalMgr.__init__(self,parent,name,type)
+        pass
+    
+    def _Find(page,name):
+        return page.find(0x00EA,name,0)
+    Find = staticmethod(_Find)
+
+    def _FindCreate(page,name):
+        return page.find(0x00EA,name,1)
+    FindCreate = staticmethod(_FindCreate)
+    
+    def import_obj(self, obj):
+        plDynaDecalMgr.import_obj(self, obj)
+        
+        script = AlcScript.objects.FindOrCreate(obj.name)
+        StoreInDict(script, "decal.type", "DynaBullet")
+
 ###Particle Systems###
 class plParticleSystem(plModifier):
     

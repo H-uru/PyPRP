@@ -266,7 +266,10 @@ def StoreInDict(dct,params,value):
     elif type(params) == type(''):
         params = params.split(".")
     else:
-        raise ValueError, "StoreInDict: 'params' is not a list, tuple or string"
+        try:
+            params = str(params).split(".")
+        except:
+            raise ValueError, "StoreInDict: 'params' is not a list, tuple or string"
     
     if not type(dct) == dict:
         raise ValueError, "StoreInDict: 'dct' is not a dictionary object"
