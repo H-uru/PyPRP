@@ -78,9 +78,11 @@ config:
 	txt.clear()
 	txt.write("""#Fog settings
 #Graphics.Renderer.SetYon float yon
+#Visibility distance
 Graphics.Renderer.SetYon 100000
 
 #Graphics.Renderer.Fog.SetDefLinear float start, float end, float density
+#The first 2 numbers are start and end distance of fog depth, the 3rd is density.
 Graphics.Renderer.Fog.SetDefLinear 1 1000 1
 
 #Graphics.Renderer.Fog.SetDefExp2 float end, float density
