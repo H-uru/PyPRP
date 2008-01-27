@@ -822,7 +822,7 @@ class ProxyBounds(HullBounds):
         mesh = obj.getData(False,True)
         print "  ProxyBounds export"
         print "   Exporting %d (%d) vertices"%(len(mesh.verts),len(obj.data.verts))
-        print "   Exporting %d (%d) faces"%(len(mesh.verts),len(obj.data.verts))
+        print "   Exporting %d (%d) faces"%(len(mesh.faces),len(obj.data.faces))
         
         self.fVertices=[]
         self.fFaces=[]
