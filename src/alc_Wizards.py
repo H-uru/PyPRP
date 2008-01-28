@@ -837,7 +837,7 @@ def Wizard_property_update():
             # Find the clickregion that contains the clickable
             foundClickRegion = None
             for clickregion in clickRegions:
-                bvertexs=obj.getBoundBox()
+                bvertexs=clickregion.getBoundBox()
                 bmaxx=bvertexs[0][0]
                 bmaxy=bvertexs[0][1]
                 bmaxz=bvertexs[0][2]
@@ -898,6 +898,7 @@ def Wizard_mattex_create():
     l = Blender.Object.Get()
     numMatCreated = 0
     numTexCreated = 0
+    texturesChecked = {}
     for obj in l:
         # DEBUG
         print "Object:",obj.name
@@ -977,9 +978,6 @@ def Wizard_mattex_create():
                     for tex in mat.getTextures():
                         if (tex != None):
                             numTextures += 1
-                            if tex.texco == Blender.Texture.TexCo["ORCO"]:
-                                # Use UV coordinates
-                                tex.texco = Blender.Texture.TexCo["UV"]
                     if (numTextures == 0):
                         # Create a texture based on the image associated with the faces
                         image = None # init needed :)
@@ -1000,6 +998,54 @@ def Wizard_mattex_create():
                                 print "Created texture",newTex.getName(),"for object",obj.getName()
                             mat.setTexture(0,newTex,Blender.Texture.TexCo.UV,Blender.Texture.MapTo.COL)
                             numTexCreated += 1
+                    for tex in mat.getTextures():
+                        if (tex != None):
+                            numTextures += 1
+                            if tex.texco == Blender.Texture.TexCo["ORCO"]:
+                                # Use UV coordinates
+                                tex.texco = Blender.Texture.TexCo["UV"]
+                            image = tex.tex.getImage()
+                            if image != None:
+                                filename = image.getFilename()
+                                parts = filename.split("/")
+                                if len(parts) == 1:
+                                    parts = filename.split("\\")
+                                if len(parts) > 0:
+                                    filename = parts[len(parts) - 1]
+                                print "  tex filename:",filename
+                                # Use INTERPOL to indicate compression
+                                if filename[0:10]=="noCompress":
+                                    tex.tex.imageFlags &= ~Blender.Texture.ImageFlags["INTERPOL"]
+                                    # DEBUG
+                                    print "  no compression"
+                                else:
+                                    tex.tex.imageFlags |= Blender.Texture.ImageFlags["INTERPOL"]
+                                    # DEBUG
+                                    print "  using compression"
+
+                                if filename[-4:]==".gif":
+                                    useAlpha = 0
+                                elif texturesChecked.has_key(filename):
+                                    useAlpha = texturesChecked[filename]
+                                else:
+                                    # Detect whether it uses alpha
+                                    width, height = image.getSize()
+                                    useAlpha = 0
+                                    for y in range(height,0,-1):
+                                        for x in range(width):
+                                            r,g,b,a = image.getPixelF(x,y-1)
+                                            if a<1:
+                                                useAlpha=1
+                                                break
+                                        if useAlpha > 0:
+                                            break
+                                    texturesChecked[filename] = useAlpha
+                                if useAlpha > 0:
+                                    # Set USEALPHA to indicate presence of alpha
+                                    tex.tex.imageFlags |= Blender.Texture.ImageFlags["USEALPHA"]
+                                    # DEBUG
+                                    print "  has alpha"
+                                    break
 
     message = 'Added %d materials and %d textures.' % (numMatCreated,numTexCreated)
     print message
