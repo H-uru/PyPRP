@@ -388,6 +388,9 @@ class hsGMaterial(plSynchedObject):         # Type 0x07
 
             if mat.getSpec() > 0.0:
                 self.fCompFlags |= hsGMaterial.hsGCompFlags["kCompSpecular"] 
+                
+            if name.lower().find("decal") != -1:
+                self.fCompFlags |= hsGMaterial.hsGCompFlags["kCompDecal"] 
 
 
             mtex_list = mat.getTextures()
@@ -488,10 +491,20 @@ class hsGMaterial(plSynchedObject):         # Type 0x07
 
     def ZBias(self):
         root = self.getRoot()
-        UsesAlpha = False
+        UsesAlpha = True
         for layerref in self.fLayers:
             layer = root.findref(layerref)
-            UsesAlpha = (UsesAlpha or layer.data.UsesAlpha)
+            UsesAlpha = (UsesAlpha and layer.data.UsesAlpha)
+        
+#            if layer.data.UsesAlpha:
+#                print "   DEBUG: Layer \"%s\" uses Alpha"%(layer.data.Key.name)
+#            else:
+#                print "   DEBUG: Layer \"%s\" is Opaque"%(layer.data.Key.name)
+
+#        if UsesAlpha:
+#            print "   DEBUG: Result - Material has Alpha"
+#        else:
+#            print "   DEBUG: Result - Material is Opaque"
         
         ZBias = int(self.fZOffset)
         if UsesAlpha and ZBias == 0:
@@ -1037,7 +1050,7 @@ class plLayer(plLayerInterface):             # Type 0x06
                                                 
                 if(mtex.blendmode == Blender.Texture.BlendModes.ADD): 
                     # self.fState.fBlendFlags |= ( hsGMatState.hsGMatBlendFlags["kBlendAdd"])
-		    self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAddColorTimesAlpha"] # This is better and more intuitive
+                    self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAddColorTimesAlpha"] # This is better and more intuitive
                     if mtex.mtAlpha != 0:
                         self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlphaAdd"]
 
@@ -1050,7 +1063,7 @@ class plLayer(plLayerInterface):             # Type 0x06
                     self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendSubtract"]
 
                 else: #(mtex.blendmode == Blender.Texture.BlendModes.MIX):
-		    # Enable Normal Alpha Blending ONLY if the other alpha blend flags are not enabled
+                    # Enable Normal Alpha Blending ONLY if the other alpha blend flags are not enabled
                     self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlpha"]
                 if(mtex.neg): # set the negate colors flag if it is so required
                     self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendInvertColor"]
@@ -1069,6 +1082,11 @@ class plLayer(plLayerInterface):             # Type 0x06
             
         if hasstencil:
             self.fState.fMiscFlags  |= hsGMatState.hsGMatMiscFlags["kMiscBindNext"]  | hsGMatState.hsGMatMiscFlags["kMiscRestartPassHere"] 
+        
+        if stencil or hasstencil:
+            # a stencil joins two layers into one that has alpha....
+            self.UsesAlpha = True
+    
             
             
 
@@ -1176,148 +1194,6 @@ class plLayer(plLayerInterface):             # Type 0x06
 
         pass
 
-
-class plBitmap(hsKeyedObject):               # Type 0x03   
-
-    #region Structures
-    class DirectXInfo:
-        def __init__(self):
-            self.fCompressionType = 0 #CompressionType;
-            self.fBlockSize = 0 #ubyte  #Formerly texelSize
-    
-
-    class UncompressedInfo:
-        def __init__(self):
-            self.fType = 0 #Uncompressed
-
-    class Info:
-        def __init__(self):
-            self.fDirectXInfo = plBitmap.DirectXInfo() #DirectXInfo 
-            self.fUncompressedInfo = plBitmap.UncompressedInfo() #UncompressedInfo 
-
-
-    #region Constants
-    CompressionType = \
-    { \
-        "kError" : 0, \
-        "kDXT1"  : 1, \
-        "kDXT2"  : 2, \
-        "kDXT3"  : 3, \
-        "kDXT4"  : 4, \
-        "kDXT5"  : 5  \
-    }
-
-    Uncompressed =  \
-    { \
-        "kRGB8888"    : 0, \
-        "kRGB4444"    : 1, \
-        "kRGB1555"    : 2, \
-        "kInten8"     : 3, \
-        "kAInten88"   : 4  \
-    }
-
-    Space = \
-    {  \
-        "kNoSpace"        : 0, \
-        "kDirectSpace"    : 1, \
-        "kGraySpace"      : 2, \
-        "kIndexSpace"     : 3  \
-    }
-
-    Flags = \
-    {  \
-        "kNoFlag"               :    0x0, \
-        "kAlphaChannelFlag"     :    0x1, \
-        "kAlphaBitFlag"         :    0x2, \
-        "kBumpEnvMap"           :    0x4, \
-        "kForce32Bit"           :    0x8, \
-        "kDontThrowAwayImage"   :   0x10, \
-        "kForceOneMipLevel"     :   0x20, \
-        "kNoMaxSize"            :   0x40, \
-        "kIntensityMap"         :   0x80, \
-        "kHalfSize"             :  0x100, \
-        "kUserOwnsBitmap"       :  0x200, \
-        "kForceRewrite"         :  0x400, \
-        "kForceNonCompressed"   :  0x800, \
-        "kIsTexture"            : 0x1000, \
-        "kIsOffscreen"          : 0x2000, \
-        "kMainScreen"           :    0x0, \
-        "kIsProjected"          : 0x4000, \
-        "kIsOrtho"              : 0x8000  \
-    }
-
-    Compression = \
-    { \
-        "kUncompressed"         : 0, \
-        "kDirectXCompression"   : 1, \
-        "kJPEGCompression"      : 2  \
-    }
-
-    BITMAPVER = 2;
-
-
-    def __init__(self,parent,name="unnamed",type=0x0003):
-        hsKeyedObject.__init__(self,parent,name,type)
-        self.BitmapInfo = plBitmap.Info() # Info 
-        
-        self.fCompressionType = 1 # Compression 
-    
-        self.fPixelSize = 1 #ubyte 
-        self.fSpace = 1     #sbyte 
-        self.fFlags = 0     #Flags 
-    
-        self.fLowModifiedTime = 0 #uint #Formerly fInputManager
-        self.fHighModifiedTime = 0 #uint #Formerly fPageMgr
-        
-        # for internal handling (From old implementation)
-        self.isCubEvMapPart = 0 
-        self.BlenderImage=None
-
-    def _Find(page,name):
-        return page.find(0x0003,name,0)
-    Find = staticmethod(_Find)
-
-    def _FindCreate(page,name):
-        return page.find(0x0003,name,1)
-    FindCreate = staticmethod(_FindCreate)
-
-
-    def read(self,stream, really=1,silent=1):
-        hsKeyedObject.read(self,stream, really, silent)
-    
-        stream.ReadByte() #Discarded: Version
-        self.fPixelSize = stream.ReadByte()
-        self.fSpace = stream.ReadByte()
-        self.fFlags = stream.Read16()
-        self.fCompressionType = stream.ReadByte()
-        
-        
-        if (self.fCompressionType != plBitmap.Compression["kUncompressed"]  and  self.fCompressionType != plBitmap.Compression["kJPEGCompression"]):
-            self.BitmapInfo.fDirectXInfo.fBlockSize = stream.ReadByte()
-            self.BitmapInfo.fDirectXInfo.fCompressionType = stream.ReadByte()
-        else:
-            self.BitmapInfo.fUncompressedInfo.fType = stream.ReadByte()
-        
-        self.fLowModifiedTime = stream.Read32()
-        self.fHighModifiedTime = stream.Read32()
-
-    def write(self, stream, really=1):
-        hsKeyedObject.write(self,stream,really)
-
-        stream.WriteByte(0x02)    # always version 0x02
-        stream.WriteByte(self.fPixelSize)
-        stream.WriteByte(self.fSpace)
-        stream.Write16(self.fFlags)
-        stream.WriteByte(self.fCompressionType)
-        
-        if (self.fCompressionType != plBitmap.Compression["kUncompressed"]  and  self.fCompressionType != plBitmap.Compression["kJPEGCompression"]):
-            stream.WriteByte(self.BitmapInfo.fDirectXInfo.fBlockSize)
-            stream.WriteByte(self.BitmapInfo.fDirectXInfo.fCompressionType)
-        else:
-            stream.WriteByte(self.BitmapInfo.fUncompressedInfo.fType)
-        
-        stream.Write32(self.fLowModifiedTime)
-        stream.Write32(self.fHighModifiedTime)
 
 class blMipMapInfo:
 
@@ -1485,6 +1361,265 @@ class blMipMapInfo:
         
         return s
 
+class plBitmap(hsKeyedObject):               # Type 0x03   
+
+    #region Structures
+    class DirectXInfo:
+        def __init__(self):
+            self.fCompressionType = 0 #CompressionType;
+            self.fBlockSize = 0 #ubyte  #Formerly texelSize
+    
+
+    class UncompressedInfo:
+        def __init__(self):
+            self.fType = 0 #Uncompressed
+
+    class Info:
+        def __init__(self):
+            self.fDirectXInfo = plBitmap.DirectXInfo() #DirectXInfo 
+            self.fUncompressedInfo = plBitmap.UncompressedInfo() #UncompressedInfo 
+
+
+    #region Constants
+    CompressionType = \
+    { \
+        "kError" : 0, \
+        "kDXT1"  : 1, \
+        "kDXT2"  : 2, \
+        "kDXT3"  : 3, \
+        "kDXT4"  : 4, \
+        "kDXT5"  : 5  \
+    }
+
+    Uncompressed =  \
+    { \
+        "kRGB8888"    : 0, \
+        "kRGB4444"    : 1, \
+        "kRGB1555"    : 2, \
+        "kInten8"     : 3, \
+        "kAInten88"   : 4  \
+    }
+
+    Space = \
+    {  \
+        "kNoSpace"        : 0, \
+        "kDirectSpace"    : 1, \
+        "kGraySpace"      : 2, \
+        "kIndexSpace"     : 3  \
+    }
+
+    Flags = \
+    {  \
+        "kNoFlag"               :    0x0, \
+        "kAlphaChannelFlag"     :    0x1, \
+        "kAlphaBitFlag"         :    0x2, \
+        "kBumpEnvMap"           :    0x4, \
+        "kForce32Bit"           :    0x8, \
+        "kDontThrowAwayImage"   :   0x10, \
+        "kForceOneMipLevel"     :   0x20, \
+        "kNoMaxSize"            :   0x40, \
+        "kIntensityMap"         :   0x80, \
+        "kHalfSize"             :  0x100, \
+        "kUserOwnsBitmap"       :  0x200, \
+        "kForceRewrite"         :  0x400, \
+        "kForceNonCompressed"   :  0x800, \
+        "kIsTexture"            : 0x1000, \
+        "kIsOffscreen"          : 0x2000, \
+        "kMainScreen"           :    0x0, \
+        "kIsProjected"          : 0x4000, \
+        "kIsOrtho"              : 0x8000  \
+    }
+
+    Compression = \
+    { \
+        "kUncompressed"         : 0, \
+        "kDirectXCompression"   : 1, \
+        "kJPEGCompression"      : 2  \
+    }
+
+    BITMAPVER = 2;
+
+
+    def __init__(self,parent,name="unnamed",type=0x0003):
+        hsKeyedObject.__init__(self,parent,name,type)
+        self.BitmapInfo = plBitmap.Info() # Info 
+        
+        self.fCompressionType = 1 # Compression 
+    
+        self.fPixelSize = 1 #ubyte 
+        self.fSpace = 1     #sbyte 
+        self.fFlags = 0     #Flags 
+    
+        self.fLowModifiedTime = 0 #uint #Formerly fInputManager
+        self.fHighModifiedTime = 0 #uint #Formerly fPageMgr
+        
+        # for internal handling (From old implementation)
+        self.isCubEvMapPart = 0 
+        self.BlenderImage=None
+
+        self.FullAlpha = False
+        self.OnOffAlpha = False
+
+        self.MipMapInfo = blMipMapInfo()
+
+        self.texCacheExtension = ".bmap"
+
+    def _Find(page,name):
+        return page.find(0x0003,name,0)
+    Find = staticmethod(_Find)
+
+    def _FindCreate(page,name):
+        return page.find(0x0003,name,1)
+    FindCreate = staticmethod(_FindCreate)
+
+
+    def read(self,stream, really=1,silent=1):
+        hsKeyedObject.read(self,stream, really, silent)
+    
+        stream.ReadByte() #Discarded: Version
+        self.fPixelSize = stream.ReadByte()
+        self.fSpace = stream.ReadByte()
+        self.fFlags = stream.Read16()
+        self.fCompressionType = stream.ReadByte()
+        
+        
+        if (self.fCompressionType != plBitmap.Compression["kUncompressed"]  and  self.fCompressionType != plBitmap.Compression["kJPEGCompression"]):
+            self.BitmapInfo.fDirectXInfo.fBlockSize = stream.ReadByte()
+            self.BitmapInfo.fDirectXInfo.fCompressionType = stream.ReadByte()
+        else:
+            self.BitmapInfo.fUncompressedInfo.fType = stream.ReadByte()
+        
+        self.fLowModifiedTime = stream.Read32()
+        self.fHighModifiedTime = stream.Read32()
+
+    def write(self, stream, really=1):
+        hsKeyedObject.write(self,stream,really)
+
+        stream.WriteByte(0x02)    # always version 0x02
+        stream.WriteByte(self.fPixelSize)
+        stream.WriteByte(self.fSpace)
+        stream.Write16(self.fFlags)
+        stream.WriteByte(self.fCompressionType)
+        
+        if (self.fCompressionType != plBitmap.Compression["kUncompressed"]  and  self.fCompressionType != plBitmap.Compression["kJPEGCompression"]):
+            stream.WriteByte(self.BitmapInfo.fDirectXInfo.fBlockSize)
+            stream.WriteByte(self.BitmapInfo.fDirectXInfo.fCompressionType)
+        else:
+            stream.WriteByte(self.BitmapInfo.fUncompressedInfo.fType)
+        
+        stream.Write32(self.fLowModifiedTime)
+        stream.Write32(self.fHighModifiedTime)
+
+    # Version header for texture cache files
+    # Update the last two digits when changing the file format
+    TEXCACHEVER = "TC02"
+
+    def TexCache_GetFilename(self):
+        resmanager=self.getResManager()
+        MyPath=resmanager.getBasePath()
+        CachePath = MyPath + "/" + self.parent.parent.parent.age.name + "_TexCache/"
+
+        # Make the directory if texture_cache is enabled
+        if (alcconfig.texture_cache):
+            try:
+                os.mkdir(CachePath)
+            except OSError:
+                pass
+
+        # Generate the filename
+        CacheFile = CachePath + str(self.Key.name) + self.texCacheExtension
+
+        return CacheFile
+
+    def TexCache_Exists(self):
+        if os.path.isfile(self.TexCache_GetFilename()):
+            mipmapinfo = self.TexCache_LoadMipMapInfo()
+            
+            if not mipmapinfo is None:
+                if self.MipMapInfo.equals(mipmapinfo):
+#                    print "TEXCACHE DEBUG:"
+#                    print "Mipmapinfo's match"
+                    return True
+#                else:
+#                    print "TEXCACHE DEBUG:"
+#                    print "Self's mipmapinfo:"
+#                    print self.MipMapInfo
+#                    print "Cachefile's mipmapinfo:"
+#                    print mipmapinfo
+#            else:
+#                print "TEXCACHE DEBUG:"
+#                print "Could not read mipmapinfo from cachefile...."
+                
+        return False
+        
+    def TexCache_Store(self,mipmapinfo=None):
+        CacheFile = self.TexCache_GetFilename()
+        stream=hsStream(CacheFile,"wb")
+
+        # Write the version number
+        stream.fs.write(plBitmap.TEXCACHEVER)
+
+        if mipmapinfo is None:
+            self.MipMapInfo.write(stream)
+        else:
+            mipmapinfo.write(stream)
+        # Write the alpha flags
+        stream.WriteBool(self.FullAlpha)
+        stream.WriteBool(self.OnOffAlpha)
+        self.write(stream)
+        stream.close()
+    
+    def TexCache_LoadVersionInfo(self,stream):
+        try:
+            versionString = stream.fs.read(4)
+            if versionString == plBitmap.TEXCACHEVER:
+                return True
+        except:
+            pass
+        return False
+
+    def TexCache_LoadMipMapInfo(self):
+        # load in the data from the file
+        CacheFile = self.TexCache_GetFilename()
+        stream=hsStream(CacheFile,"rb")
+        try:
+            # load the texture cache version first
+            if not self.TexCache_LoadVersionInfo(stream):
+                return None
+            mipmapinfo = blMipMapInfo()
+            mipmapinfo.read(stream)
+            return mipmapinfo
+        except:
+            print "    WARNING: Problem reading Texture Cache"
+            print "             PLEASE REMOVE YOUR OLD TEXTURE CACHE FILES"
+            return None
+    
+    
+    def TexCache_Load(self):
+        # load in the data from the file
+        CacheFile = self.TexCache_GetFilename()
+        print "     Reading mipmap %s from cache" % (str(self.Key.name) + ".tex")
+        stream=hsStream(CacheFile,"rb")
+        try:
+            # load the texture cache version first
+            if not self.TexCache_LoadVersionInfo(stream):
+                raise RuntimeError
+            self.MipMapInfo.read(stream)
+            # Read the alpha flags
+            self.FullAlpha = stream.ReadBool()
+            self.OnOffAlpha = stream.ReadBool()
+            self.read(stream)
+        except:
+            print "    WARNING: Problem reading Texture Cache"
+            print "             PLEASE REMOVE YOUR OLD TEXTURE CACHE FILES"
+        
+        stream.close()
+        
+    def TexCache_Delete(self):
+        CacheFile = self.TexCache_GetFilename()
+        return os.remove(CacheFile)
+
+
  
 class plMipMap(plBitmap):                    # Type 0x04
 
@@ -1563,14 +1698,10 @@ class plMipMap(plBitmap):                    # Type 0x04
         # fields used for internal processing
         
         self.Processed = 0
-
-        self.FullAlpha = False
-        self.OnOffAlpha = False
         
         self.Cached_BlenderImage = None
+        self.texCacheExtension = ".tex"        
         
-        self.MipMapInfo = blMipMapInfo()
-
     def _Find(page,name):
         return page.find(0x0004,name,0)
     Find = staticmethod(_Find)
@@ -1985,87 +2116,7 @@ class plMipMap(plBitmap):                    # Type 0x04
 
     Export_Raw = staticmethod(_Export_Raw)
 
-    def TexCache_GetFilename(self):
 
-        resmanager=self.getResManager()
-        MyPath=resmanager.getBasePath()
-        CachePath = MyPath + "/" + self.parent.parent.parent.age.name + "_TexCache/"
-
-        # Make the directory if texture_cache is enabled
-        if (alcconfig.texture_cache):
-            try:
-                os.mkdir(CachePath)
-            except OSError:
-                pass
-
-        # Generate the filename
-        CacheFile = CachePath + str(self.Key.name) + ".tex"
-
-        return CacheFile
-
-    def TexCache_Exists(self):
-        if os.path.isfile(self.TexCache_GetFilename()):
-            mipmapinfo = self.TexCache_LoadMipMapInfo()
-            
-            if not mipmapinfo is None:
-                if self.MipMapInfo.equals(mipmapinfo):
-#                    print "TEXCACHE DEBUG:"
-#                    print "Mipmapinfo's match"
-                    return True
-#                else:
-#                    print "TEXCACHE DEBUG:"
-#                    print "Self's mipmapinfo:"
-#                    print self.MipMapInfo
-#                    print "Cachefile's mipmapinfo:"
-#                    print mipmapinfo
-#            else:
-#                print "TEXCACHE DEBUG:"
-#                print "Could not read mipmapinfo from cachefile...."
-                
-        return False
-        
-    def TexCache_Store(self,mipmapinfo=None):
-        CacheFile = self.TexCache_GetFilename()
-        stream=hsStream(CacheFile,"wb")
-        
-        if mipmapinfo is None:
-            self.MipMapInfo.write(stream)
-        else:
-            mipmapinfo.write(stream)
-        self.write(stream)
-        stream.close()
-    
-    def TexCache_LoadMipMapInfo(self):
-        # load in the data from the file
-        CacheFile = self.TexCache_GetFilename()
-        stream=hsStream(CacheFile,"rb")
-        try:
-            mipmapinfo = blMipMapInfo()
-            mipmapinfo.read(stream)
-            return mipmapinfo
-        except:
-            print "    WARNING: Problem reading Texture Cache"
-            print "             PLEASE REMOVE YOUR OLD TEXTURE CACHE FILES"
-            return None
-    
-    
-    def TexCache_Load(self):
-        # load in the data from the file
-        CacheFile = self.TexCache_GetFilename()
-        print "     Reading mipmap %s from cache" % (str(self.Key.name) + ".tex")
-        stream=hsStream(CacheFile,"rb")
-        try:
-            self.MipMapInfo.read(stream)
-            self.read(stream)
-        except:
-            print "    WARNING: Problem reading Texture Cache"
-            print "             PLEASE REMOVE YOUR OLD TEXTURE CACHE FILES"
-        
-        stream.close()
-        
-    def TexCache_Delete(self):
-        CacheFile = self.TexCache_GetFilename()
-        return os.remove(CacheFile)
     
     
 class plCubicEnvironMap(plBitmap):          # Type 0x05
@@ -2083,11 +2134,10 @@ class plCubicEnvironMap(plBitmap):          # Type 0x05
         plBitmap.__init__(self,parent,name,type)
         self.fFaces = []
         
-        self.FullAlpha = 0
-        self.OnOffAlpha = 0
         self.Processed = 0
 
         self.Cached_BlenderCubicMap = None
+        self.texCacheExtension = ".qmap"
 
     def _Find(page,name):
         return page.find(0x0005,name,0)
@@ -2264,8 +2314,8 @@ class plCubicEnvironMap(plBitmap):          # Type 0x05
                     xend = width
                 
                 ImageBuffer=cStringIO.StringIO()
-                self.FullAlpha = 0
-                self.OnOffAlpha = 0
+                self.FullAlpha = False
+                self.OnOffAlpha = True
                 
                 if str(cubicmap.getFilename())[-4:]==".gif":
                     isGIF=1
@@ -2282,13 +2332,12 @@ class plCubicEnvironMap(plBitmap):          # Type 0x05
                                 a=1.0
 
                         if a == 0 and not self.FullAlpha:
-                            self.OnOffAlpha = 1
+                            self.OnOffAlpha = True
                         if a > 0 and a < 1:
-                            OnOffAlpha = 0
-                            self.FullAlpha = 1
+                            OnOffAlpha = False
+                            self.FullAlpha = True
     
                         ImageBuffer.write(struct.pack("BBBB",r*255,g*255,b*255,a*255))
-                
                 
                 # see if we should automatically determine compression type
                 if self.MipMapInfo.fCompressionType == plBitmap.Compression["kDirectXCompression"] and \
@@ -2350,84 +2399,3 @@ class plCubicEnvironMap(plBitmap):          # Type 0x05
 
     Export = staticmethod(_Export)
 
-    def TexCache_GetFilename(self):
-
-        resmanager=self.getResManager()
-        MyPath=resmanager.getBasePath()
-        CachePath = MyPath + "/" + self.parent.parent.parent.age.name + "_TexCache/"
-
-        # Make the directory if texture_cache is enabled
-        if (alcconfig.texture_cache):
-            try:
-                os.mkdir(CachePath)
-            except OSError:
-                pass
-
-        # Generate the filename
-        CacheFile = CachePath + str(self.Key.name) + ".qmap"
-
-        return CacheFile
-
-    def TexCache_Exists(self):
-        if os.path.isfile(self.TexCache_GetFilename()):
-            mipmapinfo = self.TexCache_LoadMipMapInfo()
-            
-            if not mipmapinfo is None:
-                if self.MipMapInfo.equals(mipmapinfo):
-#                    print "TEXCACHE DEBUG:"
-#                    print "Mipmapinfo's match"
-                    return True
-#                else:
-#                    print "TEXCACHE DEBUG:"
-#                    print "Self's mipmapinfo:"
-#                    print self.MipMapInfo
-#                    print "Cachefile's mipmapinfo:"
-#                    print mipmapinfo
-#            else:
-#                print "TEXCACHE DEBUG:"
-#                print "Could not read mipmapinfo from cachefile...."
-                
-        return False
-        
-    def TexCache_Store(self,mipmapinfo=None):
-        CacheFile = self.TexCache_GetFilename()
-        stream=hsStream(CacheFile,"wb")
-        
-        if mipmapinfo is None:
-            self.MipMapInfo.write(stream)
-        else:
-            mipmapinfo.write(stream)
-        self.write(stream)
-        stream.close()
-    
-    def TexCache_LoadMipMapInfo(self):
-        # load in the data from the file
-        CacheFile = self.TexCache_GetFilename()
-        stream=hsStream(CacheFile,"rb")
-        try:
-            mipmapinfo = blMipMapInfo()
-            mipmapinfo.read(stream)
-            return mipmapinfo
-        except:
-            print "    WARNING: Problem reading Texture Cache"
-            print "             PLEASE REMOVE YOUR OLD TEXTURE CACHE FILES"
-            return None
-    
-    
-    def TexCache_Load(self):
-        # load in the data from the file
-        CacheFile = self.TexCache_GetFilename()
-        print "     Reading mipmap %s from cache" % (str(self.Key.name) + ".tex")
-        stream=hsStream(CacheFile,"rb")
-        try:
-            self.MipMapInfo.read(stream)
-            self.read(stream)
-        except:
-            print "    WARNING: Problem reading Texture Cache"
-            print "             PLEASE REMOVE YOUR OLD TEXTURE CACHE FILES"
-        
-        stream.close()
-        
-    def TexCache_Delete(self):
-        CacheFile = self.TexCache_GetFilename()
-        return os.remove(CacheFile)

@@ -1560,6 +1560,9 @@ class plDrawInterface(plObjInterface):
         name = obj.name 
         mesh = obj.getData(False,True) # gets a Mesh object instead of an NMesh
         root = self.getRoot()
+        
+        
+        
 
         print " [Draw Interface %s]"%(str(self.Key.name))
         # First see if we have any materials associated with the mesh:
@@ -1590,6 +1593,9 @@ class plDrawInterface(plObjInterface):
         # Calculate the amount of UV Maps
         Count_UvMaps = len(mesh.getUVLayerNames())
     
+        # Store active UV map
+        if Count_UvMaps > 0:
+            StoredActiveUVMap = mesh.activeUVLayer
         
 
         # Weight Count is Global....
@@ -1739,6 +1745,11 @@ class plDrawInterface(plObjInterface):
                 # second triangle
                 MaterialGroups[mface.mat]["faces"].append([MyVertIdcs[0],MyVertIdcs[2],MyVertIdcs[3]])
 
+        # Restore active UV map
+        if Count_UvMaps > 0:
+            mesh.activeUVLayer = StoredActiveUVMap 
+
+
 
     ######################################
     ##
@@ -1752,7 +1763,7 @@ class plDrawInterface(plObjInterface):
             if not MatGroup is None:
                 mat = MatGroup['mat']
                 pmat=root.find(0x07,mat.name,1)
-                
+
                 # export the material if needed (if it's not done before)
                 ## This will create all texture layers, cubic envmaps and mipmaps, and set the blendings
                 ## If no textures are associated with the material, it will take the (first) uvmap texture of 
@@ -1773,7 +1784,7 @@ class plDrawInterface(plObjInterface):
                 RenderLevel.setMajorLevel(ZBias << 1)
 
                 SpansLevel = plRenderLevel(plRenderLevel.MajorLevel["kOpaqueMajorLevel"],plRenderLevel.MinorLevel["kDefRendMinorLevel"])
-                if RenderLevel == SpansLevel.fLevel:
+                if RenderLevel.fLevel == SpansLevel.fLevel:
                     suffix="Spans"
                 else:
                     suffix="BlendSpans"

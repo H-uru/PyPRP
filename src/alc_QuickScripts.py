@@ -231,8 +231,8 @@ def QuickScript_SoundRegion(obj):
             acttxt += "        - type: soundmsg\n"
             acttxt += "          params:\n"
             acttxt += "              receivers:\n"  
-            for emitter in list(emitters):
-                acttxt += "                - 0011:" + str(emitter) + "\n" 
+        for emitter in list(emitters):
+            acttxt += "                - 0011:" + str(emitter) + "\n" 
             acttxt += "              cmds:\n"  
             acttxt += "                - play\n" 
             acttxt += "                - setvolume\n" 
@@ -244,8 +244,8 @@ def QuickScript_SoundRegion(obj):
             acttxt += "        - type: soundmsg\n"
             acttxt += "          params:\n"
             acttxt += "              receivers:\n"  
-            for emitter in list(emitters):
-                acttxt += "                - 0011:" + str(emitter) + "\n" 
+        for emitter in list(emitters):
+            acttxt += "                - 0011:" + str(emitter) + "\n" 
             acttxt += "              cmds:\n"  
             acttxt += "                - stop\n"
             acttxt += "          waiton: -1\n"
@@ -254,8 +254,7 @@ def QuickScript_SoundRegion(obj):
             acttxt += "  curstate: 0\n"
             acttxt += "  flags:\n"
             acttxt += "    - detect_trigger\n"
-        
-        
+       
             # Parse the code
             myactscript = AlcScript(acttxt).GetRootScript()
             mymodscript = AlcScript(modtxt).GetRootScript()

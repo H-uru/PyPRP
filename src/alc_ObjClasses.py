@@ -983,11 +983,11 @@ class plHKPhysical(plPhysical):
     # flags for gColType (was 'type')
     Collision = \
     { \
-        "cNone"             : 0x0000,\
-        "cIgnoreAvatars"    : 0x0002,\
-        "cStorePosition"    : 0x0100,\
-        "cResetPosition"    : 0x0200,\
-        "cDetector"         : 0x0400,\
+        "cNone"             : 0x00000000,\
+        "cIgnoreAvatars"    : 0x00020000,\
+        "cStorePosition"    : 0x01000000,\
+        "cResetPosition"    : 0x02000000,\
+        "cDetector"         : 0x04000000,\
     }
     
     
@@ -1074,8 +1074,7 @@ class plHKPhysical(plPhysical):
         self.fEL = stream.ReadFloat()
         bounds = stream.Read32()
 
-        self.gShort1 = stream.Read16()
-        self.gColType  = stream.Read16()
+        self.gColType  = stream.Read32()
 
         self.gFlagsDetect = stream.Read32()
         self.gFlagsRespond = stream.Read32()
@@ -1117,8 +1116,7 @@ class plHKPhysical(plPhysical):
 
         stream.Write32(self.fBounds.fType) # retrieve from HKBounds Subclass
 
-        stream.Write16(self.gShort1)
-        stream.Write16(self.gColType)
+        stream.Write32(self.gColType)
 
         stream.Write32(self.gFlagsDetect)
         stream.Write32(self.gFlagsRespond)
@@ -1411,9 +1409,9 @@ class plHKPhysical(plPhysical):
 
             if self.fRC < 0.0:
                 print "  No Friction, disabling frictive setting"
-                # If no friction is set, or it is set lower than 0
-                # Default it to a relatively high setting
-                self.fRC = 100.0 
+                # If no friction is set, or it is set lower than 0,
+                # default it to around 10, so it doesn't appear unnatural on the moving objects...
+                self.fRC = 10.0 
                 # And disable friction :)
                 self.fLOSDB |= plPhysical.plLOSDB["kLOSDBAvatarWalkable"]
             else:
@@ -1446,8 +1444,8 @@ class plHKPhysical(plPhysical):
                     self.fLOSDB = plHKPhysical.plLOSDB["kLOSDBUIItems"]
                     
                 else:
-                    # basic setting: if it is dynamic, it is kickable
-                    if not isdynamic:
+                    # basic setting: if it is an explicit dynamic object and has mass, it's position get's stored
+                    if isdynamic and obj.rbFlags & Blender.Object.RBFlags["DYNAMIC"]:
                         self.gColType = plHKPhysical.Collision["cStorePosition"]
                     else:
                         self.gColType = plHKPhysical.Collision["cResetPosition"]        
