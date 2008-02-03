@@ -1250,6 +1250,9 @@ class blMipMapInfo:
             return False
         if not self.fMipMaps == ext.fMipMaps:
             return False
+        if not self.fResize == ext.fResize:
+            return False
+
         if not self.fGauss == ext.fGauss:
             return False
         
@@ -1299,6 +1302,7 @@ class blMipMapInfo:
                 else:
                     self.fCompressionType = plBitmap.Compression["kUncompressed"]
                     self.fBitmapInfo.fUncompressedInfo.fType = plBitmap.Uncompressed["kRGB8888"] # The only format we support
+                self.fResize = False
 
             if tex.imageFlags & 0x1000: #Blender.Texture.ImageFlags["GAUSS"] doesn't work... :/
                 self.fGauss = True
@@ -1316,6 +1320,12 @@ class blMipMapInfo:
                 self.fMipMaps = True
             else:
                 self.fMipMaps = False            
+            
+            if tex.imageFlags & Blender.Texture.ImageFlags["MIPMAP"] or tex.imageFlags & Blender.Texture.ImageFlags["INTERPOL"]:
+                self.fResize = True
+            else:
+                self.fResize = False
+            
                 
     def clone(self):
         new = blMipMapInfo()

@@ -302,6 +302,7 @@ def Wizard_property_update():
                 obj.removeProperty(p)
             except (AttributeError, RuntimeError):
                 col_flags0=0
+            col_flags0 = col_flags0 << 16
             if (col_flags0 > 0):
                 if (col_flags0 == plHKPhysical.Collision["cStorePosition"]):
                     value = "storepos"
@@ -309,7 +310,10 @@ def Wizard_property_update():
                     value = "resetpos"
                 elif (col_flags0 == plHKPhysical.Collision["cDetector"]):
                     value = "detect"
-                obj.addProperty("physlogic",value)
+                else:
+                    value = None
+                if value != None:
+                    obj.addProperty("physlogic",value)
 
             # Translate col_flags1 values 
             # (just delete the property; this is automatically set by other code)
@@ -972,6 +976,7 @@ def Wizard_mattex_create():
             if (mat != None) and (len(mesh.faces) > 0):
                 # Set specular to black (otherwise all lit stuff will be shiny)
                 mat.setSpecCol([0,0,0])
+                mat.setSpec(0)
                 if (mesh.faceUV):
                     # Check for existence of textures
                     numTextures = 0
