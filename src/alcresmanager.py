@@ -335,7 +335,7 @@ class alcUruPage:
 
 
                 # Only if this object has the correct alcty, will we pocess it as a softvolume...
-                if alctype == "softvolume":  #Soft Volume
+                if (alctype == "softvolume") or (alctype == "svconvex"):  #Soft Volume
 
                     ## This should be put in plSoftVolumeComplex.Export(page,obj,scnobj,name,SceneNodeRef,softvolumeparser):
                     ## But I'm not touching the softvolume code yet 
