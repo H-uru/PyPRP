@@ -527,8 +527,8 @@ class plShadowMaster(plObjInterface):    # Type: 0x00D3
         self.fAttenDist = 20.0
         self.fMaxDist = 0.0
         self.fMinDist = 0.0
-        self.fMaxSize = 255
-        self.fMinSize = 255
+        self.fMaxSize = 256
+        self.fMinSize = 256
         self.fPower = 2.0
 
     def _Find(page,name):
