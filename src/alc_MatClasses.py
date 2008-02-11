@@ -1135,7 +1135,7 @@ class plLayer(plLayerInterface):             # Type 0x06
         
         if mat.getMode() & Blender.Material.Modes['NOMIST']:
             self.fState.fShadeFlags |= hsGMatState.hsGMatShadeFlags["kShadeNoFog"]
-            self.fState.fShadeFlags |= hsGMatState.hsGMatShadeFlags["kShadeReallyNoFog"]            
+            self.fState.fShadeFlags |= hsGMatState.hsGMatShadeFlags["kShadeReallyNoFog"]
                     
         if mat.getMode() & Blender.Material.Modes['ZTRANSP']:
             self.fState.fZFlags |= hsGMatState.hsGMatZFlags["kZNoZWrite"]

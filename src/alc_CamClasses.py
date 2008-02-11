@@ -43,7 +43,7 @@ from alcConvexHull import *
 from alc_VolumeIsect import *
 from alc_AlcScript import *
 from alc_RefParser import *
-
+from alc_Messages import *
 import alcconfig, alchexdump
 
 

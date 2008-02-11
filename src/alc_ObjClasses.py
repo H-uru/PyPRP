@@ -341,8 +341,7 @@ class plSceneObject(plSynchedObject):                       #Type 0x01
         # Add page_num property
         if self.getPageNum() != 0: # but only if it's not page 0
             obj.addProperty("page_num",str(self.getPageNum()))
-
-
+    
     def deldefaultproperty(self,obj,propertyname,defaultvalue):
         try:
             p=obj.getProperty(propertyname)

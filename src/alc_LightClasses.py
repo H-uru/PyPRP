@@ -78,6 +78,22 @@ class plLightInfo(plObjInterface):                          #Type 0x54 (Uru)
         "kNumProps"             : 12  \
     }
     
+    scriptProps = \
+    { \
+        "disable"              : 0, \
+        "obsolete"             : 1, \
+        "castshadows"          : 2, \
+        "movable"              : 3, \
+        "hasincludes"          : 4, \
+        "includeschars"        : 5, \
+        "OBSOLECTE_0"          : 6, \
+        "overall"              : 7, \
+        "hasspecular"          : 8, \
+        "shadowonly"           : 9, \
+        "shadowlightgroup"     : 10, \
+        "forceproj"            : 11, \
+    }
+    
     def __init__(self,parent,name="unnamed",type=None):
         plObjInterface.__init__(self,parent,name,type)
         try: #Quick, dirty fix for NameError bug with classes from alc_GeomClasses
@@ -342,6 +358,14 @@ class plDirectionalLightInfo(plLightInfo):
         propString = getTextPropertyOrDefault(obj,"softvolume",propString)
         if (propString != None and self.softVolumeParser != None):
             self.softvol = self.softVolumeParser.parseProperty(propString,str(self.Key.name))
+        
+        flags = FindInDict(objscript,"lamp.flags",None)
+        if type(flags) == list:
+            self.fFlags = hsBitVector() # reset
+            for flag in flags:
+                if flag.lower() in plLightInfo.scriptProps:
+                    idx =  plLightInfo.scriptProps[flag.lower()]
+                    self.fFlags.SetBit(idx)
 
 #list1
 class plOmniLightInfo(plDirectionalLightInfo): #Incorrect, but I guess it can slip   
@@ -439,7 +463,7 @@ class plOmniLightInfo(plDirectionalLightInfo): #Incorrect, but I guess it can sl
         else:
             print "  Long-range cutoff"
             self.fAttenCutoff= Dist * 10
-            
+
 
 #list1
 class plSpotLightInfo(plOmniLightInfo):    

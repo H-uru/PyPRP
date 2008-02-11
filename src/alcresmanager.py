@@ -599,7 +599,7 @@ class alcUruPage:
                     AlcLogicHelper.Export(self,obj,scnobj,name)
 
                     # Visual Export (Also contains drawablespans export code)
-                    plDrawInterface.Export(self,obj,scnobj,name,SceneNodeRef,isdynamic)
+                    plDrawInterface.Export(self,obj,scnobj,name,SceneNodeRef,isdynamic,softVolumeParser)
 
                     # Shadow Caster Export
                     plShadowCaster.Export(self,obj,scnobj,name,isdynamic)

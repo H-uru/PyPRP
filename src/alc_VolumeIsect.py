@@ -301,14 +301,17 @@ class alcSoftVolumeParser:
                     raise "Error: missing a ')' in softvolume property '%s' of %s" %(propString,rootName)
                 complexSV = None
                 if isUnion == True:
-                    tempname = alcUniqueName(rootName + "Union",0,0,'union')
-                    complexSV = self.prp.find(0x008A,tempname,1)
+                    #tempname = alcUniqueName(rootName + "Union",0,0,'union')
+                    #complexSV = self.prp.find(0x008A,tempname,1)
+                    complexSV = self.prp.find(0x008A,rootName,1)
                 elif isIntersection == True:
-                    tempname = alcUniqueName(rootName + "Isect",0,0,'isect')
-                    complexSV = self.prp.find(0x008B,tempname,1)
+                    #tempname = alcUniqueName(rootName + "Isect",0,0,'isect')
+                    #complexSV = self.prp.find(0x008B,tempname,1)
+                    complexSV = self.prp.find(0x008B,rootName,1)
                 elif isInverse == True:
-                    tempname = alcUniqueName(rootName + "Invert",0,0,'invert')
-                    complexSV = self.prp.find(0x008C,tempname,1)
+                    #tempname = alcUniqueName(rootName + "Invert",0,0,'invert')
+                    #complexSV = self.prp.find(0x008C,tempname,1)
+                    complexSV = self.prp.find(0x008C,rootName,1)
                 if complexSV == None:
                     raise "Error: could not create a complex soft volume for %s" % rootName
                 for svRef in svRefs:

@@ -1535,7 +1535,7 @@ class plDrawInterface(plObjInterface):
     Import = staticmethod(_Import)
 
 
-    def _Export(page,obj,scnobj,name,SceneNodeRef,isdynamic=0):
+    def _Export(page,obj,scnobj,name,SceneNodeRef,isdynamic,softVolParser):
         # --- Draw Interface ---
         drawiref=scnobj.data.draw
         if drawiref.isNull():
@@ -1546,13 +1546,13 @@ class plDrawInterface(plObjInterface):
         if drawi==None:
             raise "ERROR: DrawInterface %s - %s not found!" %(str(scnobj.data.Key),str(drawiref))
 
-        drawi.data.export_obj(obj,SceneNodeRef,isdynamic)
+        drawi.data.export_obj(obj,SceneNodeRef,isdynamic,softVolParser)
         # update draw interface
         drawi.data.parentref=scnobj.data.getRef()
 
     Export = staticmethod(_Export)
         
-    def export_obj(self,obj,SceneNodeRef,isdynamic):
+    def export_obj(self,obj,SceneNodeRef,isdynamic,softVolParser):
         if obj.getType() != "Mesh":
             return
             
@@ -1560,9 +1560,6 @@ class plDrawInterface(plObjInterface):
         name = obj.name 
         mesh = obj.getData(False,True) # gets a Mesh object instead of an NMesh
         root = self.getRoot()
-        
-        
-        
 
         print " [Draw Interface %s]"%(str(self.Key.name))
         # First see if we have any materials associated with the mesh:
@@ -1586,8 +1583,6 @@ class plDrawInterface(plObjInterface):
     ## Loop through all the faces, to sort vertices and faces out per material
     ##
     ######################################
-
-
 
 
         # Calculate the amount of UV Maps
@@ -1810,7 +1805,22 @@ class plDrawInterface(plObjInterface):
             drawspans.data.fCriteria = DSpans['Criteria']
             #export the object
             setnum=drawspans.data.export_obj(obj,isdynamic,DSpans['MatGroups'])
-            self.addSpanSet(setnum,drawspans.data.getRef())    
+            self.addSpanSet(setnum,drawspans.data.getRef())
+        
+        # --- Export the Vis Region
+        
+        objscript = AlcScript.objects.Find(obj.getName())
+        
+        propString = FindInDict(objscript,"visual.visregion")
+        volume = None
+        if (propString != None and softVolParser != None):
+            volume = softVolParser.parseProperty(str(propString),str(self.Key.name))
+        
+        if volume:
+            vr = root.find(0x0116, propString, 1)
+            vr.data.scenenode=SceneNodeRef
+            vr.data.fRegion = volume
+            self.fRegions.append(vr.data.getRef())
         
 
 class plInstanceDrawInterface(plDrawInterface):
