@@ -186,6 +186,7 @@ class plLightInfo(plObjInterface):                          #Type 0x54 (Uru)
 
         # --- Prepare and Export Shadow object ---
         if shadow != None:
+            shadow.data.parentref=scnobj.data.getRef()
             shadow.data.export_obj(obj)
             scnobj.data.data1.append(shadow.data.getRef())
 
@@ -243,6 +244,7 @@ class plDirectionalLightInfo(plLightInfo):
 
     def export_object(self,obj):
         lamp=obj.data
+        objscript = AlcScript.objects.Find(obj.getName())
         
         print " [Light Base]\n";
         
@@ -336,12 +338,8 @@ class plDirectionalLightInfo(plLightInfo):
 
         
         # Set the soft volume
-        propString = None
-        try:
-            prop = obj.getProperty("softvolume")
-            propString = str(prop.getData())
-        except:
-            pass
+        propString = FindInDict(objscript,"lamp.softvolume")
+        propString = getTextPropertyOrDefault(obj,"softvolume",propString)
         if (propString != None and self.softVolumeParser != None):
             self.softvol = self.softVolumeParser.parseProperty(propString,str(self.Key.name))
 
@@ -524,7 +522,7 @@ class plShadowMaster(plObjInterface):    # Type: 0x00D3
     
     def __init__(self,parent,name="unnamed",type=0x00D3):
         plObjInterface.__init__(self,parent,name,type)
-        self.fAttenDist = 20.0
+        self.fAttenDist = 10.0
         self.fMaxDist = 0.0
         self.fMinDist = 0.0
         self.fMaxSize = 256
@@ -546,7 +544,7 @@ class plShadowMaster(plObjInterface):    # Type: 0x00D3
 
     def read(self,stream):
         plObjInterface.read(self,stream)
-
+        
         self.fAttenDist = stream.ReadFloat()
         self.fMaxDist = stream.ReadFloat()
         self.fMinDist = stream.ReadFloat()
@@ -557,7 +555,7 @@ class plShadowMaster(plObjInterface):    # Type: 0x00D3
 
     def write(self,stream):
         plObjInterface.write(self,stream)
-
+        
         stream.WriteFloat(self.fAttenDist)
         stream.WriteFloat(self.fMaxDist)
         stream.WriteFloat(self.fMinDist)
@@ -573,8 +571,9 @@ class plShadowMaster(plObjInterface):    # Type: 0x00D3
     def export_obj(self,obj):
         lamp = obj.data
         
-        print " [ShadowMaster]"  
+        print " [ShadowMaster]"
         self.BitFlags[plShadowMaster.plDrawProperties["kSelfShadow"]] = 1
+        self.fMaxDist = lamp.dist
         
         pass
         

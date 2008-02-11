@@ -397,20 +397,19 @@ class alcUruPage:
 
             # Check if the object is a Lamp
             if obj_type=="Lamp":
-                
-                print "" 
-                print "[Lamp %s]" % name
-
-                # --- Obtain scene object ---
-                scnobj = plSceneObject.FindCreate(self.prp,name)
-                
-                scnobj.data.scene=SceneNodeRef
-
-                #
-                plLightInfo.Export(self,obj,scnobj,name,SceneNodeRef,softVolumeParser)
-
-                # Coordinate export
-                plCoordinateInterface.Export(self,obj,scnobj,name,True,objlist) 
+                if (alctype == 'lamp') or (alctype == 'object'):
+                    print "" 
+                    print "[Lamp %s]" % name
+                    
+                    # --- Obtain scene object ---
+                    scnobj = plSceneObject.FindCreate(self.prp,name)
+                    scnobj.data.scene=SceneNodeRef
+                    
+                    #
+                    plLightInfo.Export(self,obj,scnobj,name,SceneNodeRef,softVolumeParser)
+                    
+                    # Coordinate export
+                    plCoordinateInterface.Export(self,obj,scnobj,name,True,objlist) 
                 
             elif obj_type=="Empty":
                 # Support for Sound emission points (basically point with some added stuff)

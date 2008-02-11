@@ -276,7 +276,7 @@ class plSoundBuffer(hsKeyedObject):                     #Type 0x29
     def makeFromInput(self, wavobj):
         wavobj.setCurrent() #Make it the current sound object... just because we can :P
         
-        self.fFileName.set(wavobj.getName().replace(".wav", ".ogg"))
+        self.fFileName.set(os.path.basename(wavobj.getFilename()).replace(".wav", ".ogg"))
         
         self.fFlags |= plSoundBuffer.Flags["kIsExternal"]
         self.fFlags |= plSoundBuffer.Flags["kAlwaysExternal"]
@@ -633,7 +633,9 @@ class plWin32Sound(plSound):
         minFallDist = FindInDict(objscript,"sound.minfdist", 5)
         self.fMinFalloff = int(minFallDist)
         
-        wavobj = Blender.Sound.Get(sname+'.wav')
+        wavobj = Blender.Sound.Get(sname)
+        if not wavobj:
+            wavobj = Blender.Sound.Get(sname)+".wav"
         if wavobj:
             #HACK - Save the sound so that Blender doesn't eat it >.<
             wavobj.fakeUser = 1
