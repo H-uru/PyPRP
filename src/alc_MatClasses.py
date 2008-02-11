@@ -812,7 +812,7 @@ class plLayer(plLayerInterface):             # Type 0x06
                     mipmapinfo = blMipMapInfo()
                     mipmapinfo.export_tex(tex)
                     
-                    if stencil:
+                    if stencil and (not Blender.Texture.ImageFlags["USEALPHA"]):
                         mipmapinfo.fCalcAlpha = True
                     
                     mipmap=plMipMap.Export(root,tex.image.getName(),tex.image,mipmapinfo)
