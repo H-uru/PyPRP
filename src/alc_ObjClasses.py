@@ -1416,10 +1416,11 @@ class plHKPhysical(plPhysical):
             else:
                 print "  Friction:",self.fRC
     
-            # retrieve elasticity from logic property
-            self.fEL = float(FindInDict(objscript,"physical.elasticity",0.0))
-            if self.fEL == -1:
-                self.fEL = getFloatPropertyOrDefault(obj,"el",-1)
+            # retrieve elasticity from alcscript
+            self.fEL = float(FindInDict(objscript,"physical.elasticity",-1.0))
+            if self.fEL == -1.0:
+                # retrieve elasticity from logic property if not in alcscript
+                self.fEL = getFloatPropertyOrDefault(obj,"el",-1.0)
             if self.fEL < 0.0:
                 print "  No Elasticity set"
             else:
