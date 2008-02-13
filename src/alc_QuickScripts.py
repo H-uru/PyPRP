@@ -149,7 +149,7 @@ def QuickScript_Footstep(obj):
             acttxt += "      waittocmd: 0\n"
             acttxt += "  curstate: 0\n"
             acttxt += "  flags:\n"
-            acttxt += "    - detect_trigger\n"
+            acttxt += "    - detecttrigger\n"
         
             # Parse the code
             myactscript = AlcScript(acttxt).GetRootScript()
@@ -253,7 +253,7 @@ def QuickScript_SoundRegion(obj):
             acttxt += "      waittocmd: 0\n"
             acttxt += "  curstate: 0\n"
             acttxt += "  flags:\n"
-            acttxt += "    - detect_trigger\n"
+            acttxt += "    - detecttrigger\n"
        
             # Parse the code
             myactscript = AlcScript(acttxt).GetRootScript()
@@ -412,6 +412,9 @@ def QuickScript_SimpleClickable(obj):
         modtxt += "        - type: picking\n"
         modtxt += "    - type: objectinbox\n"
         modtxt += "      satisfied: true\n"
+        modtxt += "    - type: facing\n"
+        modtxt += "      satisfied: true\n"
+        modtxt += "      directional: true\n"
         modtxt += "  actions:\n"
         modtxt += "    - type: pythonfile\n"
         modtxt += "      ref: $AutoClick\n"

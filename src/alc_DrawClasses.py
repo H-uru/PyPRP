@@ -1778,6 +1778,12 @@ class plDrawInterface(plObjInterface):
                     ZBias = 7
                 RenderLevel.setMajorLevel(ZBias << 1)
 
+                Props = 0
+                if ZBias > 0:
+                    Criteria |= plDrawable.Crit["kCritSortSpans"]
+                    Props = plDrawable.Props["kPropSortSpans"]
+
+
                 SpansLevel = plRenderLevel(plRenderLevel.MajorLevel["kOpaqueMajorLevel"],plRenderLevel.MinorLevel["kDefRendMinorLevel"])
                 if RenderLevel.fLevel == SpansLevel.fLevel:
                     suffix="Spans"
@@ -1790,7 +1796,7 @@ class plDrawInterface(plObjInterface):
                 
                 # Create the entry if it doesn't exist yet...
                 if not DrawableSpansList.has_key(DSpansName):
-                    DrawableSpansList[DSpansName] = {'MatGroups': [],'RenderLevel': RenderLevel.fLevel,'Criteria': Criteria}
+                    DrawableSpansList[DSpansName] = {'MatGroups': [],'RenderLevel': RenderLevel.fLevel,'Criteria': Criteria,'Props': Props}
                 
                 # And append this material to it...
                 DrawableSpansList[DSpansName]['MatGroups'].append(MatGroup)
@@ -1803,6 +1809,7 @@ class plDrawInterface(plObjInterface):
             drawspans.data.fSceneNode=SceneNodeRef
             drawspans.data.fRenderLevel.fLevel=DSpans['RenderLevel']
             drawspans.data.fCriteria = DSpans['Criteria']
+            drawspans.data.fProps = DSpans['Props']
             #export the object
             setnum=drawspans.data.export_obj(obj,isdynamic,DSpans['MatGroups'])
             self.addSpanSet(setnum,drawspans.data.getRef())

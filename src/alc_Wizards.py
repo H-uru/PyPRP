@@ -399,6 +399,8 @@ def Wizard_property_update():
                 obj.rbFlags |= Blender.Object.RBFlags["ACTOR"]
                 objscript = AlcScript.objects.FindOrCreate(obj.name)
                 StoreInDict(objscript,"quickscript.simpleclick.pythonfile",clickfile)
+                # Pin this object
+                StoreInDict(objscript,"physical.pinned","true")
             except (AttributeError, RuntimeError):
                 pass
 
@@ -930,32 +932,32 @@ def Wizard_mattex_create():
             except (AttributeError, RuntimeError):
                 pass             
 
-            # Check for null materials in mesh
+            # Remove initial null material and all other materials than the first
             numNullMaterials = 0
             newMaterials = []
-            for mat in mesh.materials:
+            mat = None
+            if len(mesh.materials) > 0:
+                mat = mesh.materials[0]
                 if mat == None:
-                    numNullMaterials += 1
+                    mesh.materials = []
+                    obj.colbits = 0x00
+                    obj.activeMaterial = 0
+                    print "  Deleted null material"
                 else:
+                    # Swap out the old array for the new one
                     newMaterials.append(mat)
-            if numNullMaterials > 0:
-                # Swap out the old array for the new one
-                if len(newMaterials) > 0:
                     mesh.materials = newMaterials
                     obj.colbits = 0x01
                     obj.activeMaterial = 1
                     for face in mesh.faces:
                         face.mat = 0
-                print "  Deleted",numNullMaterials,"null materials"
 
             # Check for existence of materials for the mesh
-            mat = None
-            for mat in mesh.materials:
-                if mat != None:
-                    break
             if mat != None:
                 # DEBUG
                 print " has material", mat
+                # Unset shadow buf mode to prevent unwanted shadow casters
+                mat.mode &= ~Blender.Material.Modes["SHADOWBUF"]
             elif type != "region" and type != "svconvex" and type != "collider" and type != "book" and type != "page":
                 # Create a material
                 matName = alcUniqueName(obj.name,0,0,"m");
@@ -972,6 +974,7 @@ def Wizard_mattex_create():
                 #DEBUG
                 print " is type",type
                 continue
+
             # Check for existence of UV coordinates on the face
             if (mat != None) and (len(mesh.faces) > 0):
                 # Set specular to black (otherwise all lit stuff will be shiny)

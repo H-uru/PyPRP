@@ -711,8 +711,16 @@ class plLayer(plLayerInterface):             # Type 0x06
 
         mesh = obj.getData(False,True)
 
+        exportTexturesToPrp = alcconfig.export_textures_to_page_prp
+        try:
+            p = obj.getProperty("ignorePPT")
+            if (bool(p.getData()) == True):
+                exportTexturesToPrp = 0
+        except:
+            pass
+
         # determine what the texture prp must be
-        if alcconfig.export_textures_to_page_prp:
+        if exportTexturesToPrp:
             texprp=root
         else:
             texprp=resmanager.findPrp("Textures")
@@ -781,7 +789,7 @@ class plLayer(plLayerInterface):             # Type 0x06
                 mipmapinfo.fGauss = True
                 mipmapinfo.fResize = True
 
-                qmap = plCubicEnvironMap.Export(root,tex.image.getName(),tex.image,mipmapinfo)
+                qmap = plCubicEnvironMap.Export(root,tex.image.getName(),tex.image,mipmapinfo,exportTexturesToPrp)
 
                 self.fTexture = qmap.data.getRef()
                 self.fHasTexture = 1
@@ -815,7 +823,7 @@ class plLayer(plLayerInterface):             # Type 0x06
                     if stencil and (not Blender.Texture.ImageFlags["USEALPHA"]):
                         mipmapinfo.fCalcAlpha = True
                     
-                    mipmap=plMipMap.Export(root,tex.image.getName(),tex.image,mipmapinfo)
+                    mipmap=plMipMap.Export(root,tex.image.getName(),tex.image,mipmapinfo,exportTexturesToPrp)
                                         
                     self.fTexture = mipmap.data.getRef()
                     self.fHasTexture = 1
@@ -1008,7 +1016,7 @@ class plLayer(plLayerInterface):             # Type 0x06
                 mipmapinfo.fCompressionType = plBitmap.Compression["kDirectXCompression"]
                 mipmapinfo.fBitmapInfo.fDirectXInfo.fCompressionType = plBitmap.CompressionType["kDXT5"]
                 
-                mipmap = plMipMap.Export_Raw(root,blendname,blenddata,blendwidth,blendheight,mipmapinfo)
+                mipmap = plMipMap.Export_Raw(root,blendname,blenddata,blendwidth,blendheight,mipmapinfo,exportTexturesToPrp)
                 
                 # and link the mipmap to the layer
                 self.fTexture = mipmap.data.getRef()
@@ -1164,8 +1172,16 @@ class plLayer(plLayerInterface):             # Type 0x06
         mipmapinfo.fGauss = False
         mipmapinfo.fResize = True
         
+        exportTexturesToPrp = alcconfig.export_textures_to_page_prp
+        try:
+            p = obj.getProperty("ignorePPT")
+            if (bool(p.getData()) == True):
+                exportTexturesToPrp = 0
+        except:
+            pass        
+
         print "  Exporting Mipmap image",image.getName()
-        mipmap=plMipMap.Export(root,image.getName(),image,mipmapinfo)
+        mipmap=plMipMap.Export(root,image.getName(),image,mipmapinfo,exportTexturesToPrp)
 
         print "  Processes Mipmap image",mipmap.data.Key.name
 
@@ -2070,9 +2086,9 @@ class plMipMap(plBitmap):                    # Type 0x04
 
     UniquePrefix = 1
 
-    def _FindCreateByMipMapInfo(page,name,mipmapinfo):
+    def _FindCreateByMipMapInfo(page,name,mipmapinfo,exportTexturesToPrp):
         resmgr = page.resmanager
-        if not alcconfig.export_textures_to_page_prp:
+        if not exportTexturesToPrp:
             page=resmgr.findPrp("Textures")
             if page==None:
                 raise "    Textures PRP file not found"
@@ -2110,25 +2126,22 @@ class plMipMap(plBitmap):                    # Type 0x04
 
     FindCreateByMipMapInfo = staticmethod(_FindCreateByMipMapInfo)
 
-    def _Export(page,name,blenderimage,mipmapinfo):
-        mipmap = plMipMap.FindCreateByMipMapInfo(page,name,mipmapinfo)
+    def _Export(page,name,blenderimage,mipmapinfo,exportTexturesToPrp):
+        mipmap = plMipMap.FindCreateByMipMapInfo(page,name,mipmapinfo,exportTexturesToPrp)
         mipmap.data.SetConfig(plMipMap.Color["kARGB32Config"])
         mipmap.data.FromBlenderImage(blenderimage)
         return mipmap
         
     Export = staticmethod(_Export)
     
-    def _Export_Raw(page,name,imbuffer, imwidth, imheight, mipmapinfo):
-        mipmap = plMipMap.FindCreateByMipMapInfo(page,name,mipmapinfo)
+    def _Export_Raw(page,name,imbuffer, imwidth, imheight, mipmapinfo,exportTexturesToPrp):
+        mipmap = plMipMap.FindCreateByMipMapInfo(page,name,mipmapinfo,exportTexturesToPrp)
         mipmap.data.SetConfig(plMipMap.Color["kARGB32Config"])
         mipmap.data.FromRawImage(imbuffer,imwidth,imheight)
         return mipmap
 
     Export_Raw = staticmethod(_Export_Raw)
 
-
-    
-    
 class plCubicEnvironMap(plBitmap):          # Type 0x05
 
     Faces = {
@@ -2392,9 +2405,9 @@ class plCubicEnvironMap(plBitmap):          # Type 0x05
         self.Processed = 1
         
         
-    def _Export(page,name,image,mipmapinfo):
+    def _Export(page,name,image,mipmapinfo,exportTexturesToPrp):
         resmgr = page.resmanager
-        if not alcconfig.export_textures_to_page_prp:
+        if not exportTexturesToPrp:
             page=resmgr.findPrp("Textures")
             if page==None:
                 raise "    Textures PRP file not found"

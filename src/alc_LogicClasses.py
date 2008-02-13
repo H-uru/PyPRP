@@ -214,14 +214,14 @@ class AlcLogicHelper:
         climbHeight = int((deltaWZ - 5.42)/2)
         climbOffset = 0
         
-	print "[AutoLadder Script]"
-	print "    Calculated Ladder:"
-	print "    Bottom Region Matrix:"
-	print btmMtx
-	print "    Top Region Matrix:"
-	print topMtx
-	print "    climbHeight: %d" % climbHeight
-	print "    Attempting to create objects:"
+        print "[AutoLadder Script]"
+        print "    Calculated Ladder:"
+        print "    Bottom Region Matrix:"
+        print btmMtx
+        print "    Top Region Matrix:"
+        print topMtx
+        print "    climbHeight: %d" % climbHeight
+        print "    Attempting to create objects:"
 
         # construct the objects:
         SceneNodeRef=page.prp.getSceneNode().data.getRef()
@@ -252,7 +252,7 @@ class AlcLogicHelper:
             
             btmClimbRegion.data.export_raw(btmMtx,0,climbHeight,1)
             print "Loops: %d" % climbHeight
-	    print "GoingUp: 1"
+            print "GoingUp: 1"
 
             # End calculate the right settings
             btmScnobj.data.data2.append(btmClimbRegion.data.getRef())
@@ -285,9 +285,9 @@ class AlcLogicHelper:
             # calculate the correct settings
 
             topClimbRegion.data.export_raw(topMtx,0,climbHeight,0)
-	    print "Loops: %d" % climbHeight
-	    print "GoingUp: 0"
-	    
+            print "Loops: %d" % climbHeight
+            print "GoingUp: 0"
+    
             # End calculate the right settings
             topScnobj.data.data2.append(topClimbRegion.data.getRef())
     
@@ -537,7 +537,7 @@ class plLogicModifier(plLogicModBase):
         "localelement"      : 0, \
         "reset"             : 1, \
         "triggered"         : 2, \
-        "oneShot"           : 3, \
+        "oneshot"           : 3, \
         "requestingtrigger" : 4, \
         "typeactivator"     : 5, \
         "multitrigger"      : 6  \
@@ -564,7 +564,7 @@ class plLogicModifier(plLogicModBase):
     { \
         "nochange"   :  0, \
         "up"         :  1, \
-        "ueft"       :  2, \
+        "left"       :  2, \
         "right"      :  3, \
         "down"       :  4, \
         "poised"     :  5, \
@@ -701,7 +701,7 @@ class plLogicModifier(plLogicModBase):
                         txt += "    waittocmd: 0\n"
                         txt += "curstate: 0\n"
                         txt += "flags:\n"
-                        txt += "  - detect_trigger\n"
+                        txt += "  - detecttrigger\n"
 
                         plobj.data.export_script(AlcScript(txt).GetRootScript(),scnobj)
                         # Also add this new respondermodifier to the scene node..
@@ -1917,7 +1917,7 @@ class plResponderModifier(plSingleModifier):
         self.fEnabled = bool(str(FindInDict(script,"enabled",str(self.fEnabled))).lower() == "true")
 
         # pass throug the flags - of no flag parameter is specified, default with kDetectTrigger
-        flags = FindInDict(script,"flags",["detect_trigger"])
+        flags = FindInDict(script,"flags",["detecttrigger"])
         if type(flags) == list:
             for flag in flags:
                 if plResponderModifier.ScriptFlags.has_key(str(flag).lower()):

@@ -613,7 +613,7 @@ class plWin32Sound(plSound):
                 self.fProperties |= plSound.Properties["kPropIs3DSound"]
             if(prop == "loop"):
                 self.fProperties |= plSound.Properties["kPropLooping"]
-            if(prop == "start"):
+            if(prop == "start" or prop == "play" ):
                 self.fProperties |= plSound.Properties["kPropAutoStart"]
             if(prop == "local"):
                 self.fProperties |= plSound.Properties["kPropLocalOnly"]
@@ -633,9 +633,13 @@ class plWin32Sound(plSound):
         minFallDist = FindInDict(objscript,"sound.minfdist", 5)
         self.fMinFalloff = int(minFallDist)
         
-        wavobj = Blender.Sound.Get(sname)
-        if not wavobj:
-            wavobj = Blender.Sound.Get(sname)+".wav"
+        try:
+            wavobj = Blender.Sound.Get(sname)
+            if not wavobj:
+                raise ValueExcepttion, "This exception is supposed to be caught and process, so you should never see it"
+        except:
+            wavobj = Blender.Sound.Get(sname+".wav")
+
         if wavobj:
             #HACK - Save the sound so that Blender doesn't eat it >.<
             wavobj.fakeUser = 1

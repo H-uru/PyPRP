@@ -31,7 +31,7 @@ Name: 'PyPRP'
 Blender: 245
 Group: 'Object'
 Submenu: 'Copy Logic Properties from main selection to secondary selection' i_CopyProperties
-
+Submenu: 'Ignore textures during per-page-texture export' i_ignore
 Tooltip: 'GoW PyPRP'
 """
 
@@ -88,11 +88,25 @@ def deldefaultproperty(obj,propertyname,defaultvalue):
 
 
 
+def ignoreTextures():
+    l = Blender.Object.GetSelected()
+    for obj in l:
+        try:
+            p = obj.getProperty("ignorePPT")
+            obj.removeProperty(p)
+        except:
+            pass
+        obj.addProperty("ignorePPT",True,'BOOL')
+    Blender.Draw.PupMenu('Ignored textures in %d objects.' % (len(l)))
+
+
 def do_main():
     args = __script__['arg']
     w = args.split("_")
     if w[1]=="CopyProperties":
         CopyProperties()
+    elif w[1]=="ignore":
+        ignoreTextures()
     else:
         raise "Unknown options %s" %(w)
 
@@ -100,4 +114,3 @@ def do_main():
 
 #Main code
 do_main()
-
