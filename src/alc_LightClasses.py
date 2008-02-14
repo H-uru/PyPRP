@@ -376,34 +376,32 @@ class plOmniLightInfo(plDirectionalLightInfo): #Incorrect, but I guess it can sl
         self.fAttenLinear=0.0
         self.fAttenQuadratic=1.0
         self.fAttenCutoff=10.0
-
+    
     def _Find(page,name):
         return page.find(0x0056,name,0)
     Find = staticmethod(_Find)
-
+    
     def _FindCreate(page,name):
         return page.find(0x0056,name,1)
     FindCreate = staticmethod(_FindCreate)
-
-
+    
     def changePageRaw(self,sid,did,stype,dtype):
         plDirectionalLightInfo.changePageRaw(self,sid,did,stype,dtype)
-
-
+    
     def read(self,stream):
         plDirectionalLightInfo.read(self,stream)
         self.fAttenConst     = stream.ReadFloat()
         self.fAttenLinear    = stream.ReadFloat()
         self.fAttenQuadratic = stream.ReadFloat()
         self.fAttenCutoff    = stream.ReadFloat()
-
+    
     def write(self,stream):
         plDirectionalLightInfo.write(self,stream)
         stream.WriteFloat(self.fAttenConst)
         stream.WriteFloat(self.fAttenLinear)
         stream.WriteFloat(self.fAttenQuadratic)
         stream.WriteFloat(self.fAttenCutoff)
-
+    
     def import_obj(self,obj):
         plDirectionalLightInfo.import_obj(self,obj)
 
@@ -416,12 +414,12 @@ class plOmniLightInfo(plDirectionalLightInfo): #Incorrect, but I guess it can sl
         else:
             obj.data.mode = obj.data.mode | Blender.Lamp.Modes["Quad"]
         return obj
-
+    
     def export_object(self,obj):
         plDirectionalLightInfo.export_object(self,obj)
         lamp=obj.data
-
-     
+        
+        
         # To use blenders Half distance lighting setting, the following formula is used:
         # Linear Mode (default):
         # Blender: Intensity = BlenderDistance/(BlenderDistance + d)
@@ -552,20 +550,18 @@ class plShadowMaster(plObjInterface):    # Type: 0x00D3
         self.fMaxSize = 256
         self.fMinSize = 256
         self.fPower = 2.0
-
+    
     def _Find(page,name):
         return page.find(0x00D3,name,0)
     Find = staticmethod(_Find)
-
+    
     def _FindCreate(page,name):
         return page.find(0x00D3,name,1)
     FindCreate = staticmethod(_FindCreate)
-
-
+    
     def changePageRaw(self,sid,did,stype,dtype):
         plObjInterface.changePageRaw(self,sid,did,stype,dtype)
-
-
+    
     def read(self,stream):
         plObjInterface.read(self,stream)
         
@@ -575,8 +571,7 @@ class plShadowMaster(plObjInterface):    # Type: 0x00D3
         self.fMaxSize = stream.Read32()
         self.fMinSize = stream.Read32()
         self.fPower = stream.ReadFloat()
-
-
+    
     def write(self,stream):
         plObjInterface.write(self,stream)
         
@@ -586,19 +581,25 @@ class plShadowMaster(plObjInterface):    # Type: 0x00D3
         stream.Write32(self.fMaxSize)
         stream.Write32(self.fMinSize)
         stream.WriteFloat(self.fPower)
-
+    
     def import_obj(self,obj):
         lamp = obj.data
-        
         lamp.mode |= Blender.Lamp.Modes["RayShadow"]
-
+    
     def export_obj(self,obj):
         lamp = obj.data
         
         print " [ShadowMaster]"
         self.BitFlags[plShadowMaster.plDrawProperties["kSelfShadow"]] = 1
-        self.fMaxDist = lamp.dist
         
+        if lamp.mode & (Lamp.Modes["Sphere"]):
+            self.fAttenDist = lamp.dist
+        else:
+            self.fAttenDist = lamp.dist * 10
+        print "  Attensity distance %f" % self.fAttenDist
+        
+        self.fPower = lamp.energy
+        print "  Power: %f" % self.fPower
         pass
         
 class plShadowCaster(plMultiModifier):    #Type 0x00D4
@@ -664,49 +665,42 @@ class plShadowCaster(plMultiModifier):    #Type 0x00D4
 class plPointShadowMaster(plShadowMaster):    # Type: 0x00D5
     def __init__(self,parent,name="unnamed",type=0x00D5):
         plShadowMaster.__init__(self,parent,name,type)
-
+    
     def _Find(page,name):
         return page.find(0x00D5,name,0)
     Find = staticmethod(_Find)
-
+    
     def _FindCreate(page,name):
         return page.find(0x00D5,name,1)
     FindCreate = staticmethod(_FindCreate)
-
-
+    
     def changePageRaw(self,sid,did,stype,dtype):
         plShadowMaster.changePageRaw(self,sid,did,stype,dtype)
-
-
+    
     def read(self,stream):
         plShadowMaster.read(self,stream)
-
-
+    
     def write(self,stream):
         plShadowMaster.write(self,stream)
-
 
 class plDirectShadowMaster(plShadowMaster):    # Type: 0x00D6
     def __init__(self,parent,name="unnamed",type=0x00D6):
         plShadowMaster.__init__(self,parent,name,type)
-
+    
     def _Find(page,name):
         return page.find(0x00D6,name,0)
     Find = staticmethod(_Find)
-
+    
     def _FindCreate(page,name):
         return page.find(0x00D6,name,1)
     FindCreate = staticmethod(_FindCreate)
-
-
+    
     def changePageRaw(self,sid,did,stype,dtype):
         plShadowMaster.changePageRaw(self,sid,did,stype,dtype)
-
-
+    
     def read(self,stream):
         plShadowMaster.read(self,stream)
-
-
+    
     def write(self,stream):
         plShadowMaster.write(self,stream)
 

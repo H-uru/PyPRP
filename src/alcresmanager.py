@@ -614,22 +614,22 @@ class alcUruPage:
                     plAudioInterface.Export(self,obj,scnobj,name,SceneNodeRef,softVolumeParser)
  
             elif obj_type=="Camera":
-                print "" 
-                print "[Camera %s]" % name
-                #find the sceneobject or create it
-                scnobj = plSceneObject.FindCreate(self.prp,name)
-                scnobj.data.scene=SceneNodeRef
+                if (alctype == 'camera') or (alctype == 'object'):
+                    print "" 
+                    print "[Camera %s]" % name
+                    #find the sceneobject or create it
+                    scnobj = plSceneObject.FindCreate(self.prp,name)
+                    scnobj.data.scene=SceneNodeRef
 
-                
-                # Export the coordinate interface ('self' is passed as ref to this resmgr)
-                plCoordinateInterface.Export(self,obj,scnobj,name,True,objlist)
-
-                # Logical Export - OK, may be a bit weird but perhaps someone has use for it :)
-                AlcLogicHelper.Export(self,obj,scnobj,name)
-
-                plCameraModifier1.Export(self,obj,scnobj,name)
-                                 
                     
+                    # Export the coordinate interface ('self' is passed as ref to this resmgr)
+                    plCoordinateInterface.Export(self,obj,scnobj,name,True,objlist)
+
+                    # Logical Export - OK, may be a bit weird but perhaps someone has use for it :)
+                    AlcLogicHelper.Export(self,obj,scnobj,name)
+
+                    plCameraModifier1.Export(self,obj,scnobj,name)
+                
             else: # Not a mesh - save for next pass
                 objlist2.append(obj)
                     

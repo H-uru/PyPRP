@@ -134,13 +134,13 @@ class mfs:
     def writesum(self,path,old_style=0):
         count = 0
         for f in self.files:
-            if f.type in ["base","page"]:
+            if f.type in ["page"]:
                 count=count+1
         sum=Wdys()
         sum.open(path,"wb")
         sum.write(struct.pack("II",count,0))
         for f in self.files:
-            if f.type in ["base","page"]:
+            if f.type in ["page"]:
                 if f.type=="page" and old_style:
                     name=""
                 else:

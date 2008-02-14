@@ -781,7 +781,7 @@ class plVisRegion(plObjInterface):
         "kRefRegion" : 0, \
         "kRefVisMgr" : 1  \
     }
-
+    
     def __init__(self,parent,name="unnamed",type=0x0116):
         plObjInterface.__init__(self,parent,name,type)
         self.fRegion = UruObjectRef(self.getVersion())
@@ -790,19 +790,18 @@ class plVisRegion(plObjInterface):
     def _Find(page,name):
         return page.find(0x0116,name,0)
     Find = staticmethod(_Find)
-
+    
     def _FindCreate(page,name):
         return page.find(0x0116,name,1)
     FindCreate = staticmethod(_FindCreate)
-
+    
     def changePageRaw(self,sid,did,stype,dtype):
         plObjInterface.changePageRaw(self,sid,did,stype,dtype)
         self.fRegion.changePageRaw(sid,did,stype,dtype)
         self.fMgr.changePageRaw(sid,dad,stype,dtype)
-
+    
     def read(self,stream):
         plObjInterface.read(self,stream)
-        
         self.fRegion.read(stream)
         self.fMgr.read(stream)
     
