@@ -34,6 +34,7 @@ except ImportError:
 import md5, random, binascii, cStringIO, copy, Image, math, struct, StringIO, os, os.path, pickle
 import alc_AbsClasses
 from alc_AbsClasses import *
+from alc_AnimClasses import *
 from alcurutypes import *
 from alcdxtconv import *
 from alchexdump import *
@@ -2421,4 +2422,40 @@ class plCubicEnvironMap(plBitmap):          # Type 0x05
 
 
     Export = staticmethod(_Export)
-
+class plLayerAnimationBase(plLayerInterface):
+    def __init__(self,parent,name="unnamed",type=0x00EF):
+        plLayerInterface.__init__(self,parent,name,type)
+        
+        self.fEvalTime = -1.0
+        self.fCurrentTime = -1.0
+        self.fSegmentID = None
+        self.fPreshadeColorCtl = None
+        self.fRuntimeColorCtl = None
+        self.fAmbientColorCtl = None
+        self.fSpecularColorCtl = None
+        self.fOpacityCtl = None
+        self.fTransformCtl = None
+    
+    def _Find(page,name):
+        return page.find(0x00EF,name,0)
+    Find = staticmethod(_Find)
+    
+    def _FindCreate(page,name):
+        return page.find(0x00E6,name,1)
+    FindCreate = staticmethod(_FindCreate)
+    
+    def read(self, stream):
+        plLayerInterface.read(self,stream)
+        
+        self.fPreshadeColorCtl = PrpController(stream.Read16(), self.getVersion())
+        self.fPreshadeColorCtl.read(stream)
+        self.fRuntimeColorCtl = PrpController(stream.Read16(), self.getVersion())
+        self.fRuntimeColorCtl.read(stream)
+        self.fAmbientColorCtl = PrpController(stream.Read16(), self.getVersion())
+        self.fAmbientColorCtl.read(stream)
+        self.fSpecularColorCtl = PrpController(stream.Read16(), self.getVersion())
+        self.fSpecularColorCtl.read(stream)
+        self.fOpacityCtl = PrpController(stream.Read16(), self.getVersion())
+        self.fOpacityCtl.read(stream)
+        self.fTransformCtl = PrpController(stream.Read16(), self.getVersion())
+        self.fTransformCtl.read(stream)
