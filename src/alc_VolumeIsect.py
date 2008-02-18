@@ -140,7 +140,7 @@ class plConvexPlane:
         # Invert the normal - Uru space is backwards
         self.Normal *= -1
         # Determine the axis that is closest to the normal, and choose
-	# another axis
+        # another axis
         xAxis = Blender.Mathutils.Vector(1,0,0)
         yAxis = Blender.Mathutils.Vector(0,1,0)
         zAxis = Blender.Mathutils.Vector(0,0,1)
@@ -161,7 +161,7 @@ class plConvexPlane:
         planeAxis2 = Blender.Mathutils.CrossVecs(planeAxis1,vNormal).normalize()
 
         # Determine four points in the plane, and add them to
-	# the face
+        # the face
         point = self.Point
         v0 = point-planeAxis1-planeAxis2
         v1 = point+planeAxis2-planeAxis1
@@ -225,20 +225,20 @@ class plConvexIsect(plVolumeIsect):
                 self.AddPlane(Nor, Pos)
 		
     def AddPlane(self, Nor, Pos):
-	    for curPlane in self.vPlanes:
-		    if Blender.Mathutils.DotVecs(curPlane.Normal, Nor) >= 0.9999:
-			    dist = Blender.Mathutils.DotVecs(Nor, Pos)
-			    if dist > curPlane.Distance:
-				    curPlane.Distance = dist
-				    curPlane.Point = Pos
-			    return
-	    plane = plConvexPlane()
-            plane.Normal = Nor
-	    plane.Point = Pos
-	    plane.Distance = Blender.Mathutils.DotVecs(Nor, Pos)
-	    plane.ScaledNormal = plane.Normal
-	    plane.ScaledDist = plane.Distance
-            self.vPlanes.append(plane)
+        for curPlane in self.vPlanes:
+            if Blender.Mathutils.DotVecs(curPlane.Normal, Nor) >= 0.9999:
+                dist = Blender.Mathutils.DotVecs(Nor, Pos)
+                if dist > curPlane.Distance:
+                    curPlane.Distance = dist
+                    curPlane.Point = Pos
+                return
+        plane = plConvexPlane()
+        plane.Normal = Nor
+        plane.Point = Pos
+        plane.Distance = Blender.Mathutils.DotVecs(Nor, Pos)
+        plane.ScaledNormal = plane.Normal
+        plane.ScaledDist = plane.Distance
+        self.vPlanes.append(plane)
 
 
 class alcSoftVolumeParser:

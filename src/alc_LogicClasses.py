@@ -79,7 +79,7 @@ class AlcLogicHelper:
         
         # don't process any further until we reviewed this
         # return
-	# Reviewed. Updated. Works. -Nadnerb 01/24/08
+        # Reviewed. Updated. Works. -Nadnerb 01/24/08
 
         # creates a set of ladder regions from the bounding box of an object
 
@@ -2062,14 +2062,14 @@ class plAvLadderMod(plSingleModifier):
         stream.WriteBool(self.fGoingUp)
         stream.WriteBool(self.fEnabled)
         self.fLadderView.write(stream)
-	
-	# print "*writing ladder mod*"
-	# print "Type: %d" % self.fType
-	# print "Loops: %d" % self.fLoops
-	# print "GoingUp: %s" % self.fGoingUp
-	# print "Enabled: %s" % self.fEnabled
-	# print "LadderView: "
-	# print self.fLadderView
+        
+        # print "*writing ladder mod*"
+        # print "Type: %d" % self.fType
+        # print "Loops: %d" % self.fLoops
+        # print "GoingUp: %s" % self.fGoingUp
+        # print "Enabled: %s" % self.fEnabled
+        # print "LadderView: "
+        # print self.fLadderView
         
     def import_obj(self,obj):
         try:
@@ -2135,7 +2135,7 @@ class plAvLadderMod(plSingleModifier):
         if str(FindInDict(objscript,"region.ladder.direction","down")).lower() == "up":
             print "   Direction: Up"
             self.fGoingUp = True
-	elif str(getTextPropertyOrDefault(obj,"direction","down")).lower() == "up":
+        elif str(getTextPropertyOrDefault(obj,"direction","down")).lower() == "up":
             print "   Direction: Up"
             self.fGoingUp = True
         else:
@@ -2143,7 +2143,7 @@ class plAvLadderMod(plSingleModifier):
             self.fGoingUp = False
             
         style = str(FindInDict(objscript,"region.ladder.style","big")).lower()
-	style = str(getTextPropertyOrDefault(obj,"style",style)).lower()
+        style = str(getTextPropertyOrDefault(obj,"style",style)).lower()
         if style == "fourfeet":
             print "   Style: Four Feet"
             self.fType == plAvLadderMod.fTypeField["kFourFeet"]
@@ -2155,7 +2155,7 @@ class plAvLadderMod(plSingleModifier):
             self.fType = plAvLadderMod.fTypeField["kBig"]
 
         self.fLoops = FindInDict(objscript,"region.ladder.loops",self.fLoops)
-	self.fLoops = getIntPropertyOrDefault(obj,"loops",self.fLoops)
+        self.fLoops = getIntPropertyOrDefault(obj,"loops",self.fLoops)
         print "   Number of loops:",self.fLoops
 
     
@@ -2165,9 +2165,9 @@ class plAvLadderMod(plSingleModifier):
         v = Blender.Mathutils.Vector(0,-1,0,1) # vector describing -Y axis
         v = v * rotMatrix  # transform the vector accoring to object matrix
         self.fLadderView.setVector(v) # assign to Direction Vector
-	self.fLoops = Loops
-	self.fGoingUp = GoingUp
-	self.fType = Type
+        self.fLoops = Loops
+        self.fGoingUp = GoingUp
+        self.fType = Type
 
     def _Export(page,obj,scnobj,name):
         #set the coordinate interface
