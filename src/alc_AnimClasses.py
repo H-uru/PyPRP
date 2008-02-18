@@ -282,11 +282,203 @@ class plParticleEmitter:
         raise "Can't read plParticleEmitter, yet..."
 
 
+###Other creatables###
+class plAnimStage:
+    
+    NotifyType = {
+        "kNotifyEnter": 0x1,
+        "kNotifyLoop": 0x2,
+        "kNotifyAdvance": 0x4,
+        "kNotifyRegress": 0x8
+    }
+    
+    ForwardType = {
+        "kForwardNone": 0,
+        "kForwardKey": 1,
+        "kForwardAuto": 2,
+        "kForwardMax": 3
+    }
+    
+    BackType = {
+        "kBackNone": 0,
+        "kBackKey": 1,
+        "kBackAuto": 2,
+        "kBackMax": 3
+    }
+    
+    AdvanceType = {
+        "kAdvanceNone": 0,
+        "kAdvanceOnMove": 1,
+        "kAdvanceAuto": 2,
+        "kAdvanceOnAnyKey": 3,
+        "kAdvanceMax": 4
+    }
+
+    RegressType = {
+        "kAdvanceNone": 0,
+        "kAdvanceOnMove": 1,
+        "kAdvanceAuto": 2,
+        "kAdvanceOnAnyKey": 3,
+        "kAdvanceMax": 4
+    }
+    
+    def __init__(self):
+        self.fAnimName = "Unnamed Animation"
+        self.fNotify = 0
+        self.fForwardType = 0
+        self.fBackType = 0
+        self.fAdvanceType = 0
+        self.fRegressType = 0
+        self.fLoops = 0
+        self.fDoAdvanceTo = 0
+        self.fAdvanceTo = 0
+        self.fDoRegressTo = 0
+        self.fRegressTo = 0
+    
+    
+    def read(self, s):
+        self.fAnimName = s.ReadSafeString()
+        self.fNotify = s.ReadByte()
+        self.fForwardType = s.Read32()
+        self.fBackType = s.Read32()
+        self.fAdvanceType = s.Read32()
+        self.fRegressType = s.Read32()
+        self.fLoops = s.Read32()
+        self.fDoAdvanceTo = s.ReadBool()
+        self.fAdvanceTo = s.Read32()
+        self.fDoRegressTo = s.ReadBool()
+        self.fRegressTo = s.Read32()
+    
+    
+    def write(self, s):
+        s.WriteSafeString(self.fAnimName)
+        s.WriteByte(self.fNotify)
+        s.Write32(self.fForwardType)
+        s.Write32(self.fBackType)
+        s.Write32(self.fAdvanceType)
+        s.Write32(self.fRegressType)
+        s.Write32(self.fLoops)
+        s.WriteBool(self.fDoAdvanceTo)
+        s.Write32(self.fAdvanceTo)
+        s.WriteBool(self.fDoRegressTo)
+        s.Write32(self.fRegressTo)
+
+
+###ATC Curve###
+class PrpEaseCurve:
+    def __init__(self,type=None,version=5):
+        if (type == None):
+            self.type = 0x8000
+        else:
+            self.type = type
+        if(version != 5):
+            self.data = None
+            raise "Can only read Ease Curves for Uru. Myst 5 NOT SUPPORTED!!!"
+        
+        self.Key = plKey(5)
+        
+        if type == 0x0319:
+            self.data = plATCEaseCurve(self)
+        elif type == 0x031A:
+            self.data = plConstAccelEaseCurve(self)
+        elif type == 0x031B:
+            self.data = plSplineEaseCurve(self)
+        elif type == 0x8000: #NULL Creatable ;)
+            self.data = None
+        else:
+            raise "Unexpected plCreatable Object Type [%04X] -- expected a plATCEaseCurve -- Sombody's on crack..." %type
+       
+    def read(self,buf):
+        if self.data != None:
+            self.data.read(buf)
+
+
+    def write(self,buf):
+        buf.Write16(self.type)
+        if self.data != None:
+            self.data.read(buf)
+
+
+    def getVersion(self):
+        return self.version
+
+
+    def update(self,Key):
+        self.Key.update(Key)
+
+
+    def changePageRaw(self,sid,did,stype,dtype):
+        self.Key.changePageRaw(sid,did,stype,dtype)
+        if self.data != None:
+            self.data.changePageRaw(sid,did,stype,dtype)
+
+
+class plATCEaseCurve:
+    def __init__(self, parent = None, type = 0x0319):
+        #Insane Stuff
+        self.parent = parent
+        if parent == None:
+            self.type = type
+        else:
+            self.type = parent.type
+        
+        #Plasma Stuff
+        self.fMinLength = 0.0
+        self.fMaxLength = 0.0
+        self.fNormLength = 0.0
+        self.fStartSpeed = 0.0
+        self.fSpeed = 0.0
+        self.fBeginWorldTime = 0.0
+    
+    
+    def read(self, s):
+        self.fMinLength = s.ReadFloat()
+        self.fMaxLength = s.ReadFloat()
+        self.fNormLength = s.ReadFloat()
+        self.fStartSpeed = s.ReadFloat()
+        self.fSpeed = s.ReadFloat()
+        self.fBeginWorldTime = s.ReadDouble()
+    
+    
+    def write(self, s):
+        s.WriteFloat(self.fMinLength)
+        s.WriteFloat(self.fMaxLength)
+        s.WriteFloat(self.fNormLength)
+        s.WriteFloat(self.fStartSpeed)
+        s.WriteFloat(self.fSpeed)
+        s.WriteDouble(self.fBeginWorldTime)
+
+
+class plConstAccelEaseCurve(plATCEaseCurve):
+    def __init__(self, parent = None, type = 0x031A):
+        plATCEaseCurve.__init__(self, parent, type)
+        pass
+
+
+class plSplineEaseCurve(plATCEaseCurve):
+    def __init__(self, parent = None, type = 0x031B):
+        plATCEaseCurve.__init__(self, parent, type)
+        self.fCoef = []
+    
+    
+    def read(self, s):
+        plATCEaseCurve.read(self, s)
+        
+        for i in range(4):
+            self.fCoef[i] = s.ReadFloat()
+    
+    
+    def write(self, s):
+        plATCEaseCurve.write(self, s)
+        
+        for i in range(4):
+            s.WriteFloat(self.fCoef[i])
+    
 ###Controllers###
 class PrpController:
     def __init__(self,type=None,version=5):
         if (type == None):
-            self.ctrlType = 0xFFFF
+            self.ctrlType = 0x8000
         else:
             self.ctrlType = type
         if(version != 5):
@@ -331,16 +523,20 @@ class PrpController:
             self.data = plCompoundPosController(self)
         elif type == 0x023B:
             self.data = plTMController(self)
+        elif type == 0x8000: #NULL Creatable ;)
+            self.data = None
         else:
             raise "Unexpected plCreatable Object Type [%04X] -- expected a plController -- Sombody's on crack..." %type
-       
+
     def read(self,buf):
-        self.data.read(buf)
+        if self.data != None:
+            self.data.read(buf)
 
 
     def write(self,buf):
-        self.data.write(buf)
-
+        buf.Write16(self.ctrlType)
+        if self.data != None:
+            self.data.read(buf)
 
     def getVersion(self):
         return self.version

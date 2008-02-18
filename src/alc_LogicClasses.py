@@ -1315,62 +1315,44 @@ class plFacingConditionalObject(plConditionalObject):
 ##  Modifiers  ##
 ##             ##
 #################
-
-class plAnimStageVec:
-	def __init__(self, parent, name="unnamed", type=0x0000):
-		self.fAnimStages = []
-		
-	def read(self, stream):
-		count = stream.Read16()
-		for i in range(count):
-			s = plAnimStage()
-			s.read(self, stream)
-			self.fAnimStages.append(s)
-			
-	def write(self, stream):
-		stream.Write16(len(self.fAnimStages))
-		for s in self.fAnimStages:
-			s.write(self, stream)
-		
-
 class plMultistageBehMod(plSingleModifier):
-	def __init__(self,parent,name="unnamed",type=0x00C1):
-		plSingleModifier.__init__(self,parent,name,type)
-		
-		self.fStages = plAnimStageVec() #this+0x6C #Implemented Directly above
-		self.fFreezePhys = True #this+0x70
-		self.fSmartSeek = True #this+0x71
-		self.fReverseFBControlsOnRelease = False #this+0x72
-		self.fReceivers = [] #std.vector<plKey,std.allocator<plKey>>  #this+0x74
-		
-	def read(self, stream):
-		plSingleModifier.read(self, stream)
-		
-		self.fStages.read(self, stream)
-		
-		self.fFreezePhys = stream.ReadBool()
-		self.fSmartSeek = stream.ReadBool()
-		self.fReverseFBControlsOnRelease = stream.ReadBool()
-		
-		count = stream.Read16()
-		for i in range(count):
-			s = stream.ReadSafeString(self.getVersion())
-			self.fReceivers.append(s)
-		
-	def write(self, stream):
-		plSingleModifier.read(self, stream)
-		
-		self.fStages.write(self, stream)
-		
-		stream.WriteBool(self.fFreezePhys)
-		stream.WriteBool(self.fSmartSeek)
-		stream.WriteBool(self.fReverseFBControlsOnRelease)
-		
-		stream.Write16(len(self.fReceivers))
-		for s in self.fReceivers:
-			stream.WriteSafeString(s, 0)
-		
-	
+    def __init__(self,parent,name="unnamed",type=0x00C1):
+        plSingleModifier.__init__(self,parent,name,type)
+        
+        self.fStages = []
+        self.fFreezePhys = True #this+0x70
+        self.fSmartSeek = True #this+0x71
+        self.fReverseFBControlsOnRelease = False #this+0x72
+        self.fReceivers = hsTArray()
+    
+    
+    def read(self, s):
+        plSingleModifier.read(self, s)
+        
+        self.fFreezePhys = s.ReadBool()
+        self.fSmartSeek = s.ReadBool()
+        self.fReverseFBControlsOnRelease = s.ReadBool()
+        
+        count = s.Read32()
+        for i in range(count):
+            self.fStages[i] = plAnimStage()
+            self.fStages[i].read(s)
+        
+        self.fReceivers.ReadVector(s)
+    
+    
+    def write(self, s):
+        plSingleModifier.write(self, s)
+        
+        s.WriteBool(self.fFreezePhys)
+        s.WriteBool(self.fSmartSeek)
+        s.WriteBool(self.fReverseFBControlsOnRelease)
+        
+        s.Write32(len(self.fStages))
+        for stage in self.fStages:
+            stage.write(s)
+        
+        self.fReceivers.WriteVector(s)
 
 class plSittingModifier(plSingleModifier):
     Flags = \
