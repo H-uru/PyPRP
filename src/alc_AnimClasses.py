@@ -1234,15 +1234,14 @@ class plAnimTimeConvert():
     
     def __init__(self,parent=None,type=0x0254):
         self.fFlags = 0
-        self.fBegin = 0
-        self.fEnd = 0
-        self.fLoopEnd = 0
-        self.fLoopBegin = 0
-        self.fSpeed = 0
-        self.fCurrentAnimTime = 0
-        self.fWrapTime = 0
+        self.fBegin = 0.0
+        self.fEnd = 0.0
+        self.fLoopEnd = 0.0
+        self.fLoopBegin = 0.0
+        self.fSpeed = 1.0
+        self.fCurrentAnimTime = 0.0
         self.fLastEvalWorldTime = 0.0
-        self.fLastStateChange = 0.0
+        self.fStopPoints = []
     
     def read(self, stream):
         self.fFlags = stream.Read32()
@@ -1259,7 +1258,13 @@ class plAnimTimeConvert():
         self.fSpeedEaseCurve.read(stream)
         self.fCurrentAnimTime = stream.ReadFloat()
         self.fLastEvalWorldTime = stream.ReadDouble()
-        self.count = stream.Read32()
+        
+        count = stream.Read32()
+        #This is going to crash until we have the messages implemented
+        
+        count = stream.Read32()
+        for i in range(count):
+            self.fStopPoints.append(stream.ReadFloat())
     
     def write(self, stream):
         stream.Write32(self.fFlags)
@@ -1275,5 +1280,9 @@ class plAnimTimeConvert():
         
         stream.WriteFloat(self.fCurrentAnimTime)
         stream.WriteFloat(self.fLastEvalWorldTime)
+        
         stream.Write32(0)
-        stream.Write32(0)
+        
+        stream.Write32(len(self.fStopPoints))
+        for i in self.fStopPoints:
+            stream.WriteFloat(i)

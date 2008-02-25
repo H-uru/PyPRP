@@ -2910,6 +2910,7 @@ class plLayerAnimation(plLayerAnimationBase):
         # We have to grab the animation stuff here...
         ipo = mat.ipo
         ipo.channel = chan
+        endFrame = 0
         
         if (Ipo.MA_OFSX in ipo) and (Ipo.MA_OFSY in ipo) and (Ipo.MA_OFSZ in ipo):
             KeyList = alc_AnimClasses.hsPoint3KeyList()
@@ -2935,6 +2936,7 @@ class plLayerAnimation(plLayerAnimationBase):
             p3c.fKeyList = KeyList
             self.fTransformCtl = alc_AnimClasses.plSimplePosController()
             self.fTransformCtl.fValue = p3c
+            endFrame = curves[len(curves)-1].pt[0]
         else:
             self.fTransformCtl = alc_AnimClasses.PrpController(0x8000, self.getVersion())
         
@@ -2946,14 +2948,18 @@ class plLayerAnimation(plLayerAnimationBase):
         self.fOpacityCtl = alc_AnimClasses.PrpController(0x8000, self.getVersion())
         
         self.fTimeConvert = alc_AnimClasses.plAnimTimeConvert()
+        self.fTimeConvert.fBegin = 0.0
+        self.fTimeConvert.fEnd = endFrame
+        self.fTimeConvert.fStopPoints.append(endFrame)
+        
         
         if mat.getMode() & Blender.Material.Modes['NOMIST']:
             self.fState.fShadeFlags |= hsGMatState.hsGMatShadeFlags["kShadeNoFog"]
             self.fState.fShadeFlags |= hsGMatState.hsGMatShadeFlags["kShadeReallyNoFog"]
-                    
+        
         if mat.getMode() & Blender.Material.Modes['ZTRANSP']:
             self.fState.fZFlags |= hsGMatState.hsGMatZFlags["kZNoZWrite"]
-            
+        
         if mat.getSpec() > 0.0:
             self.fState.fShadeFlags |= hsGMatState.hsGMatShadeFlags["kShadeSpecular"]
             self.fState.fShadeFlags |= hsGMatState.hsGMatShadeFlags["kShadeSpecularAlpha"]
