@@ -113,6 +113,8 @@ class PrpObject:
                 self.data=plHKPhysical(self)
             elif self.type==0x0040:
                 self.data=plViewFaceModifier(self)
+            elif self.type==0x0043:
+                self.data=plLayerAnimation(self)
             elif self.type==0x0048:
                 self.data=plSound(self)
             elif self.type==0x0049:

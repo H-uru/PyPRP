@@ -282,7 +282,6 @@ class plParticleEmitter:
         raise "Can't read plParticleEmitter, yet..."
 
 
-###Other creatables###
 class plAnimStage:
     
     NotifyType = {
@@ -1216,3 +1215,58 @@ class plAGApplicator:
     def write(self,buf):
         buf.WriteBool(self.bool)
         buf.WriteSafeString(self.str)
+
+
+class plAnimTimeConvert():
+    plAnimTimeFlags = \
+    { \
+        "kNone"        : 0x0,  \
+        "kStopped"     : 0x1,  \
+        "kLoop"        : 0x2,  \
+        "kBackwards"   : 0x4,  \
+        "kWrap"        : 0x8,  \
+        "kNeedsReset"  : 0x10, \
+        "kEasingIn"    : 0x20, \
+        "kForcedMove"  : 0x40, \
+        "kNoCallbacks" : 0x80, \
+        "kFlagsMask"   : 0xFF  \
+    }
+    
+    def __init__(self,parent=None,type=0x0254):
+        self.fBegin = 0
+        self.fEnd = 0
+        self.fLoopEnd = 0
+        self.fLoopBegin = 0
+        self.fSpeed = 0
+        self.fCurrentAnimTime = 0
+        self.fWrapTime = 0
+        self.fLastEvalWorldTime = 0.0
+        self.fLastStateChange = 0.0
+    
+    def read(self, stream):
+        self.fFlags = stream.Read32()
+        self.fBegin = stream.ReadFloat()
+        self.fEnd = stream.ReadFloat()
+        self.fLoopEnd = stream.ReadFloat()
+        self.fLoopBegin = stream.ReadFloat()
+        self.fSpeed = stream.ReadFloat()
+        self.fEaseInCurve = PrpEaseCurve(stream.Read16(), self.getVersion())
+        self.fEaseInCurve.read(stream)
+        self.fEaseOutCurve = PrpEaseCurve(stream.Read16(), self.getVersion())
+        self.fEaseOutCurve.read(stream)
+        self.fSpeedEaseCurve = PrpEaseCurve(stream.Read16(), self.getVersion())
+        self.fSpeedEaseCurve.read(stream)
+        self.fCurrentAnimTime = stream.ReadFloat()
+        self.fLastEvalWorldTime = stream.ReadDouble()
+        self.count = stream.Read32()
+    
+    def write(self, stream):
+        stream.Write32(self.fFlags)
+        stream.WriteFloat(self.fBegin)
+        stream.WriteFloat(self.fEnd)
+        stream.WriteFloat(self.fLoopEnd)
+        stream.WriteFloat(self.fLoopBegin)
+        stream.WriteFloat(self.fSpeed)
+        stream.WriteFloat(self.fCurrentAnimTime)
+        stream.WriteFloat(self.fLastEvalWorldTime)
+        stream.Write32(self.fCallbackMsgs)

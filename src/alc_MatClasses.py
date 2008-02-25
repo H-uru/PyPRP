@@ -406,9 +406,19 @@ class hsGMaterial(plSynchedObject):         # Type 0x07
 
                         # we hit a problem when two textures are shared, because the mtex is different per material.
                         # because of this. we'll prefix the material name, before the layer name
-                        layer = root.find(0x06,mat.name + "-" + mtex.tex.name,1)
-                        layerlist.append({"layer":layer,"mtex":mtex,"stencil":mtex.stencil})
-                        
+                        try:
+                            ipo = mat.ipo
+                            ipo.channel = list(mtex_list).index(mtex)
+                            if(len(ipo.curves) > 0):
+                                #It's a LayerAnimation
+                                layer = root.find(0x0043,mat.name + "-" + mtex.tex.name,1)
+                                layerlist.append({"layer":layer,"mtex":mtex,"stencil":mtex.stencil,"channel":ipo.channel})
+                            else:
+                                layer = root.find(0x06,mat.name + "-" + mtex.tex.name,1)
+                                layerlist.append({"layer":layer,"mtex":mtex,"stencil":mtex.stencil,"channel":ipo.channel})
+                        except:
+                            layer = root.find(0x06,mat.name + "-" + mtex.tex.name,1)
+                            layerlist.append({"layer":layer,"mtex":mtex,"stencil":mtex.stencil,"channel":-1})
 
             i = 0
             while i < len(layerlist):
@@ -417,9 +427,10 @@ class hsGMaterial(plSynchedObject):         # Type 0x07
                 if not layer_info["stencil"]:
                     layer = layer_info["layer"]
                     mtex = layer_info["mtex"]
+                    chan = layer_info["channel"]
                     if(not layer.isProcessed):
                         layer.data.FromBlenderMTex(mtex,obj,mat)
-                        layer.data.FromBlenderMat(obj,mat)
+                        layer.data.FromBlenderMat(obj,mat,chan)
                         layer.isProcessed = 1
                     self.fLayers.append(layer.data.getRef())
                     i += 1
@@ -1099,7 +1110,7 @@ class plLayer(plLayerInterface):             # Type 0x06
             
             
 
-    def FromBlenderMat(self,obj,mat):
+    def FromBlenderMat(self,obj,mat,channel = 0):
         # Now Copy Settings from the material...
         mesh = obj.getData(False,True)
         
@@ -2427,8 +2438,7 @@ class plCubicEnvironMap(plBitmap):          # Type 0x05
         qmap.data.FromBlenderCubicMap(image)
         
         return qmap
-
-
+    
     Export = staticmethod(_Export)
 
 class plLayerAnimationBase(plLayerInterface):
@@ -2450,12 +2460,11 @@ class plLayerAnimationBase(plLayerInterface):
     Find = staticmethod(_Find)
     
     def _FindCreate(page,name):
-        return page.find(0x00E6,name,1)
+        return page.find(0x00EF,name,1)
     FindCreate = staticmethod(_FindCreate)
     
     def read(self, stream):
         plLayerInterface.read(self,stream)
-        
         self.fPreshadeColorCtl = PrpController(stream.Read16(), self.getVersion())
         self.fPreshadeColorCtl.read(stream)
         self.fRuntimeColorCtl = PrpController(stream.Read16(), self.getVersion())
@@ -2468,3 +2477,488 @@ class plLayerAnimationBase(plLayerInterface):
         self.fOpacityCtl.read(stream)
         self.fTransformCtl = PrpController(stream.Read16(), self.getVersion())
         self.fTransformCtl.read(stream)
+    
+    def write(self, stream):
+        plLayerInterface.write(self,stream)
+        self.fPreshadeColorCtl.write(stream)
+        self.fRuntimeColorCtl.write(stream)
+        self.fAmbientColorCtl.write(stream)
+        self.fSpecularColorCtl.write(stream)
+        self.fOpacityCtl.write(stream)
+        self.fTransformCtl.write(stream)
+
+class plLayerAnimation(plLayerAnimationBase):
+    def __init__(self,parent=None,type=0x0043):
+        plLayerAnimationBase.__init__(self,parent,name,type)
+        self.fTimeConvert = plAnimTimeConvert()
+    
+    def _Find(page,name):
+        return page.find(0x0043,name,0)
+    Find = staticmethod(_Find)
+    
+    def _FindCreate(page,name):
+        return page.find(0x0043,name,1)
+    FindCreate = staticmethod(_FindCreate)
+    
+    def read(self, stream):
+        plLayerAnimationBase.read(self, stream)
+        self.fTimeConvert.read(stream)
+    
+    def write(self, stream):
+        plLayerAnimationBase.write(self, stream)
+        self.fTimeConvert.write(stream)
+    
+    def FromBlenderMTex(self,mtex,obj,mat,stencil=False,hasstencil=False):
+        print "   [LayerAnimation %s]"%(str(self.Key.name))
+        #prp is for current prp file... (though that should be obtainable from self.parent.prp)
+        resmanager=self.getResManager()
+        root=self.getRoot()
+
+        mesh = obj.getData(False,True)
+
+        exportTexturesToPrp = alcconfig.export_textures_to_page_prp
+        try:
+            p = obj.getProperty("ignorePPT")
+            if (bool(p.getData()) == True):
+                exportTexturesToPrp = 0
+        except:
+            pass
+
+        # determine what the texture prp must be
+        if exportTexturesToPrp:
+            texprp=root
+        else:
+            texprp=resmanager.findPrp("Textures")
+        if texprp==None:
+            raise "Textures PRP file not found"
+
+        mipmap = None
+        qmap = None
+
+        if(mtex):
+
+            # First Determine the UVW Source....
+            BlenderUVLayers = mesh.getUVLayerNames()
+
+            UVLayers = {}
+            
+            # Build up a nice map here....
+            i = 0
+            for name in BlenderUVLayers:
+                UVLayers[name] = i
+                i += 1
+
+            Use_Sticky = False
+            # Loop through Layers To see which coorinate systems are used.
+            for _mtex in mat.getTextures():
+                if not _mtex is None:
+                    if _mtex.texco == Blender.Texture.TexCo["STICK"] and mesh.vertexUV:
+                        Use_Sticky = True
+            
+            UVSticky = 0 # Setting Sticky gives you 1st uv layer if no Sticky Coords set...
+            if Use_Sticky:
+                UVSticky = len(UVLayers)
+                
+            # Check out current mapping
+            if mtex.texco == Blender.Texture.TexCo["STICK"]:
+                print "    -> Using sticky mapping"
+                self.fUVWSrc = UVSticky
+            elif mtex.texco == Blender.Texture.TexCo["UV"]:
+                try:
+                    print "    -> Using UV map '%s'"%(mtex.uvlayer)
+                    self.fUVWSrc = UVLayers[mtex.uvlayer]
+                except:
+                    print "    -> Err, Using first UV map"
+                    self.fUVWSrc = 0
+            else:
+                print "    -> Using default first UV map"
+                # Other mappings will make the map default to first uv map
+                self.fUVWSrc = 0
+            
+        
+            # process the image
+            tex = mtex.tex
+            
+            #mtex type ENVMAP
+            if(tex.type == Blender.Texture.Types.ENVMAP):
+                
+                # check 
+                if(tex.stype != Blender.Texture.STypes.ENV_LOAD or tex.image == None):
+                    raise "ERROR: Cannot set Environment map from static/anim render. Please render your EnvMap, save it, and then set the EnvMap to load your saved image!"
+                
+                #find or create the qmap
+
+                mipmapinfo = blMipMapInfo()
+                mipmapinfo.fName = tex.image.getName()
+                mipmapinfo.fMipMaps = True
+                mipmapinfo.fGauss = True
+                mipmapinfo.fResize = True
+
+                qmap = plCubicEnvironMap.Export(root,tex.image.getName(),tex.image,mipmapinfo,exportTexturesToPrp)
+
+                self.fTexture = qmap.data.getRef()
+                self.fHasTexture = 1
+                
+                # set default settings for qmaps:
+                # self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlpha"]
+                self.fState.fClampFlags |= 0 # | hsGMatState.hsGMatClampFlags[""]
+                self.fState.fShadeFlags |= hsGMatState.hsGMatShadeFlags["kShadeEnvironMap"]
+                self.fState.fZFlags     |= 0 # | hsGMatState.hsGMatZFlags[""]
+                self.fState.fMiscFlags  |= ( hsGMatState.hsGMatMiscFlags["kMiscUseReflectionXform"]
+                                            | hsGMatState.hsGMatMiscFlags["kMiscRestartPassHere"] 
+                                            )
+                
+                self.fUVWSrc            |= plLayerInterface.plUVWSrcModifiers["kUVWReflect"]
+    
+                # set the blendflags for this layer to the cubicmap flags
+                #self.fRenderLevel = plRenderLevel(plRenderLevel.MajorLevel["kDefRendMajorLevel"] | plRenderLevel.MajorLevel["kBlendRendMajorLevel"], 
+                #                                    plRenderLevel.MinorLevel["kDefRendMinorLevel"])
+                self.UsesAlpha = True
+                
+                pass
+            #mtex type IMAGE
+            elif(tex.type == Blender.Texture.Types.IMAGE):
+                # find or create the mipmap
+                
+                if(tex.image):
+
+                    mipmapinfo = blMipMapInfo()
+                    mipmapinfo.export_tex(tex)
+                    
+                    if stencil and (not Blender.Texture.ImageFlags["USEALPHA"]):
+                        mipmapinfo.fCalcAlpha = True
+                    
+                    mipmap=plMipMap.Export(root,tex.image.getName(),tex.image,mipmapinfo,exportTexturesToPrp)
+                                        
+                    self.fTexture = mipmap.data.getRef()
+                    self.fHasTexture = 1
+                    
+                    # set the blendflags for this layer to the alphaflags, if it has alhpa
+                    if (mipmap.data.FullAlpha or mipmap.data.OnOffAlpha):
+                        self.UsesAlpha = True
+                
+                    if tex.extend == Blender.Texture.ExtendModes["CLIP"]:
+                        self.fState.fClampFlags |= hsGMatState.hsGMatClampFlags["kClampTexture"]
+                
+                pass
+            #mtex type BLEND
+            #Builds a linear AlphaBlend
+            elif(tex.type == Blender.Texture.Types.BLEND):
+                if mtex.tex.stype == Blender.Texture.STypes.BLN_LIN:
+                    # now create a blend, depending on whether it is horizontal or vertical:
+                    if(tex.flags & Blender.Texture.Flags.FLIPBLEND > 0):
+                        #Vertical blend
+                        blendname = "ALPHA_BLEND_FILTER_V_LIN_64x64"
+                        
+                        blenddata = cStringIO.StringIO()
+                        blendwidth = 64
+                        blendheight = 64
+                        
+                        for y in range(blendheight,0,-1):
+                            alpha = 255 *(float(y)/blendheight)
+                            for x in range(0,blendwidth):
+                                blenddata.write(struct.pack("BBBB",255,255,255,alpha))
+                    else:
+                        #Horizontal blend
+                        blendname = "ALPHA_BLEND_FILTER_U_LIN_64x64"
+            
+                        blenddata = cStringIO.StringIO()
+                        blendwidth = 64
+                        blendheight = 64
+                        
+                        for y in range(blendheight,0,-1):
+                            for x in range(0,blendwidth):
+                                alpha = 255 * (float(x)/blendwidth)
+                                blenddata.write(struct.pack("BBBB",255,255,255,alpha))
+
+                elif mtex.tex.stype == Blender.Texture.STypes.BLN_QUAD:
+                    # now create a blend, depending on whether it is horizontal or vertical:
+                    if(tex.flags & Blender.Texture.Flags.FLIPBLEND > 0):
+                        #Vertical blend
+                        blendname = "ALPHA_BLEND_FILTER_V_QUAD_64x64"
+                        
+                        blenddata = cStringIO.StringIO()
+                        blendwidth = 4
+                        blendheight = 64
+                        
+                        for y in range(blendheight,0,-1):
+                            alpha = 255 * math.pow(float(y)/blendheight,2)
+                            for x in range(0,blendwidth):
+                                blenddata.write(struct.pack("BBBB",255,255,255,alpha))
+                    else:
+                        #Horizontal blend
+                        blendname = "ALPHA_BLEND_FILTER_U_QUAD_64x64"
+            
+                        blenddata = cStringIO.StringIO()
+                        blendwidth = 64
+                        blendheight = 4
+                        
+                        for y in range(blendheight,0,-1):
+                            for x in range(0,blendwidth):
+                                alpha = 255 * math.pow(float(x)/blendwidth,2)
+                                blenddata.write(struct.pack("BBBB",255,255,255,alpha))
+
+                elif mtex.tex.stype == Blender.Texture.STypes.BLN_EASE:
+                    # now create a blend, depending on whether it is horizontal or vertical:
+                    if(tex.flags & Blender.Texture.Flags.FLIPBLEND > 0):
+                        #Vertical blend
+                        blendname = "ALPHA_BLEND_FILTER_V_EASE_64x64"
+                        
+                        blenddata = cStringIO.StringIO()
+                        blendwidth = 4
+                        blendheight = 64
+                        
+                        for y in range(blendheight,0,-1):
+                            alpha = 255 * (1 - (0.5 + (math.cos((float(y)/blendheight) * math.pi) * 0.5)))
+                            for x in range(0,blendwidth):
+                                blenddata.write(struct.pack("BBBB",255,255,255,alpha))
+                    else:
+                        #Horizontal blend
+                        blendname = "ALPHA_BLEND_FILTER_U_EASE_64x64"
+            
+                        blenddata = cStringIO.StringIO()
+                        blendwidth = 64
+                        blendheight = 4
+                        
+                        for y in range(blendheight,0,-1):
+                            for x in range(0,blendwidth):
+                                alpha = 255 * (1 - (0.5 + (math.cos( (float(x)/blendwidth) * math.pi) * 0.5)))
+                                blenddata.write(struct.pack("BBBB",255,255,255,alpha))
+
+                elif mtex.tex.stype == Blender.Texture.STypes.BLN_DIAG:
+                    # Prepare the data for this object....
+                    blendname = "ALPHA_BLEND_FILTER_DIAG_64x64"
+   
+                    blenddata = cStringIO.StringIO()
+                    blendwidth = 64
+                    blendheight = 64
+                
+                    for y in range(blendheight,0,-1):
+                        for x in range(0,blendwidth):
+                            dist = math.sqrt(math.pow(x ,2) + math.pow(y,2))
+                            alpha = 255 *(dist / math.sqrt(math.pow(blendwidth,2) + math.pow(blendheight,2)))
+                            
+                            blenddata.write(struct.pack("BBBB",255,255,255,alpha))
+
+                elif mtex.tex.stype == Blender.Texture.STypes.BLN_SPHERE:
+                    # Prepare the data for this object....
+                    blendname = "ALPHA_BLEND_FILTER_SPHERE_64x64"
+                    
+                    blenddata = cStringIO.StringIO()
+                    blendwidth = 64
+                    blendheight = 64
+                
+                    for y in range(blendheight,0,-1):
+                        for x in range(0,blendwidth):
+                            dist = math.sqrt(math.pow(x - (blendwidth/2),2) + math.pow(y - (blendheight/2),2))
+                            alpha = 255 *(math.cos((dist / (blendwidth/2) * 0.5 * math.pi )))
+                            if alpha < 0 or dist > (blendwidth/2):
+                                alpha = 0
+                            elif alpha > 255:
+                                alpha = 255
+                            blenddata.write(struct.pack("BBBB",255,255,255,alpha))
+
+                elif mtex.tex.stype == Blender.Texture.STypes.BLN_HALO:
+                    # Prepare the data for this object....
+                    blendname = "ALPHA_BLEND_FILTER_HALO_64x64"
+                    
+                    blenddata = cStringIO.StringIO()
+                    blendwidth = 64
+                    blendheight = 64
+                
+                    for y in range(blendheight,0,-1):
+                        for x in range(0,blendwidth):
+                            dist = math.sqrt( math.pow(x - (blendwidth/2),2) + math.pow(y - (blendheight/2),2) ) 
+                            alpha = 255 *(0.5 + (0.5 * math.cos((dist / (blendwidth/2) * math.pi ))))
+                            if alpha < 0 or dist > (blendwidth/2):
+                                alpha = 0
+                            elif alpha > 255:
+                                alpha = 255
+                            blenddata.write(struct.pack("BBBB",255,255,255,alpha))
+
+                else: ## RADIAL TYPE
+                    #
+                    # Prepare the data for this object....
+                    if(tex.flags & Blender.Texture.Flags.FLIPBLEND > 0):
+                        blendname = "ALPHA_BLEND_FILTER_V_RADIAL_64x64"
+                    else:
+                        blendname = "ALPHA_BLEND_FILTER_U_RADIAL_64x64"
+                    
+                    blenddata = cStringIO.StringIO()
+                    blendwidth = 64
+                    blendheight = 64
+                
+                    for y in range(blendheight,0,-1):
+                        for x in range(0,blendwidth):
+                            if(tex.flags & Blender.Texture.Flags.FLIPBLEND > 0): 
+                                rely = x - (blendwidth/2)
+                                relx = y - (blendheight/2)
+                            else:
+                                relx = x - (blendwidth/2)
+                                rely = y - (blendheight/2)
+                            
+                            angle = math.atan2(rely,relx) + math.pi
+                                
+                            while angle < 0:
+                                angle += 2* math.pi
+                            
+                            while angle > (2*math.pi):
+                                angle -= 2* math.pi
+                            
+                            alpha = 255 *(angle/(2*math.pi))
+                            if alpha < 0:
+                                alpha = 0
+                            blenddata.write(struct.pack("BBBB",255,255,255,alpha))
+                
+                # Set clipping (clamping)
+                self.fState.fClampFlags |= hsGMatState.hsGMatClampFlags["kClampTexture"]
+
+                
+                mipmapinfo = blMipMapInfo()
+                mipmapinfo.fName = blendname
+                mipmapinfo.fMipMaps = False
+                mipmapinfo.fGauss = False
+                mipmapinfo.fCompressionType = plBitmap.Compression["kDirectXCompression"]
+                mipmapinfo.fBitmapInfo.fDirectXInfo.fCompressionType = plBitmap.CompressionType["kDXT5"]
+                
+                mipmap = plMipMap.Export_Raw(root,blendname,blenddata,blendwidth,blendheight,mipmapinfo,exportTexturesToPrp)
+                
+                # and link the mipmap to the layer
+                self.fTexture = mipmap.data.getRef()
+                self.fHasTexture = 1
+                # alphablend layers do not affect blendflags (as far as we know now)
+                
+                
+            elif(tex.type == Blender.Texture.Types.NONE):
+                pass # don't do anything
+
+            
+            # now process additional mtex settings
+
+
+            if not stencil:
+                # find the texture object, so we can get some values from it
+                
+                # first make a calculation of the uv transformation matrix.
+                uvmobj = Blender.Object.New ('Empty')
+                
+                trickscale = mtex.size[2]
+                # now set the scale (and rotation) to the object
+                uvmobj.SizeX = mtex.size[0] * trickscale
+                uvmobj.SizeY = mtex.size[1] * trickscale
+                uvmobj.LocX = mtex.ofs[0]
+                uvmobj.LocY = mtex.ofs[1]
+                uvm=getMatrix(uvmobj)
+                uvm.transpose()
+                self.fTransform.set(uvm)
+    
+                self.fOpacity = mtex.colfac # factor how texture blends with color used as alpha blend value
+    
+                # See if any faces are set to double sided...
+                for mface in mesh.faces:
+                    if mface.uv and mface.mode & Blender.Mesh.FaceModes["TWOSIDE"]:
+                        self.fState.fMiscFlags  |= hsGMatState.hsGMatMiscFlags["kMiscTwoSided"] 
+                        break
+                
+                                                
+                if(mtex.blendmode == Blender.Texture.BlendModes.ADD): 
+                    # self.fState.fBlendFlags |= ( hsGMatState.hsGMatBlendFlags["kBlendAdd"])
+                    self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAddColorTimesAlpha"] # This is better and more intuitive
+                    if mtex.mtAlpha != 0:
+                        self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlphaAdd"]
+
+                elif(mtex.blendmode == Blender.Texture.BlendModes.MULTIPLY):
+                    self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendMult"]
+                    if mtex.mtAlpha != 0:
+                        self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlphaMult"]
+                                                
+                elif(mtex.blendmode == Blender.Texture.BlendModes.SUBTRACT):
+                    self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendSubtract"]
+
+                else: #(mtex.blendmode == Blender.Texture.BlendModes.MIX):
+                    # Enable Normal Alpha Blending ONLY if the other alpha blend flags are not enabled
+                    self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlpha"]
+                if(mtex.neg): # set the negate colors flag if it is so required
+                    self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendInvertColor"]
+
+                    
+        if stencil:
+            # now set the various layer properties specific to alphablendmaps
+            self.fState.fBlendFlags |= ( hsGMatState.hsGMatBlendFlags["kBlendAlpha"]
+                                        | hsGMatState.hsGMatBlendFlags["kBlendAlphaMult"]
+                                        | hsGMatState.hsGMatBlendFlags["kBlendNoTexColor"]
+                                        )
+            
+            self.fState.fZFlags     |= hsGMatState.hsGMatZFlags["kZNoZWrite"]
+            self.fState.fMiscFlags  |= 0 # | hsGMatState.hsGMatMiscFlags[""] 
+            self.fAmbientColor = RGBA(1.0,1.0,1.0,1.0)
+            
+        if hasstencil:
+            self.fState.fMiscFlags  |= hsGMatState.hsGMatMiscFlags["kMiscBindNext"]  | hsGMatState.hsGMatMiscFlags["kMiscRestartPassHere"] 
+        
+        if stencil or hasstencil:
+            # a stencil joins two layers into one that has alpha....
+            self.UsesAlpha = True
+    
+    def FromBlenderMat(self,obj,mat, chan = 0):
+        # Now Copy Settings from the material...
+        mesh = obj.getData(False,True)
+        
+        # We have to grab the animation stuff here...
+        ipo = mat.ipo
+        ipo.channel = chan
+        
+        if (Ipo.MA_OFSX in myipo) and (Ipo.MA_OFSY in myipo) and (Ipo.MA_OFSZ in myipo):
+            KeyList = hsPoint3KeyList()
+            
+            # We need to get the list of BezCurves
+            # Then get the value for each and create a point3
+            # Then store that in a frame and store than in the list
+            curves = ipo[Ipo.MA_OFSX].bezierPoints
+            for frm in range(len(curves)):
+                frame = hsPoint3Key()
+                frame.fFrameNum = curves[frm].pt[0]
+                frame.fFrameTime = curves[frm].pt[0]/30.0
+                
+                pt = Vertex()
+                pt.x = curves[frm].pt[1]
+                pt.y = ipo[Ipo.MA_OFSY].bezierPoints[frm].pt[1]
+                pt.z = ipo[Ipo.MA_OFSZ].bezierPoints[frm].pt[1]
+                
+                frame.fValue = pt
+                KeyList.fKeys.append(frame)
+            
+            p3c = plPoint3Controller()
+            p3c.fKeyList = KeyList
+            self.fTransformCtl = plSimplePosController()
+            self.fTransformCtl.fValue = p3c
+        else:
+            self.fTransformCtl = PrpController(0x8000, self.getVersion())
+        
+        ##MAJOR HACK HERE
+        self.fPreshadeColorCtl = PrpController(0x8000, self.getVersion())
+        self.fRuntimeColorCtl = PrpController(0x8000, self.getVersion())
+        self.fAmbientColorCtl = PrpController(0x8000, self.getVersion())
+        self.fSpecularColorCtl = PrpController(0x8000, self.getVersion())
+        self.fOpacityCtl = PrpController(0x8000, self.getVersion())
+        
+        self.fTimeConvert = plAnimTimeConvert()
+        
+        if mat.getMode() & Blender.Material.Modes['NOMIST']:
+            self.fState.fShadeFlags |= hsGMatState.hsGMatShadeFlags["kShadeNoFog"]
+            self.fState.fShadeFlags |= hsGMatState.hsGMatShadeFlags["kShadeReallyNoFog"]
+                    
+        if mat.getMode() & Blender.Material.Modes['ZTRANSP']:
+            self.fState.fZFlags |= hsGMatState.hsGMatZFlags["kZNoZWrite"]
+            
+        if mat.getSpec() > 0.0:
+            self.fState.fShadeFlags |= hsGMatState.hsGMatShadeFlags["kShadeSpecular"]
+            self.fState.fShadeFlags |= hsGMatState.hsGMatShadeFlags["kShadeSpecularAlpha"]
+            self.fState.fShadeFlags |= hsGMatState.hsGMatShadeFlags["kShadeSpecularColor"]
+            self.fState.fShadeFlags |= hsGMatState.hsGMatShadeFlags["kShadeSpecularHighlight"]
+            self.fSpecularPower = mat.getHardness()
+            
+        # If we have two vertex color layers, the 2nd is used as alpha layer - if we have vertex alpha,
+        # we need to have the alpha blending flag set, and we need to have
+        if len(mesh.getColorLayerNames()) > 1:
+            self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlpha"]
