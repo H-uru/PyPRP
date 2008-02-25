@@ -54,6 +54,8 @@ class alcBook:
         self.book = bookscript.FindOrCreate('age')
         
         self.globals = bookscript.FindOrCreate('config')
+        
+        self.texs = bookscript.FindOrCreate('textures')
     
 
     def getFromBlender(self):
@@ -86,6 +88,11 @@ class alcBook:
             self.age.attach['AgeSDLHook'] = True
         else:
             self.age.attach['AgeSDLHook'] = False
+        
+        value = FindInDict(self.texs,"pack", [])
+        if type(value) == list:
+            for _tex in value:
+                self.age.specialtex.append(_tex)
             
         # Now process the page list....
         

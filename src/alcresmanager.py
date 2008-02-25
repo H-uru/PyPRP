@@ -716,6 +716,8 @@ class alcUruAge:
         self.book=None
         self.version=version
         self.attach = {}
+        
+        self.specialtex = []
 
         self.options = {}
         self.pages=[]
@@ -897,6 +899,7 @@ class alcUruAge:
         self.book.getFromBlender()
         print self.options
         print self.attach
+        print self.specialtex
     
     
     def import_page(self,name):

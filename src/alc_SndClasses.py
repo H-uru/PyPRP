@@ -33,7 +33,6 @@ except ImportError:
     
 import md5
 import random
-import binascii
 import cStringIO
 import copy
 import Image
@@ -41,8 +40,9 @@ import math
 import struct
 import StringIO
 import os
-import os.path
 import pickle
+from os.path import *
+from binascii import *
 from alcurutypes import *
 from alcdxtconv import *
 from alchexdump import *
@@ -52,6 +52,7 @@ from alcConvexHull import *
 from alc_AbsClasses import *
 from alc_VolumeIsect import *
 from alc_MatClasses import *
+from alc_AlcScript import *
 import alcconfig
 import alchexdump
 
@@ -574,6 +575,19 @@ class plWin32Sound(plSound):
         "kRightChannel" : 1 \
     }
     
+    scriptProps = \
+    { \
+        "is3dsound"       : 0x1, \
+        "disablelod"      : 0x2, \
+        "looping"         : 0x4, \
+        "autostart"       : 0x8, \
+        "localonly"       : 0x10, \
+        "loadonlyoncall"  : 0x20, \
+        "fullydisabled"   : 0x40, \
+        "dontfade"        : 0x80, \
+        "incidental"      : 0x100 \
+    }
+    
     def __init__(self,parent,name="unnamed",type=0x0049):
         plSound.__init__(self,parent,name,type)
         self.fChannelSelect = 0
@@ -605,18 +619,13 @@ class plWin32Sound(plSound):
     def exportObj(self, obj, softVolumeParser):
         objscript = AlcScript.objects.Find(obj.getName())
         
-        flags = FindInDict(objscript,"sound.flags", "")
-        flags = flags.replace(" ","")
-        f = flags.split('|')
-        for prop in f:
-            if(prop == "3d"):
-                self.fProperties |= plSound.Properties["kPropIs3DSound"]
-            if(prop == "loop"):
-                self.fProperties |= plSound.Properties["kPropLooping"]
-            if(prop == "start" or prop == "play" ):
-                self.fProperties |= plSound.Properties["kPropAutoStart"]
-            if(prop == "local"):
-                self.fProperties |= plSound.Properties["kPropLocalOnly"]
+        flags = FindInDict(objscript,"sound.flags",[])
+        if type(flags) == list:
+            self.fFlags = 0 # reset
+            for flag in flags:
+                if flag.lower() in plWin32Sound.scriptProps:
+                    idx =  plWin32Sound.scriptProps[flag.lower()]
+                    self.fFlags |= idx
         
         chan = FindInDict(objscript,"sound.channel")
         if(chan == "right"):
@@ -656,16 +665,16 @@ class plWin32Sound(plSound):
         vol = FindInDict(objscript,"sound.volume", 1.0)
         self.fDesiredVol = vol
         
-        type = FindInDict(objscript,"sound.type", "Ambience")
-        if(type.lower() == "soundfx"):
+        sndtype = FindInDict(objscript,"sound.type", "Ambience")
+        if(sndtype.lower() == "soundfx"):
             self.fType = plSound.Type["kSoundFX"]
-        elif(type.lower() == "ambience"):
+        elif(sndtype.lower() == "ambience"):
             self.fType = plSound.Type["kAmbience"]
-        elif(type.lower() == "backgroundmusic"):
+        elif(sndtype.lower() == "backgroundmusic"):
             self.fType = plSound.Type["kBackgroundMusic"]
-        elif(type.lower() == "guisound"):
+        elif(sndtype.lower() == "guisound"):
             self.fType = plSound.Type["kGUISound"]
-        elif(type.lower() == "npcvoices"):
+        elif(sndtype.lower() == "npcvoices"):
             self.fType = plSound.Type["kNPCVoices"]
         else:
             self.fType = plSound.Type["kAmbience"]

@@ -2089,11 +2089,19 @@ class plMipMap(plBitmap):                    # Type 0x04
 
     def _FindCreateByMipMapInfo(page,name,mipmapinfo,exportTexturesToPrp):
         resmgr = page.resmanager
+        tex=resmgr.findPrp("Textures")
         if not exportTexturesToPrp:
-            page=resmgr.findPrp("Textures")
+            page=tex
             if page==None:
                 raise "    Textures PRP file not found"
         
+        try:
+            if not page.age.specialtex.index(name) is -1:
+                page = tex
+                if page==None:
+                    raise "    Textures PRP file not found"
+        except ValueError:
+            pass
         
 #        print "Locating mipmap for mipmapinfo:"
 #        print mipmapinfo
@@ -2422,7 +2430,8 @@ class plCubicEnvironMap(plBitmap):          # Type 0x05
 
 
     Export = staticmethod(_Export)
-class plLayerAnimationBase(plLayerInterface):
+
+class plLayerAnimationBase(plLayerInterface):
     def __init__(self,parent,name="unnamed",type=0x00EF):
         plLayerInterface.__init__(self,parent,name,type)
         
