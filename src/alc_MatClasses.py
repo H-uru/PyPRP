@@ -26,6 +26,8 @@ try:
     try:
         from Blender import Mesh
         from Blender import Lamp
+        from Blender import Ipo
+        from Blender import BezTriple
     except Exception, detail:
         print detail
 except ImportError:
@@ -33,8 +35,8 @@ except ImportError:
 
 import md5, random, binascii, cStringIO, copy, Image, math, struct, StringIO, os, os.path, pickle
 import alc_AbsClasses
+import alc_AnimClasses
 from alc_AbsClasses import *
-from alc_AnimClasses import *
 from alcurutypes import *
 from alcdxtconv import *
 from alchexdump import *
@@ -43,6 +45,7 @@ from alc_Functions import *
 from alcConvexHull import *
 from alc_VolumeIsect import *
 from alc_AlcScript import *
+from alc_AnimClasses import *
 
 def stripIllegalChars(name):
     name=name.replace("*","_")
@@ -406,8 +409,8 @@ class hsGMaterial(plSynchedObject):         # Type 0x07
 
                         # we hit a problem when two textures are shared, because the mtex is different per material.
                         # because of this. we'll prefix the material name, before the layer name
-                        try:
-                            ipo = mat.ipo
+                        ipo = mat.ipo
+                        if(ipo != None):
                             ipo.channel = list(mtex_list).index(mtex)
                             if(len(ipo.curves) > 0):
                                 #It's a LayerAnimation
@@ -416,7 +419,7 @@ class hsGMaterial(plSynchedObject):         # Type 0x07
                             else:
                                 layer = root.find(0x06,mat.name + "-" + mtex.tex.name,1)
                                 layerlist.append({"layer":layer,"mtex":mtex,"stencil":mtex.stencil,"channel":ipo.channel})
-                        except:
+                        else:
                             layer = root.find(0x06,mat.name + "-" + mtex.tex.name,1)
                             layerlist.append({"layer":layer,"mtex":mtex,"stencil":mtex.stencil,"channel":-1})
 
@@ -2488,9 +2491,9 @@ class plLayerAnimationBase(plLayerInterface):
         self.fTransformCtl.write(stream)
 
 class plLayerAnimation(plLayerAnimationBase):
-    def __init__(self,parent=None,type=0x0043):
+    def __init__(self,parent=None,name="unnamed",type=0x0043):
         plLayerAnimationBase.__init__(self,parent,name,type)
-        self.fTimeConvert = plAnimTimeConvert()
+        self.fTimeConvert = None
     
     def _Find(page,name):
         return page.find(0x0043,name,0)
@@ -2908,15 +2911,15 @@ class plLayerAnimation(plLayerAnimationBase):
         ipo = mat.ipo
         ipo.channel = chan
         
-        if (Ipo.MA_OFSX in myipo) and (Ipo.MA_OFSY in myipo) and (Ipo.MA_OFSZ in myipo):
-            KeyList = hsPoint3KeyList()
+        if (Ipo.MA_OFSX in ipo) and (Ipo.MA_OFSY in ipo) and (Ipo.MA_OFSZ in ipo):
+            KeyList = alc_AnimClasses.hsPoint3KeyList()
             
             # We need to get the list of BezCurves
             # Then get the value for each and create a point3
             # Then store that in a frame and store than in the list
             curves = ipo[Ipo.MA_OFSX].bezierPoints
             for frm in range(len(curves)):
-                frame = hsPoint3Key()
+                frame = alc_AnimClasses.hsPoint3Key()
                 frame.fFrameNum = curves[frm].pt[0]
                 frame.fFrameTime = curves[frm].pt[0]/30.0
                 
@@ -2928,21 +2931,21 @@ class plLayerAnimation(plLayerAnimationBase):
                 frame.fValue = pt
                 KeyList.fKeys.append(frame)
             
-            p3c = plPoint3Controller()
+            p3c = alc_AnimClasses.plPoint3Controller()
             p3c.fKeyList = KeyList
-            self.fTransformCtl = plSimplePosController()
+            self.fTransformCtl = alc_AnimClasses.plSimplePosController()
             self.fTransformCtl.fValue = p3c
         else:
-            self.fTransformCtl = PrpController(0x8000, self.getVersion())
+            self.fTransformCtl = alc_AnimClasses.PrpController(0x8000, self.getVersion())
         
         ##MAJOR HACK HERE
-        self.fPreshadeColorCtl = PrpController(0x8000, self.getVersion())
-        self.fRuntimeColorCtl = PrpController(0x8000, self.getVersion())
-        self.fAmbientColorCtl = PrpController(0x8000, self.getVersion())
-        self.fSpecularColorCtl = PrpController(0x8000, self.getVersion())
-        self.fOpacityCtl = PrpController(0x8000, self.getVersion())
+        self.fPreshadeColorCtl = alc_AnimClasses.PrpController(0x8000, self.getVersion())
+        self.fRuntimeColorCtl = alc_AnimClasses.PrpController(0x8000, self.getVersion())
+        self.fAmbientColorCtl = alc_AnimClasses.PrpController(0x8000, self.getVersion())
+        self.fSpecularColorCtl = alc_AnimClasses.PrpController(0x8000, self.getVersion())
+        self.fOpacityCtl = alc_AnimClasses.PrpController(0x8000, self.getVersion())
         
-        self.fTimeConvert = plAnimTimeConvert()
+        self.fTimeConvert = alc_AnimClasses.plAnimTimeConvert()
         
         if mat.getMode() & Blender.Material.Modes['NOMIST']:
             self.fState.fShadeFlags |= hsGMatState.hsGMatShadeFlags["kShadeNoFog"]

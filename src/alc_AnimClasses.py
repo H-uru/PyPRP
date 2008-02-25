@@ -1233,6 +1233,7 @@ class plAnimTimeConvert():
     }
     
     def __init__(self,parent=None,type=0x0254):
+        self.fFlags = 0
         self.fBegin = 0
         self.fEnd = 0
         self.fLoopEnd = 0
@@ -1267,6 +1268,12 @@ class plAnimTimeConvert():
         stream.WriteFloat(self.fLoopEnd)
         stream.WriteFloat(self.fLoopBegin)
         stream.WriteFloat(self.fSpeed)
+        
+        stream.Write16(0x8000)
+        stream.Write16(0x8000)
+        stream.Write16(0x8000)
+        
         stream.WriteFloat(self.fCurrentAnimTime)
         stream.WriteFloat(self.fLastEvalWorldTime)
-        stream.Write32(self.fCallbackMsgs)
+        stream.Write32(0)
+        stream.Write32(0)
