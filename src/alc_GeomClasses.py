@@ -142,22 +142,54 @@ class hsMatrix44:
         self.update()
     
     
-    def rotate(self,v):
+    def transformvector(self,v):
         m=self.matrix
         x, y, z = v
         x = m[0][0]*x + m[0][1]*y + m[0][2]*z + m[0][3]
         y = m[1][0]*x + m[1][1]*y + m[1][2]*z + m[1][3]
         z = m[2][0]*x + m[2][1]*y + m[2][2]*z + m[2][3]
         return [x,y,z]
+
+    def __mul__(self, m):
+        # matrix multiplication :)
+        sm = self.matrix
+        mm = m.matrix
+        om = hsMatrix44()
+        for row in range(4):
+            for col in range(4):
+                om.matrix[row][col] = 0
+                for index in range(4):
+                    om.matrix[row][col] += sm[row][index] * mm[index][col]
+        return om
+
+    def rotate(self, x, y, z, r):
+        # axis angle rotation r = radians (rotates self)
+        c = math.cos(r)
+        s = math.sin(r)
+        t = 1 - c
+        rot = hsMatrix44()
+        rot.matrix[0] = [(t*x*x)+c, (t*x*y)-(z*s), (t*x*z)+(y*s), 0]
+        rot.matrix[1] = [(t*x*y)+(z*s), (t*y*y)+c, (t*y*z)-(x*s), 0]
+        rot.matrix[2] = [(t*x*z)-(y*s), (t*y*z)+(x*s), (t*z*z)+c, 0]
+        rot.matrix[3] = [0, 0, 0, 1]
+        self.matrix = (self * rot).matrix
     
+    def scale(self, x, y, z):
+        # 3 axis scale (scales self)
+        scale = hsMatrix44()
+        scale.matrix[0] = [x, 0, 0, 0]
+        scale.matrix[1] = [0, y, 0, 0]
+        scale.matrix[2] = [0, 0, z, 0]
+        scale.matrix[3] = [0, 0, 0, 1]
+        self.matrix = (self * scale).matrix
+	
     def translate(self,v):
         m=self.matrix
         x, y, z = v
         m[0][3] += x
         m[1][3] += y
         m[2][3] += z
-        self.matrix=m 
-        
+        self.matrix=m
 
 
 class RGBA:
