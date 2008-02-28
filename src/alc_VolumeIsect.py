@@ -106,8 +106,8 @@ class plVolumeIsect:
     def write(self, buf):
         pass
 
-
-
+    def export_object(self, obj):
+        pass
 
     def changePageRaw(self,sid,did,stype,dtype):
         pass

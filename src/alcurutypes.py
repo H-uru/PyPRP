@@ -563,6 +563,8 @@ class hsKeyedObject:                                 #Type 0x02
         ref.flag=1
         return ref
     
+    def getName(self):
+        return self.Key.name
     
     def getResManager(self):
         if self.parent.parent.parent.resmanager!=None:

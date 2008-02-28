@@ -395,7 +395,7 @@ class PrpEaseCurve:
     def write(self,buf):
         buf.Write16(self.type)
         if self.data != None:
-            self.data.read(buf)
+            self.data.write(buf)
 
 
     def getVersion(self):
@@ -535,7 +535,7 @@ class PrpController:
     def write(self,buf):
         buf.Write16(self.ctrlType)
         if self.data != None:
-            self.data.read(buf)
+            self.data.write(buf)
 
     def getVersion(self):
         return self.version
@@ -583,6 +583,7 @@ class plLeafController(plController):
         buf.Write32(len(self.fControllers))
         for i in self.fControllers:
             i.write(buf)
+        buf.Write32(self.garbage)
 
 
 class plScaleController(plController):
@@ -1217,7 +1218,7 @@ class plAGApplicator:
         buf.WriteSafeString(self.str)
 
 
-class plAnimTimeConvert():
+class plAnimTimeConvert:
     plAnimTimeFlags = \
     { \
         "kNone"        : 0x0,  \
@@ -1279,7 +1280,7 @@ class plAnimTimeConvert():
         stream.Write16(0x8000)
         
         stream.WriteFloat(self.fCurrentAnimTime)
-        stream.WriteFloat(self.fLastEvalWorldTime)
+        stream.WriteDouble(self.fLastEvalWorldTime)
         
         stream.Write32(0)
         

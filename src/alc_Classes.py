@@ -423,9 +423,9 @@ class plSoftVolume(plRegionBase):               #Type 0x0087 (Uru)
     def __init__(self,parent,name="unnamed",type=0x0087):
         plRegionBase.__init__(self,parent,name,type)
         #Format
-        self.i70 = 0
-        self.f74 = 1.0
-        self.f78 = 0
+        self.fListenState = 0
+        self.fInsideStrength = 1.0
+        self.fOutsideStrength = 0
     
     def _Find(page,name):
         return page.find(0x0087,name,0)
@@ -437,24 +437,24 @@ class plSoftVolume(plRegionBase):               #Type 0x0087 (Uru)
 
     def read(self,stream):
         plRegionBase.read(self,stream)
-        self.i70 = stream.Read32()
-        self.f74 = stream.ReadFloat()
-        self.f78 = stream.ReadFloat()
+        self.fListenState = stream.Read32()
+        self.fInsideStrength = stream.ReadFloat()
+        self.fOutsideStrength = stream.ReadFloat()
     
     
     def write(self,stream):
         plRegionBase.write(self,stream)
-        stream.Write32(self.i70)
-        stream.WriteFloat(self.f74)
-        stream.WriteFloat(self.f78)
+        stream.Write32(self.fListenState)
+        stream.WriteFloat(self.fInsideStrength)
+        stream.WriteFloat(self.fOutsideStrength)
 
 
 class plSoftVolumeSimple(plSoftVolume):
     def __init__(self,parent,name="unnamed",type=0x0088):
         plSoftVolume.__init__(self,parent,name,type)
         #Format
-        self.f80 = 0
-        self.VI7C = None #plVolumeIsect instance
+        self.fSoftDist = 0
+        self.fVolume = None #plVolumeIsect instance
 
 
     def _Find(page,name):
@@ -468,26 +468,26 @@ class plSoftVolumeSimple(plSoftVolume):
     def read(self,stream,size):
         st=stream.tell()
         plSoftVolume.read(self,stream)
-        self.f80 = stream.ReadFloat()
+        self.fSoftDist = stream.ReadFloat()
         vitype = stream.Read16()
         if (vitype != 0x0000):
-            self.VI7C = PrpVolumeIsect(vitype,self.getVersion())
-            if self.VI7C.data == None:
+            self.fVolume = PrpVolumeIsect(vitype,self.getVersion())
+            if self.fVolume.data == None:
                 size=size-(stream.tell()-st)
                 self.rawdata=cStringIO.StringIO()
                 self.rawdata.write(stream.read(size))
                 self.rawdata.seek(0)
             else:
-                self.VI7C.read(stream)
+                self.fVolume.read(stream)
 
     def write(self,stream):
         plSoftVolume.write(self,stream)
-        stream.WriteFloat(self.f80)
-        if self.VI7C == None:
-            stream.Write16(0x0000)
+        stream.WriteFloat(self.fSoftDist)
+        if self.fVolume == None:
+            stream.Write16(0x8000)
         else:
-            stream.Write16(self.VI7C.vitype)
-            self.VI7C.write(stream)
+            stream.Write16(self.fVolume.vitype)
+            self.fVolume.write(stream)
 
  
     def getPropertyString(self):
@@ -496,13 +496,23 @@ class plSoftVolumeSimple(plSoftVolume):
 
     def import_all(self):
         name = str(self.Key.name)
-        if self.VI7C.data != None:
-            self.VI7C.data.createObject(name,self.getPageNum())
+        if self.fVolume.data != None:
+            self.fVolume.data.createObject(name,self.getPageNum())
 
     def export_object(self,obj):
-        # Pass this info to a convect volume isect
-        self.VI7C = PrpVolumeIsect(0x02F5,self.getVersion())
-        self.VI7C.data.export_object(obj)
+        objscript = AlcScript.objects.Find(obj.getName())
+        
+        dist = FindInDict(objscript,"softvolume.softdist", 0)
+        self.fSoftDist = float(dist)
+        
+        isect = FindInDict(objscript,"softvolume.type", "convex")
+        
+        if (isect.lower() == "convex"):
+            self.fVolume = PrpVolumeIsect(0x02F5,self.getVersion())
+        else:
+            self.fVolume = PrpVolumeIsect(0x02F0,self.getVersion())
+
+        self.fVolume.data.export_object(obj)
 
 
 
