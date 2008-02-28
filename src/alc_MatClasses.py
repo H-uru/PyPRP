@@ -2509,29 +2509,25 @@ class plLayerAnimation(plLayerAnimationBase):
         endFrame = 0
         
         if (Ipo.MA_OFSX in ipo) and (Ipo.MA_OFSY in ipo) and (Ipo.MA_OFSZ in ipo):
-            KeyList = alc_AnimClasses.hsPoint3KeyList()
+            KeyList = []
             
             # We need to get the list of BezCurves
             # Then get the value for each and create a point3
             # Then store that in a frame and store than in the list
             curves = ipo[Ipo.MA_OFSX].bezierPoints
             for frm in range(len(curves)):
-                frame = alc_AnimClasses.hsPoint3Key()
+                frame = alc_AnimClasses.hsMatrix44Key()
                 frame.fFrameNum = curves[frm].pt[0]
                 frame.fFrameTime = curves[frm].pt[0]/30.0
                 
-                pt = Vertex()
-                pt.x = curves[frm].pt[1]
-                pt.y = ipo[Ipo.MA_OFSY].bezierPoints[frm].pt[1]
-                pt.z = ipo[Ipo.MA_OFSZ].bezierPoints[frm].pt[1]
+                matx = hsMatrix44()
+                matx.translate((curves[frm].pt[1], ipo[Ipo.MA_OFSY].bezierPoints[frm].pt[1], ipo[Ipo.MA_OFSZ].bezierPoints[frm].pt[1]))
                 
-                frame.fValue = pt
-                KeyList.fKeys.append(frame)
+                frame.fValue = matx
+                KeyList.append(frame)
             
-            p3c = alc_AnimClasses.plPoint3Controller()
-            p3c.fKeyList = KeyList
-            self.fTransformCtl = alc_AnimClasses.PrpController(0x0239, self.getVersion())
-            self.fTransformCtl.data.fValue = p3c
+            self.fTransformCtl = alc_AnimClasses.PrpController(0x0234, self.getVersion())
+            self.fTransformCtl.data.fKeys = KeyList
             endFrame = curves[len(curves)-1].pt[0]
         else:
             self.fTransformCtl = alc_AnimClasses.PrpController(0x8000, self.getVersion())
@@ -2546,7 +2542,6 @@ class plLayerAnimation(plLayerAnimationBase):
         self.fTimeConvert = alc_AnimClasses.plAnimTimeConvert()
         self.fTimeConvert.fBegin = 0.0
         self.fTimeConvert.fEnd = endFrame
-        self.fTimeConvert.fStopPoints.append(endFrame)
         
         
         if mat.getMode() & Blender.Material.Modes['NOMIST']:
