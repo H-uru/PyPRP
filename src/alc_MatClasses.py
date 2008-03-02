@@ -412,7 +412,7 @@ class hsGMaterial(plSynchedObject):         # Type 0x07
                                 anim = True
                         
                         layer = root.find(0x06,mat.name + "-" + mtex.tex.name,1)
-                        layerlist.append({"layer":layer,"mtex":mtex,"stencil":stencil,"anim":anim})
+                        layerlist.append({"layer":layer,"mtex":mtex,"stencil":mtex.tex.stencil,"anim":anim})
 
             i = 0
             while i < len(layerlist):
