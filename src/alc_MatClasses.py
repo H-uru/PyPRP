@@ -412,7 +412,7 @@ class hsGMaterial(plSynchedObject):         # Type 0x07
                                 anim = True
                         
                         layer = root.find(0x06,mat.name + "-" + mtex.tex.name,1)
-                        layerlist.append({"layer":layer,"mtex":mtex,"stencil":mtex.stencil,"anim":anim})
+                        layerlist.append({"layer":layer,"mtex":mtex,"stencil":mtex.stencil,"channel":channel,"anim":anim})
 
             i = 0
             while i < len(layerlist):
@@ -456,6 +456,7 @@ class hsGMaterial(plSynchedObject):         # Type 0x07
                         i += 1
                 
                 if layer_info["anim"]:
+                    chan = layer_info["channel"]
                     animlayer = root.find(0x0043,layer.data.getName() + "_LayerAnim_",1)
                     animlayer.data.FromBlender(obj,mat,mtex,chan)
                     animlayer.data.fUnderlay = layer.data.getRef()
