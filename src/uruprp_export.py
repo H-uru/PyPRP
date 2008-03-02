@@ -102,12 +102,8 @@ def export_age(agename,basepath,selection=0,merge=0,pagename=None):
         fnitxt=fnitxt + line + "\n"
     if fnitxt!="":
         age.setInit(fnitxt)
-        age.mfs.addFile(basepath + "/" + agename + ".fni")
-    #generate mfs and sum files
+    #generate sum files
     #print "Computing Checksums..."
-    age.mfs.update()
-    print "Writing %s" %(agename + ".xml")
-    age.mfs.writexml(basepath + "/" + agename + ".xml")
     old_style=0
     if alcconfig.ver2==11:
         old_style=1
