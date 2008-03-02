@@ -406,13 +406,13 @@ class hsGMaterial(plSynchedObject):         # Type 0x07
                         channel = list(mtex_list).index(mtex)
                         anim = False
                         
-                        if(ipo != None):
+                        if ipo != None:
                             ipo.channel = channel
                             if(len(ipo.curves) > 0):
                                 anim = True
                         
                         layer = root.find(0x06,mat.name + "-" + mtex.tex.name,1)
-                        layerlist.append({"layer":layer,"mtex":mtex,"stencil":mtex.stencil,"channel":channel,"anim":anim})
+                        layerlist.append({"layer":layer,"mtex":mtex,"stencil":stencil,"anim":anim})
 
             i = 0
             while i < len(layerlist):
@@ -421,7 +421,6 @@ class hsGMaterial(plSynchedObject):         # Type 0x07
                 if not layer_info["stencil"]:
                     layer = layer_info["layer"]
                     mtex = layer_info["mtex"]
-                    chan = layer_info["channel"]
                     if(not layer.isProcessed):
                         layer.data.FromBlenderMTex(mtex,obj,mat)
                         layer.data.FromBlenderMat(obj,mat)
@@ -457,8 +456,8 @@ class hsGMaterial(plSynchedObject):         # Type 0x07
                         i += 1
                 
                 if layer_info["anim"]:
-                    animlayer = root.find(0x0043,layer.data.getName() + "_AnimLayer",1)
-                    animlayer.data.FromBlender(obj,mat,chan)
+                    animlayer = root.find(0x0043,layer.data.getName() + "_LayerAnim_",1)
+                    animlayer.data.FromBlender(obj,mat,mtex,chan)
                     animlayer.data.fUnderlay = layer.data.getRef()
                     self.fLayers.append(animlayer.data.getRef())
 
@@ -2498,11 +2497,8 @@ class plLayerAnimation(plLayerAnimationBase):
         plLayerAnimationBase.write(self, stream)
         self.fTimeConvert.write(stream)
     
-    def FromBlender(self,obj,mat,chan = 0):
+    def FromBlender(self,obj,mat,mtex,chan = 0):
         print "   [LayerAnimation %s]"%(str(self.Key.name))
-        # Now Copy Settings from the material...
-        mesh = obj.getData(False,True)
-        
         # We have to grab the animation stuff here...
         ipo = mat.ipo
         ipo.channel = chan
@@ -2517,8 +2513,11 @@ class plLayerAnimation(plLayerAnimationBase):
             curves = ipo[Ipo.MA_OFSX].bezierPoints
             for frm in range(len(curves)):
                 frame = alc_AnimClasses.hsMatrix44Key()
-                frame.fFrameNum = curves[frm].pt[0]
-                frame.fFrameTime = curves[frm].pt[0]/30.0
+                num = curves[frm].pt[0]
+                if num == 1:
+                    num = 0
+                frame.fFrameNum = int(num)
+                frame.fFrameTime = num/30.0
                 
                 matx = hsMatrix44()
                 matx.translate((curves[frm].pt[1], ipo[Ipo.MA_OFSY].bezierPoints[frm].pt[1], ipo[Ipo.MA_OFSZ].bezierPoints[frm].pt[1]))
@@ -2528,7 +2527,7 @@ class plLayerAnimation(plLayerAnimationBase):
             
             self.fTransformCtl = alc_AnimClasses.PrpController(0x0234, self.getVersion())
             self.fTransformCtl.data.fKeys = KeyList
-            endFrame = curves[len(curves)-1].pt[0]
+            endFrame = curves[-1].pt[0]
         else:
             self.fTransformCtl = alc_AnimClasses.PrpController(0x8000, self.getVersion())
         
@@ -2540,25 +2539,8 @@ class plLayerAnimation(plLayerAnimationBase):
         self.fOpacityCtl = alc_AnimClasses.PrpController(0x8000, self.getVersion())
         
         self.fTimeConvert = alc_AnimClasses.plAnimTimeConvert()
+        self.fTimeConvert.fFlags |= 0x22
         self.fTimeConvert.fBegin = 0.0
-        self.fTimeConvert.fEnd = endFrame
-        
-        
-        if mat.getMode() & Blender.Material.Modes['NOMIST']:
-            self.fState.fShadeFlags |= hsGMatState.hsGMatShadeFlags["kShadeNoFog"]
-            self.fState.fShadeFlags |= hsGMatState.hsGMatShadeFlags["kShadeReallyNoFog"]
-        
-        if mat.getMode() & Blender.Material.Modes['ZTRANSP']:
-            self.fState.fZFlags |= hsGMatState.hsGMatZFlags["kZNoZWrite"]
-        
-        if mat.getSpec() > 0.0:
-            self.fState.fShadeFlags |= hsGMatState.hsGMatShadeFlags["kShadeSpecular"]
-            self.fState.fShadeFlags |= hsGMatState.hsGMatShadeFlags["kShadeSpecularAlpha"]
-            self.fState.fShadeFlags |= hsGMatState.hsGMatShadeFlags["kShadeSpecularColor"]
-            self.fState.fShadeFlags |= hsGMatState.hsGMatShadeFlags["kShadeSpecularHighlight"]
-            self.fSpecularPower = mat.getHardness()
-            
-        # If we have two vertex color layers, the 2nd is used as alpha layer - if we have vertex alpha,
-        # we need to have the alpha blending flag set, and we need to have
-        if len(mesh.getColorLayerNames()) > 1:
-            self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlpha"]
+        self.fTimeConvert.fEnd = endFrame/30.0
+        self.fTimeConvert.fLoopEnd = endFrame/30.0
+        self.fTimeConvert.fLoopBegin = 0.0
