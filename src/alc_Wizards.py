@@ -492,7 +492,10 @@ def Wizard_property_update():
                 StoreInDict(objscript,"region.type","footstep")
                 try:
                     p = obj.getProperty("footstepsound")
-                    footstepsound = int(p.getData())
+                    if (p.type == "STRING"):
+                        footstepsound = alcAscii2Hex(str(p.getData()),2)
+                    else:
+                        footstepsound = int(p.getData())
                     print p
                     numProps += 1
                     obj.removeProperty(p)
