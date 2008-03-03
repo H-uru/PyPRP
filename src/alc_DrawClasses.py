@@ -1780,6 +1780,7 @@ class plDrawInterface(plObjInterface):
 
                 Props = 0
                 if ZBias > 0:
+                    # this seems to cause issues for my ages. Consider using sort faces (vs spans), or have an option for removing this?
                     Criteria |= plDrawable.Crit["kCritSortSpans"]
                     Props = plDrawable.Props["kPropSortSpans"]
 

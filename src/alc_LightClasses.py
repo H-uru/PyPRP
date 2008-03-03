@@ -592,10 +592,13 @@ class plShadowMaster(plObjInterface):    # Type: 0x00D3
         print " [ShadowMaster]"
         self.BitFlags[plShadowMaster.plDrawProperties["kSelfShadow"]] = 1
         
-        if lamp.mode & (Lamp.Modes["Sphere"]):
-            self.fAttenDist = lamp.dist
-        else:
-            self.fAttenDist = lamp.dist * 10
+        # this seems to have caused some problems due to large values
+        #if lamp.mode & (Lamp.Modes["Sphere"]):
+            #self.fAttenDist = lamp.dist
+        #else:
+            #self.fAttenDist = lamp.dist * 10
+        # reverting to this:
+        self.fAttenDist = lamp.dist
         print "  Attensity distance %f" % self.fAttenDist
         
         self.fPower = lamp.energy
