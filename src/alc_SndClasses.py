@@ -621,11 +621,11 @@ class plWin32Sound(plSound):
         
         flags = FindInDict(objscript,"sound.flags",[])
         if type(flags) == list:
-            self.fFlags = 0 # reset
+            self.fProperties = 0 # reset
             for flag in flags:
                 if flag.lower() in plWin32Sound.scriptProps:
                     idx =  plWin32Sound.scriptProps[flag.lower()]
-                    self.fFlags |= idx
+                    self.fProperties |= idx
         
         chan = FindInDict(objscript,"sound.channel")
         if(chan == "right"):
