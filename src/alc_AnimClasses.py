@@ -40,7 +40,6 @@ from alc_Functions import *
 from alcConvexHull import *
 from alc_AbsClasses import *
 from alc_VolumeIsect import *
-from alc_MatClasses import *
 from alc_CamClasses import *
 from alc_ObjClasses import *
 from alc_AlcScript import *

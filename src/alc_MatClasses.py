@@ -425,7 +425,8 @@ class hsGMaterial(plSynchedObject):         # Type 0x07
                         layer.data.FromBlenderMTex(mtex,obj,mat)
                         layer.data.FromBlenderMat(obj,mat)
                         layer.isProcessed = 1
-                    self.fLayers.append(layer.data.getRef())
+                    if not layer_info["anim"]:
+                        self.fLayers.append(layer.data.getRef())
                     i += 1
                 else:
                     if i < len(layerlist) - 1: # if it's not the last one
@@ -437,7 +438,8 @@ class hsGMaterial(plSynchedObject):         # Type 0x07
                             boundlayer.data.FromBlenderMat(obj,mat)
                             boundlayer.data.FromBlenderMTex(boundmtex,obj,mat,False,True)
                             boundlayer.isProcessed = 1
-                        self.fLayers.append(boundlayer.data.getRef())
+                        if not boundlayer_info["anim"]:
+                            self.fLayers.append(boundlayer.data.getRef())
  
                         # append the stencil layer after that...
                         layer = layer_info["layer"]
@@ -446,7 +448,8 @@ class hsGMaterial(plSynchedObject):         # Type 0x07
                             layer.data.FromBlenderMTex(mtex,obj,mat,True,False)
 #                            layer.data.FromBlenderMat(obj,mat)
                             layer.isProcessed = 1
-                        self.fLayers.append(layer.data.getRef())
+                        if not layer_info["anim"]:
+                            self.fLayers.append(layer.data.getRef())
                         self.fCompFlags |= hsGMaterial.hsGCompFlags["kCompNeedsBlendChannel"] 
                     
                         # And ofcourse increase by 2 instead of one...
@@ -2455,17 +2458,17 @@ class plLayerAnimationBase(plLayerInterface):
     
     def read(self, stream):
         plLayerInterface.read(self,stream)
-        self.fPreshadeColorCtl = PrpController(stream.Read16(), self.getVersion())
+        self.fPreshadeColorCtl = alc_AnimClasses.PrpController(stream.Read16(), self.getVersion())
         self.fPreshadeColorCtl.read(stream)
-        self.fRuntimeColorCtl = PrpController(stream.Read16(), self.getVersion())
+        self.fRuntimeColorCtl = alc_AnimClasses.PrpController(stream.Read16(), self.getVersion())
         self.fRuntimeColorCtl.read(stream)
-        self.fAmbientColorCtl = PrpController(stream.Read16(), self.getVersion())
+        self.fAmbientColorCtl = alc_AnimClasses.PrpController(stream.Read16(), self.getVersion())
         self.fAmbientColorCtl.read(stream)
-        self.fSpecularColorCtl = PrpController(stream.Read16(), self.getVersion())
+        self.fSpecularColorCtl = alc_AnimClasses.PrpController(stream.Read16(), self.getVersion())
         self.fSpecularColorCtl.read(stream)
-        self.fOpacityCtl = PrpController(stream.Read16(), self.getVersion())
+        self.fOpacityCtl = alc_AnimClasses.PrpController(stream.Read16(), self.getVersion())
         self.fOpacityCtl.read(stream)
-        self.fTransformCtl = PrpController(stream.Read16(), self.getVersion())
+        self.fTransformCtl = alc_AnimClasses.PrpController(stream.Read16(), self.getVersion())
         self.fTransformCtl.read(stream)
     
     def write(self, stream):
