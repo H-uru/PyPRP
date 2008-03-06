@@ -593,7 +593,7 @@ class plShadowMaster(plObjInterface):    # Type: 0x00D3
         self.BitFlags[plShadowMaster.plDrawProperties["kSelfShadow"]] = 1
         
 
-        if not (lamp.mode & (Lamp.Modes["Sphere"])) and (lamp.type==Blender.Lamp.Types["Area"]) and (lamp.mode & (Lamp.Modes["Quad"])):
+        if not (lamp.mode & (Lamp.Modes["Sphere"])) and (lamp.type==Blender.Lamp.Types["Lamp"]) and (lamp.mode & (Lamp.Modes["Quad"])):
             self.fAttenDist = lamp.dist * 10
         else:
             self.fAttenDist = lamp.dist

@@ -515,6 +515,14 @@ class alcUruPage:
             # Get the name
             name=str(obj.name)
 
+            # Get the "type" property, first from the alcscript, and next from the 'alctype' proprty 
+            # (which overrides alsccript)
+            try:
+                alctype = objscript['type']
+            except:
+                alctype = 'object'
+            alctype = getTextPropertyOrDefault(obj,"type",alctype)
+
             # Get it's initial dynamics settings
             if obj.rbFlags & Blender.Object.RBFlags["ACTOR"]:
                 isdynamic=1
@@ -522,14 +530,6 @@ class alcUruPage:
                 isdynamic=0
 
             if obj_type=="Mesh":
-                # Get the "type" property, first from the alcscript, and next from the 'alctype' proprty 
-                # (which overrides alsccript)
-                try:
-                    alctype = objscript['type']
-                except:
-                    alctype = 'object'
-                alctype = getTextPropertyOrDefault(obj,"type",alctype)
-
                 if alctype=="region": #region export
                     print "" 
                     print "[Region Object %s]" % name
