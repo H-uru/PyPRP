@@ -843,7 +843,7 @@ class plCameraBrain1_Avatar(plCameraBrain1):
 
 class plCameraBrain1_FirstPerson(plCameraBrain1_Avatar):    
     def __init__(self,parent,name="unnamed",type=0x00B3):
-        plCameraBrain1.__init__(self,parent,name,type)
+        plCameraBrain1_Avatar.__init__(self,parent,name,type)
 
     def _Find(page,name):
         return page.find(0x00B3,name,0)

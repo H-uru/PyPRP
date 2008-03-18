@@ -1232,7 +1232,7 @@ class plAnimTimeConvert:
         "kFlagsMask"   : 0xFF  \
     }
     
-    def __init__(self,parent=None,type=0x0254):
+    def __init__(self,parent=None,type=0x0254,version = 5):
         self.fFlags = 0
         self.fBegin = 0.0
         self.fEnd = 0.0
@@ -1241,7 +1241,9 @@ class plAnimTimeConvert:
         self.fSpeed = 1.0
         self.fCurrentAnimTime = 0.0
         self.fLastEvalWorldTime = 0.0
+        self.fCommandList = [] # plMessages
         self.fStopPoints = []
+        self.version = version
     
     def read(self, stream):
         self.fFlags = stream.Read32()
@@ -1260,7 +1262,24 @@ class plAnimTimeConvert:
         self.fLastEvalWorldTime = stream.ReadDouble()
         
         count = stream.Read32()
-        #This is going to crash until we have the messages implemented
+
+        # we now should read in a message queue, which is hard because of incomplete message implementations
+        
+        
+        try:
+            for i in range(count):
+                Msg = PrpMessage.FromStream(stream)
+                self.fCommandList.add(Msg.data)
+
+        except ValueError, detail:
+            print "/---------------------------------------------------------"
+            print "|  WARNING:"
+            print "|   Got Value Error:" , detail, ":"
+            print "|   While reading message arrays of plAnimTimeConvert..."
+            print "|   Unknown message type not implemented."
+            print "|   ABORTING!!!"
+            print "\---------------------------------------------------------\n"
+            raise RuntimeError, "Unknown message type not implemented"
         
         count = stream.Read32()
         for i in range(count):
@@ -1286,3 +1305,6 @@ class plAnimTimeConvert:
         stream.Write32(len(self.fStopPoints))
         for i in self.fStopPoints:
             stream.WriteFloat(i)
+
+    def getVersion(self):
+        return self.version

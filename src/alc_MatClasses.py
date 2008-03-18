@@ -2495,6 +2495,8 @@ class plLayerAnimation(plLayerAnimationBase):
     
     def read(self, stream):
         plLayerAnimationBase.read(self, stream)
+        if self.fTimeConvert == None:
+            self.fTimeConvert = alc_AnimClasses.plAnimTimeConvert()
         self.fTimeConvert.read(stream)
     
     def write(self, stream):
@@ -2548,3 +2550,9 @@ class plLayerAnimation(plLayerAnimationBase):
         self.fTimeConvert.fEnd = endFrame/30.0
         self.fTimeConvert.fLoopEnd = endFrame/30.0
         self.fTimeConvert.fLoopBegin = 0.0
+
+    def ToBlenderMTex(self,mtex,obj):
+        print "     [Layer %s]"%(str(self.Key.name))
+        # TODO: Implement this to set mtex.colfac, mtex.neg and obj.data.mode
+        print "        WARNING: Layer animation settings have not been"
+        print "        converted into Blender texture settings!"
