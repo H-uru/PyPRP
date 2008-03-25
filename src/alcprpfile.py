@@ -251,9 +251,9 @@ class PrpObject:
             elif self.type==0x0049:
                 self.data=plDrawableSpans(self)
             else:
-                self.data=pRaw(self)
+                self.data=pRaw(self,"unnamed",self.type)
         else:
-            self.data=pRaw(self)
+            self.data=pRaw(self,"unnamed",self.type)
 
     
     def changePage(self,sseq,dseq,spage,dpage,stype,dtype):

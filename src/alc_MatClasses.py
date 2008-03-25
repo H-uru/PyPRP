@@ -309,7 +309,7 @@ class hsGMaterial(plSynchedObject):         # Type 0x07
         
         for layerref in self.fLayers:
             layer = root.findref(layerref)
-            if layer != None:
+            if layer != None and layer.data.Key.object_type != 0x00F0: #plLayerSDLAnimation NIE
                 # -- Retrieve from layer some info for the blender material
                 ambientCol  = layer.data.fPreshadeColor
                 diffuseCol  = layer.data.fRuntimeColor
@@ -2494,10 +2494,20 @@ class plLayerAnimation(plLayerAnimationBase):
     FindCreate = staticmethod(_FindCreate)
     
     def read(self, stream):
-        plLayerAnimationBase.read(self, stream)
-        if self.fTimeConvert == None:
-            self.fTimeConvert = alc_AnimClasses.plAnimTimeConvert()
-        self.fTimeConvert.read(stream)
+        start = stream.tell() # Keep start offset in case of trouble...
+        try:
+            plLayerAnimationBase.read(self, stream, size)
+            if self.fTimeConvert == None:
+                self.fTimeConvert = alc_AnimClasses.plAnimTimeConvert()
+            self.fTimeConvert.read(stream)
+        except:
+            print "/---------------------------------------------------------"
+            print "|  WARNING:"
+            print "|   Could not read in portion of plLayerAnimation."
+            print "|   -> Skipping %i bytes ahead " % ( (start + size) - stream.tell())
+            print "|   -> Total object size: %i bytes"% (size)
+            print "\---------------------------------------------------------\n"
+            stream.seek(start + size) #skip to the end
     
     def write(self, stream):
         plLayerAnimationBase.write(self, stream)

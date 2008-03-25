@@ -99,7 +99,7 @@ def export_age(agename,basepath,selection=0,merge=0,pagename=None):
     initxt=alcFindBlenderText("init")
     fnitxt=""
     for line in initxt.asLines():
-        fnitxt=fnitxt + line + "\n"
+        fnitxt=fnitxt + line + "\r\n"
     if fnitxt!="":
         age.setInit(fnitxt)
     #generate sum files
