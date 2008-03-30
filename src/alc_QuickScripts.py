@@ -384,13 +384,15 @@ def QuickScript_SimpleClickable(obj):
         if not region is None:
             animation = getTextPropertyOrDefault(obj,"animation",None)
             animtarget = getTextPropertyOrDefault(obj,"animtarget","/")
-        
+            soundemitter = getTextPropertyOrDefault(obj,"soundemitter",None)
+
     else:
         clickfile =     FindInDict(objscript,"quickscript.simpleclick.pythonfile",None)
         region =        FindInDict(objscript,"quickscript.simpleclick.region",None)
         animation =     FindInDict(objscript,"quickscript.simpleclick.animation",None)
         animtarget =    FindInDict(objscript,"quickscript.simpleclick.animtarget","/")
-        
+        soundemitter =  FindInDict(objscript,"quickscript.simpleclick.soundemitter",None)
+
     if not clickfile is None and not region is None:
         print "  [QuickScript - Simple Clickable]"
         # Force the object's physical logic to 'detect'
@@ -419,6 +421,10 @@ def QuickScript_SimpleClickable(obj):
         modtxt += "    - type: pythonfile\n"
         modtxt += "      ref: $AutoClick\n"
 
+        if not soundemitter is None:
+            modtxt += "    - type: responder\n"
+            modtxt += "      ref: $SoundResp\n"
+
         acttxt  = "- type: pythonfile\n"
         acttxt += "  tag: AutoClick\n"
         acttxt += "  pythonfile:\n"
@@ -428,7 +434,6 @@ def QuickScript_SimpleClickable(obj):
         acttxt += "          ref: logicmod:$AutoClick\n"
         acttxt += "        - type: string\n"
         acttxt += "          value: "+str(obj.name) +"\n"
-       
 
         if not animation is None:
             acttxt += "        - type: behavior\n"
@@ -442,6 +447,28 @@ def QuickScript_SimpleClickable(obj):
 
             if not animtarget is None:
                 acttxt += "      remote: "+str(animtarget)+"\n"
+
+        if not soundemitter is None:
+            acttxt += "- type: responder\n"
+            acttxt += "  tag: SoundResp\n"
+            acttxt += "  responder:\n"
+            acttxt += "    states:\n"
+            acttxt += "      - cmds:\n"
+            acttxt += "          - type: soundmsg\n"
+            acttxt += "            params:\n"
+            acttxt += "                receivers:\n"  
+            acttxt += "                  - 0011:" + str(soundemitter) + "\n" 
+            acttxt += "                cmds:\n"  
+            acttxt += "                  - play\n" 
+            acttxt += "                  - setvolume\n" 
+            acttxt += "                volume: 1\n"  
+            acttxt += "            waiton: -1\n"
+            acttxt += "        nextstate: 0\n"
+            acttxt += "        waittocmd: 0\n"
+            acttxt += "    curstate: 0\n"
+            acttxt += "    flags:\n"
+            acttxt += "      - detecttrigger\n"
+
 
         print "Resulting Code for .logic.modifiers:\n",modtxt
         print "Resulting Code for .logic.actions:\n",acttxt
