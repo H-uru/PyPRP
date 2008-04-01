@@ -385,14 +385,17 @@ def QuickScript_SimpleClickable(obj):
             animation = getTextPropertyOrDefault(obj,"animation",None)
             animtarget = getTextPropertyOrDefault(obj,"animtarget","/")
             soundemitter = getTextPropertyOrDefault(obj,"soundemitter",None)
-
     else:
         clickfile =     FindInDict(objscript,"quickscript.simpleclick.pythonfile",None)
         region =        FindInDict(objscript,"quickscript.simpleclick.region",None)
         animation =     FindInDict(objscript,"quickscript.simpleclick.animation",None)
         animtarget =    FindInDict(objscript,"quickscript.simpleclick.animtarget","/")
         soundemitter =  FindInDict(objscript,"quickscript.simpleclick.soundemitter",None)
-
+    
+    if not soundemitter is None:
+        emitscript = AlcScript.objects.FindOrCreate(soundemitter)
+        emitvolume = FindInDict(emitscript,"sound.volume",1)
+    
     if not clickfile is None and not region is None:
         print "  [QuickScript - Simple Clickable]"
         # Force the object's physical logic to 'detect'
@@ -461,7 +464,7 @@ def QuickScript_SimpleClickable(obj):
             acttxt += "                cmds:\n"  
             acttxt += "                  - play\n" 
             acttxt += "                  - setvolume\n" 
-            acttxt += "                volume: 1\n"  
+            acttxt += "                volume: " + str(emitvolume) + "\n"
             acttxt += "            waiton: -1\n"
             acttxt += "        nextstate: 0\n"
             acttxt += "        waittocmd: 0\n"

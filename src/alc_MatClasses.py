@@ -2470,7 +2470,7 @@ class plLayerAnimationBase(plLayerInterface):
         return page.find(0x00EF,name,1)
     FindCreate = staticmethod(_FindCreate)
     
-    def read(self, stream):
+    def read(self, stream, size):
         plLayerInterface.read(self,stream)
         self.fPreshadeColorCtl = alc_AnimClasses.PrpController(stream.Read16(), self.getVersion())
         self.fPreshadeColorCtl.read(stream)
@@ -2507,7 +2507,7 @@ class plLayerAnimation(plLayerAnimationBase):
         return page.find(0x0043,name,1)
     FindCreate = staticmethod(_FindCreate)
     
-    def read(self, stream):
+    def read(self, stream, size):
         start = stream.tell() # Keep start offset in case of trouble...
         try:
             plLayerAnimationBase.read(self, stream, size)

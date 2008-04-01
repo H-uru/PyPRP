@@ -218,10 +218,10 @@ class plConvexIsect(plVolumeIsect):
         tmatrix.transpose()
         for face in obj.data.faces:
             if (len(face.v) > 0):
-        # reversed uru space
-        Nor = Blender.Mathutils.Vector(face.no) * -1
-        # transform verts into world space (transposed for uru's reversed space)
-        Pos = tmatrix * Blender.Mathutils.Vector(face.v[0].co.x, face.v[0].co.y, face.v[0].co.z)
+                # reversed uru space
+                Nor = Blender.Mathutils.Vector(face.no) * -1
+                # transform verts into world space (transposed for uru's reversed space)
+                Pos = tmatrix * Blender.Mathutils.Vector(face.v[0].co.x, face.v[0].co.y, face.v[0].co.z)
                 self.AddPlane(Nor, Pos)
         
     def AddPlane(self, Nor, Pos):

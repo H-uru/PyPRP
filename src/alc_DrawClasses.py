@@ -995,6 +995,14 @@ class plDrawableSpans(plDrawable):
             # ass to the index dictionary (used to get the material index back from the reference.)
             MatIndices[icicle.fMaterialIdx] = midx
 
+        if len(MatList) > 16:
+            print "-------------------------------------------------------"
+            print "WARNING! Blender only supports 16 materials per object."
+            print "This object has %d materials." %(len(MatList))
+            print "Truncating list to 16 materials."
+            print "-------------------------------------------------------"
+            MatList = MatList[0:16]
+
         print "   There are %d materials now on the object"%(len(MatList))
 
         # assign these materials (Has to be assigned to the object)
@@ -1095,7 +1103,8 @@ class plDrawableSpans(plDrawable):
                 mesh.faces.extend((myface))
                 face = mesh.faces[len(mesh.faces)-1]
                 
-                face.mat = MatIndices[icicle.fMaterialIdx]
+                if MatIndices[icicle.fMaterialIdx] < len(MatList):
+                    face.mat = MatIndices[icicle.fMaterialIdx]
 
                 # now set vertex specific data
                 for vi in range(3):
@@ -1137,46 +1146,45 @@ class plDrawableSpans(plDrawable):
             # Update the normals
             mesh.calcNormals()
 
-            # Lighting - Still need to find a way to have lamps being processed first....
-
-            mat = MatList[MatIndices[icicle.fMaterialIdx]]
+             # Lighting - Still need to find a way to have lamps being processed first....
+ 
+            if MatIndices[icicle.fMaterialIdx] < len(MatList):
+                mat = MatList[MatIndices[icicle.fMaterialIdx]]
+                if len(icicle.fPermaLights.vector) + len(icicle.fPermaProjs.vector) > 0:
+                    mat.mode &= ~Blender.Material.Modes["SHADELESS"]
+                    
+                    # Only assign a lightgroup if not all lamps in the page are linked to this object
+                    if (len(icicle.fPermaLights.vector) + len(icicle.fPermaProjs.vector)) < len(lights):
+                        print "    Limited light sources (%d sources)"%(len(icicle.fPermaLights.vector) + len(icicle.fPermaProjs.vector))
     
-            if len(icicle.fPermaLights.vector) + len(icicle.fPermaProjs.vector) > 0:
-                mat.mode &= ~Blender.Material.Modes["SHADELESS"]
-                
-                # Only assign a lightgroup if not all lamps in the page are linked to this object
-                if (len(icicle.fPermaLights.vector) + len(icicle.fPermaProjs.vector)) < len(lights):
-                    print "    Limited light sources (%d sources)"%(len(icicle.fPermaLights.vector) + len(icicle.fPermaProjs.vector))
-
-                    lightgroup = Blender.Group.New(str(mat.name))
-                    objlist = Blender.Scene.GetCurrent().objects
-                    for obj in objlist:
-                        if obj.getType() == "Lamp":
-                            dataname = obj.getData(True) # first param set to True, returns only datablock's name as string
-                            
-                            for a in icicle.fPermaLights.vector:
-                                if str(a.Key.name) == str(obj.name) or str(a.Key.name) == dataname:
-                                    print "     Connecting Light",str(a.Key.name),"to lamp",str(obj.name)
-                                    lightgroup.objects.link(obj)
-                                
-                            for a in icicle.fPermaProjs.vector:
-                                if str(a.Key.name) == str(obj.name) or str(a.Key.name) == dataname:
-                                    print "     Connecting Light",str(a.Key.name),"to lamp",str(obj.name)
-                                    lightgroup.objects.link(obj)
-                    # Assign the light group to the material
-                    mat.lightGroup = lightgroup
-                    # And set the group_exclusive bit
-                    mat.mode |= Blender.Material.Modes["GROUP_EXCLUSIVE"]
-                else:
-                    print "    Fully lit object (%d sources)"%(len(icicle.fPermaLights.vector) + len(icicle.fPermaProjs.vector))
-                
-            else:
-                print "    Shadeless object"
-
-                mat.mode |= Blender.Material.Modes["SHADELESS"]
-
-        # set object to display in first layer
-        obj.layers=[1,]
+                        lightgroup = Blender.Group.New(str(mat.name))
+                        objlist = Blender.Scene.GetCurrent().objects
+                        for obj in objlist:
+                            if obj.getType() == "Lamp":
+                                dataname = obj.getData(True) # first param set to True, returns only datablock's name as string
+                                for a in icicle.fPermaLights.vector:
+                                    if str(a.Key.name) == str(obj.name) or str(a.Key.name) == dataname:
+                                        print "     Connecting Light",str(a.Key.name),"to lamp",str(obj.name)
+                                        lightgroup.objects.link(obj)
+                                    
+                                for a in icicle.fPermaProjs.vector:
+                                    if str(a.Key.name) == str(obj.name) or str(a.Key.name) == dataname:
+                                        print "     Connecting Light",str(a.Key.name),"to lamp",str(obj.name)
+                                        lightgroup.objects.link(obj)
+                        # Assign the light group to the material
+                        mat.lightGroup = lightgroup
+                        # And set the group_exclusive bit
+                        mat.mode |= Blender.Material.Modes["GROUP_EXCLUSIVE"]
+                    else:
+                        print "    Fully lit object (%d sources)"%(len(icicle.fPermaLights.vector) + len(icicle.fPermaProjs.vector))
+                    
+                 else:
+                    print "    Shadeless object"
+    
+                    mat.mode |= Blender.Material.Modes["SHADELESS"]
+ 
+         # set object to display in first layer
+         obj.layers=[1,]
         
 
     def find_buffer_group(self,HasSkinIdx,NumSkinWeights,UVCount,num_vertexs):
