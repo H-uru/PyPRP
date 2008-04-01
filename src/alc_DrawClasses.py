@@ -32,13 +32,7 @@ except ImportError:
     pass
 
 import array, random, binascii
-from alcurutypes import *
-from alc_GeomClasses import *
-from alcConvexHull import *
-from alc_Functions import *
 from alc_AbsClasses import *
-from alc_MatClasses import *
-from alc_LightClasses import *
 import alcconfig
 
 class VertexCoderElement:
@@ -155,6 +149,7 @@ class plVertexCoder:
             VarD.append(0)
             TBase.append(0)
         compress=alcconfig.vertex_compression
+        n = count
         #write encoded vertex info
         for i in range(count):
             vert=bufferGroup.fVertBuffStorage[i]
@@ -1819,16 +1814,16 @@ class plDrawInterface(plObjInterface):
         
         objscript = AlcScript.objects.Find(obj.getName())
         
-        propString = FindInDict(objscript,"visual.visregion")
-        volume = None
-        if (propString != None and softVolParser != None):
-            volume = softVolParser.parseProperty(str(propString),str(self.Key.name))
-        
-        if volume:
-            vr = root.find(0x0116, propString, 1)
-            vr.data.scenenode=SceneNodeRef
-            vr.data.fRegion = volume
-            self.fRegions.append(vr.data.getRef())
+        propString = FindInDict(objscript,"visual.visregions", [])
+        if type(propString) == list:
+            for reg in propString:
+                if (reg != None and softVolParser != None):
+                    volume = softVolParser.parseProperty(str(reg),str(self.Key.name))
+                    vr = root.find(0x0116, reg, 1)
+                    vr.data.scenenode=SceneNodeRef
+                    vr.data.BitFlags.append(plVisRegion.VecFlags["kReplaceNormal"])
+                    vr.data.fRegion = volume
+                    self.fRegions.append(vr.data.getRef())
         
 
 class plInstanceDrawInterface(plDrawInterface):
@@ -1837,15 +1832,15 @@ class plInstanceDrawInterface(plDrawInterface):
         
         self.fTargetID=-1
         self.fDrawable = UruObjectRef()
-
+    
     def _Find(page,name):
         return page.find(0x00D2,name,0)
     Find = staticmethod(_Find)
-
+    
     def _FindCreate(page,name):
         return page.find(0x00D2,name,1)
     FindCreate = staticmethod(_FindCreate)
-
+    
     def read(self,stream):
         plDrawInterface.read(self,stream)
         
@@ -1857,21 +1852,29 @@ class plInstanceDrawInterface(plDrawInterface):
         
         stream.Write32(self.fTargetID )
         self.fDrawable.write(stream)
-
+    
     def import_obj(self,obj):
         plDrawInterface.import_obj(self,obj)
         root = self.getRoot()
         print " [InstanceDrawInterface %s]"%(str(self.Key.name))
-                  
+        
         # Import all drawables in this list
-                
+        
         drawspans = root.findref(self.fDrawable)
         drawspans.data.import_mesh(obj,self.fTargetID)
-        
+    
     def _Import(scnobj,prp,obj):
         plDrawInterface.Import(scnobj,prp,obj)
     Import = staticmethod(_Import)
-
+    
     def _Export(page,obj,scnobj,name,SceneNodeRef,isdynamic=0):
         plDrawInterface.Export(page,obj,scnobj,name,SceneNodeRef,isdynamic)
     Export = staticmethod(_Export)
+
+from alcurutypes import *
+from alc_GeomClasses import *
+from alcConvexHull import *
+from alc_Functions import *
+from alc_Classes import *
+from alc_MatClasses import *
+from alc_LightClasses import *

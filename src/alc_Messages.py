@@ -218,7 +218,7 @@ class plMessage:
                 ref = refparser.RefString_FindCreateRef(scriptkey)
                 if not ref.isNull():
                     self.fReceivers.append(ref)
-		    print "    appending message receiver: %s" % scriptkey
+            print "    appending message receiver: %s" % scriptkey
         
         # for flags, take the plasma flags themselves - but don't really publish those....
         flags = list(FindInDict(script,'bcastflags',[]))
@@ -884,7 +884,7 @@ class plSoundMsg(plMessageWithCallbacks):
 
     def export_script(self,script,refparser):
         plMessage.export_script(self,script,refparser)
-	
+    
         volume = FindInDict(script, "volume", None)
         if volume != None:
             self.fVolume = float(volume)

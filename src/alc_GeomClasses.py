@@ -182,7 +182,7 @@ class hsMatrix44:
         scale.matrix[2] = [0, 0, z, 0]
         scale.matrix[3] = [0, 0, 0, 1]
         self.matrix = (self * scale).matrix
-	
+    
     def translate(self,v):
         m=self.matrix
         x, y, z = v

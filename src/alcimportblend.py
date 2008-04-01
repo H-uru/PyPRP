@@ -15,20 +15,20 @@ import Blender
 from Blender import Library
 
 def f(name):
-	open_library(name)
+    open_library(name)
 
 
 def open_library(name):
-	Library.Open(name)
-	groups = Library.LinkableGroups()
-	for db in groups:
-		print db
-		for obname in Library.Datablocks(db):
-			print obname
-			Library.Load(obname,db,0)	
-	Library.Update()
-	Library.Close()
-	Blender.Redraw()
+    Library.Open(name)
+    groups = Library.LinkableGroups()
+    for db in groups:
+        print db
+        for obname in Library.Datablocks(db):
+            print obname
+            Library.Load(obname,db,0)   
+    Library.Update()
+    Library.Close()
+    Blender.Redraw()
 
 
 Blender.Window.FileSelector(f,"Choose Library")

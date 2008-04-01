@@ -189,10 +189,10 @@ def alcCreatePanicLnkRegion(name="PanicLnkRgn",where=None,page=0):
     return obj
 
 def alcCreateFootstepRegion(name="FootStepRgn",where=None,page=0):
-	obj = alcCreateRegion(name,where,page)
-	obj.addProperty("regiontype","footstep")
-	obj.addProperty("surface","grass")
-	return obj
+    obj = alcCreateRegion(name,where,page)
+    obj.addProperty("regiontype","footstep")
+    obj.addProperty("surface","grass")
+    return obj
 
 def alcCreateMesh(name,vertices,faces):
     obj = Blender.Mesh.New(name)

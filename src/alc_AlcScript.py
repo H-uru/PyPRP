@@ -1,4 +1,4 @@
- #
+#
 # $Id: alc_AdvScript.py 777 2007-11-2 9:00:00Z Trylon $
 #
 #    Copyright (C) 2005-2006  Alcugs pyprp Project Team

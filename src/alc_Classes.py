@@ -33,15 +33,8 @@ except ImportError:
     pass
 
 import md5, random, binascii, cStringIO, copy, Image, math, struct, StringIO, os, os.path, pickle
-from alcurutypes import *
-from alcdxtconv import *
-from alchexdump import *
-from alc_GeomClasses import *
-from alc_Functions import *
-from alcConvexHull import *
 from alc_AbsClasses import *
-from alc_VolumeIsect import *
-from alc_AlcScript import *
+import alcconfig, alchexdump
 
 
 import alcconfig, alchexdump
@@ -420,10 +413,19 @@ class plExcludeRegionModifier(plSingleModifier):
         stream.WriteFloat(self.fSeekTime)
 
 class plSoftVolume(plRegionBase):               #Type 0x0087 (Uru)
+    Flags = \
+    { \
+        "kListenNone"       : 0x0, \
+        "kListenCheck"      : 0x1, \
+        "kListenPosSet"     : 0x2, \
+        "kListenDirty"      : 0x4, \
+        "kListenRegistered" : 0x8 \
+    }
+    
     def __init__(self,parent,name="unnamed",type=0x0087):
         plRegionBase.__init__(self,parent,name,type)
         #Format
-        self.fListenState = 0
+        self.fListenState = 13
         self.fInsideStrength = 1.0
         self.fOutsideStrength = 0
     
@@ -453,7 +455,7 @@ class plSoftVolumeSimple(plSoftVolume):
     def __init__(self,parent,name="unnamed",type=0x0088):
         plSoftVolume.__init__(self,parent,name,type)
         #Format
-        self.fSoftDist = 0
+        self.fSoftDist = 5
         self.fVolume = None #plVolumeIsect instance
 
 
@@ -502,8 +504,14 @@ class plSoftVolumeSimple(plSoftVolume):
     def export_object(self,obj):
         objscript = AlcScript.objects.Find(obj.getName())
         
-        dist = FindInDict(objscript,"softvolume.softdist", 0)
+        dist = FindInDict(objscript,"softvolume.softdist", 5)
         self.fSoftDist = float(dist)
+        
+        instr = FindInDict(objscript,"softvolume.instrength", 1)
+        self.fInsideStrength = float(instr)
+        
+        outstr = FindInDict(objscript,"softvolume.outstrength", 0)
+        self.fOutsideStrength = float(outstr)
         
         isect = FindInDict(objscript,"softvolume.type", "convex")
         
@@ -511,7 +519,7 @@ class plSoftVolumeSimple(plSoftVolume):
             self.fVolume = PrpVolumeIsect(0x02F5,self.getVersion())
         else:
             self.fVolume = PrpVolumeIsect(0x02F0,self.getVersion())
-
+        
         self.fVolume.data.export_object(obj)
 
 
@@ -791,6 +799,14 @@ class plVisRegion(plObjInterface):
         "kRefRegion" : 0, \
         "kRefVisMgr" : 1  \
     }
+
+    VecFlags = \
+    { \
+        "kDisable"       : 0, \
+        "kIsNot"         : 1, \
+        "kReplaceNormal" : 2, \
+        "kDisableNormal" : 3  \
+    }
     
     def __init__(self,parent,name="unnamed",type=0x0116):
         plObjInterface.__init__(self,parent,name,type)
@@ -819,3 +835,11 @@ class plVisRegion(plObjInterface):
         plObjInterface.write(self,stream)
         self.fRegion.write(stream)
         self.fMgr.write(stream)
+from alcurutypes import *
+from alcdxtconv import *
+from alchexdump import *
+from alc_GeomClasses import *
+from alc_Functions import *
+from alcConvexHull import *
+from alc_VolumeIsect import *
+from alc_AlcScript import *

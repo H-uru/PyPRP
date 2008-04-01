@@ -411,59 +411,73 @@ class hsGMaterial(plSynchedObject):         # Type 0x07
                             if(len(ipo.curves) > 0):
                                 anim = True
                         
-                        layer = root.find(0x06,mat.name + "-" + mtex.tex.name,1)
-                        layerlist.append({"layer":layer,"mtex":mtex,"stencil":mtex.stencil,"channel":channel,"anim":anim})
-
+                        #layer = root.find(0x06,mat.name + "-" + mtex.tex.name,1)
+                        layerlist.append({"mtex":mtex,"stencil":mtex.stencil,"channel":channel,"anim":anim})
+            
             i = 0
             while i < len(layerlist):
                 layer_info = layerlist[i]
-            
+                
                 if not layer_info["stencil"]:
-                    layer = layer_info["layer"]
                     mtex = layer_info["mtex"]
+                    layer = root.find(0x06,mat.name + "-" + mtex.tex.name,1)
                     if(not layer.isProcessed):
                         layer.data.FromBlenderMTex(mtex,obj,mat)
                         layer.data.FromBlenderMat(obj,mat)
                         layer.isProcessed = 1
                     if not layer_info["anim"]:
                         self.fLayers.append(layer.data.getRef())
+                    else:
+                        chan = layer_info["channel"]
+                        animlayer = root.find(0x0043,layer.data.getName() + "_LayerAnim_",1)
+                        animlayer.data.FromBlender(obj,mat,mtex,chan)
+                        animlayer.data.fUnderlay = layer.data.getRef()
+                        self.fLayers.append(animlayer.data.getRef())
                     i += 1
                 else:
                     if i < len(layerlist) - 1: # if it's not the last one
+                        mix_info = layer_info
                         # Append the next layer first, and say that it has a stencil
-                        boundlayer_info = layerlist[i+1]
-                        boundlayer = boundlayer_info["layer"]
-                        boundmtex = boundlayer_info["mtex"]
-                        if(not boundlayer.isProcessed):
-                            boundlayer.data.FromBlenderMat(obj,mat)
-                            boundlayer.data.FromBlenderMTex(boundmtex,obj,mat,False,True)
-                            boundlayer.isProcessed = 1
-                        if not boundlayer_info["anim"]:
-                            self.fLayers.append(boundlayer.data.getRef())
- 
-                        # append the stencil layer after that...
-                        layer = layer_info["layer"]
+                        layer_info = layerlist[i+1]
                         mtex = layer_info["mtex"]
+                        layer = root.find(0x06,mat.name + "-" + mtex.tex.name,1)
                         if(not layer.isProcessed):
-                            layer.data.FromBlenderMTex(mtex,obj,mat,True,False)
-#                            layer.data.FromBlenderMat(obj,mat)
+                            layer.data.FromBlenderMat(obj,mat)
+                            layer.data.FromBlenderMTex(mtex,obj,mat,False,True)
                             layer.isProcessed = 1
                         if not layer_info["anim"]:
                             self.fLayers.append(layer.data.getRef())
+                        else:
+                            chan = layer_info["channel"]
+                            animlayer = root.find(0x0043,layer.data.getName() + "_LayerAnim_",1)
+                            animlayer.data.FromBlender(obj,mat,mtex,chan)
+                            animlayer.data.fUnderlay = layer.data.getRef()
+                            self.fLayers.append(animlayer.data.getRef())
+                        
+                        # append the stencil layer after that...
+                        mtex = mix_info["mtex"]
+                        mix = root.find(0x06,layer.data.getName() + "_AlphaBlend_",1)
+                        self.fCompFlags |= hsGMaterial.hsGCompFlags["kCompNeedsBlendChannel"]
+                        if(not mix.isProcessed):
+                            mix.data.FromBlenderMTex(mtex,obj,mat,True,False)
+                            mix.data.FromBlenderMat(obj,mat)
+                            mix.isProcessed = 1
+                        if not mix_info["anim"]:
+                            self.fLayers.append(mix.data.getRef())
+                        else:
+                            chan = mix_info["channel"]
+                            animlayer = root.find(0x0043,mix.data.getName() + "_LayerAnim_",1)
+                            animlayer.data.FromBlender(obj,mat,mtex,chan)
+                            animlayer.data.fUnderlay = layer.data.getRef()
+                            self.fLayers.append(animlayer.data.getRef())
+                            
                         self.fCompFlags |= hsGMaterial.hsGCompFlags["kCompNeedsBlendChannel"] 
-                    
+                        
                         # And ofcourse increase by 2 instead of one...
                         i += 2
                     else:
                         # just ignore it...
                         i += 1
-                
-                if layer_info["anim"]:
-                    chan = layer_info["channel"]
-                    animlayer = root.find(0x0043,layer.data.getName() + "_LayerAnim_",1)
-                    animlayer.data.FromBlender(obj,mat,mtex,chan)
-                    animlayer.data.fUnderlay = layer.data.getRef()
-                    self.fLayers.append(animlayer.data.getRef())
 
             # Add a default layer if we didn't get and layers from the mtexes
             if(len(self.fLayers) == 0):
