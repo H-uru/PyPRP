@@ -1178,13 +1178,13 @@ class plDrawableSpans(plDrawable):
                     else:
                         print "    Fully lit object (%d sources)"%(len(icicle.fPermaLights.vector) + len(icicle.fPermaProjs.vector))
                     
-                 else:
+                else:
                     print "    Shadeless object"
     
                     mat.mode |= Blender.Material.Modes["SHADELESS"]
  
          # set object to display in first layer
-         obj.layers=[1,]
+        obj.layers=[1,]
         
 
     def find_buffer_group(self,HasSkinIdx,NumSkinWeights,UVCount,num_vertexs):
