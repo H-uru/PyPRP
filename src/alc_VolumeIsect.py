@@ -247,7 +247,12 @@ class alcSoftVolumeParser:
         self.prp = prp
 
     def addSoftVolume(self, softVolume):
-        self.simpleSVs.append(softVolume)
+        self.simpleSVs.append(softVolume.data.getRef())
+    
+    def getSoftVolume(self, ref):
+        if ref in self.simpleSVs:
+            return self.simpleSVs[ref]
+        return None
 
     def parseProperty(self, propString, rootName):
         # TODO: remove the whitespace
@@ -260,6 +265,15 @@ class alcSoftVolumeParser:
         # invoke the recursive method
         self.index = 0
         return self._parseProperty(newPropString, rootName)
+    
+    def isStringProperty(self, propString):
+        firstChar = propString[0]
+        if firstChar == '(':
+            raise "Unexpected '(' found in softvolume property '%s'" % propString
+        #secondChar = propString[1]
+        if ((firstChar == 'U') or (firstChar == 'I') or (firstChar == '!')):# and (secondChar == '('):
+            return True
+        return False
 
     def _parseProperty(self, propString, rootName):
         isSimple = False
@@ -327,11 +341,11 @@ class alcSoftVolumeParser:
                     break;
             simpleSV = None
             for sv in self.simpleSVs:
-                if (str(sv.data.Key.name) == simpleSVName):
-                    print "Found softvolume %s" % sv.data.Key.name
+                if (str(sv.Key.name) == simpleSVName):
+                    print "Found softvolume %s" % sv.Key.name
                     simpleSV = sv
                     break
             if simpleSV == None:
                 raise "Could not locate soft volume '%s' - please correct the softvolume property in %s" %(simpleSVName,rootName)
-            return simpleSV.data.getRef()
+            return simpleSV
         return None

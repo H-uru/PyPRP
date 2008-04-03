@@ -691,10 +691,13 @@ class plWin32Sound(plSound):
         
         # Set the soft volume
         propString = FindInDict(objscript,"sound.softvolume")
-        if (propString != None and softVolumeParser != None):
-            self.fSoftRegion = softVolumeParser.parseProperty(str(propString),str(self.Key.name))
-        
-
+        if (propString != None):
+            if(self.softVolumeParser != None and self.softVolumeParser.isStringProperty(propString)):
+                self.fSoftRegion = self.softVolumeParser.parseProperty(propString,str(self.Key.name))
+            else:
+                refparser = ScriptRefParser(self.getRoot(),str(self.Key.name))
+                volume = refparser.MixedRef_FindCreate(propString)
+                self.fSoftRegion = volume.data.getRef()
 
 class plWin32StaticSound(plWin32Sound):
     def __init__(self,parent,name="unnamed",type=0x0096):

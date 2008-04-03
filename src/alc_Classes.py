@@ -35,6 +35,7 @@ except ImportError:
 import md5, random, binascii, cStringIO, copy, Image, math, struct, StringIO, os, os.path, pickle
 from alc_AbsClasses import *
 import alcconfig, alchexdump
+from alc_RefParser import *
 
 
 import alcconfig, alchexdump
@@ -501,19 +502,17 @@ class plSoftVolumeSimple(plSoftVolume):
         if self.fVolume.data != None:
             self.fVolume.data.createObject(name,self.getPageNum())
 
-    def export_object(self,obj):
-        objscript = AlcScript.objects.Find(obj.getName())
-        
-        dist = FindInDict(objscript,"softvolume.softdist", 5)
+    def export_object(self,obj,objscript):
+        dist = FindInDict(objscript,"softdist", 5)
         self.fSoftDist = float(dist)
         
-        instr = FindInDict(objscript,"softvolume.instrength", 1)
+        instr = FindInDict(objscript,"instrength", 1)
         self.fInsideStrength = float(instr)
         
-        outstr = FindInDict(objscript,"softvolume.outstrength", 0)
+        outstr = FindInDict(objscript,"outstrength", 0)
         self.fOutsideStrength = float(outstr)
         
-        isect = FindInDict(objscript,"softvolume.type", "convex")
+        isect = FindInDict(objscript,"type", "convex")
         
         if (isect.lower() == "convex"):
             self.fVolume = PrpVolumeIsect(0x02F5,self.getVersion())
@@ -521,7 +520,6 @@ class plSoftVolumeSimple(plSoftVolume):
             self.fVolume = PrpVolumeIsect(0x02F0,self.getVersion())
         
         self.fVolume.data.export_object(obj)
-
 
 
 class plSoftVolumeComplex(plSoftVolume):
@@ -563,6 +561,22 @@ class plSoftVolumeComplex(plSoftVolume):
             propertyString += ")"
             return propertyString
         return None
+    
+    def export_object(self,obj,objscript, parser):
+        instr = FindInDict(objscript,"instrength", 1)
+        self.fInsideStrength = float(instr)
+        
+        outstr = FindInDict(objscript,"outstrength", 0)
+        self.fOutsideStrength = float(outstr)
+        
+        _refs = FindInDict(objscript,"regions", None)
+        if type(_refs) == dict: # It should be a list - if it's a dict, make it a list with one entry
+            _refs = [_refs,]
+        if type(_refs) == list:
+            for r in _refs:
+                vol = ScriptRefParser.RefString_Decode(r)
+                v = self.getRoot().find(vol['type'],vol['name'],1)
+                self.vSV7C.append(v.data.getRef())
 
 
 class plSoftVolumeUnion(plSoftVolumeComplex):
@@ -835,6 +849,7 @@ class plVisRegion(plObjInterface):
         plObjInterface.write(self,stream)
         self.fRegion.write(stream)
         self.fMgr.write(stream)
+
 from alcurutypes import *
 from alcdxtconv import *
 from alchexdump import *

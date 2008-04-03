@@ -1825,9 +1825,13 @@ class plDrawInterface(plObjInterface):
         propString = FindInDict(objscript,"visual.visregions", [])
         if type(propString) == list:
             for reg in propString:
-                if (reg != None and softVolParser != None):
-                    volume = softVolParser.parseProperty(str(reg),str(self.Key.name))
-                    vr = root.find(0x0116, reg, 1)
+                if (reg != None):
+                    if(softVolParser != None and softVolParser.isStringProperty(propString)):
+                        volume = softVolParser.parseProperty(str(reg),str(self.Key.name))
+                    else:
+                        refparser = ScriptRefParser(self.getRoot(),str(self.Key.name))
+                        volume = refparser.MixedRef_FindCreateRef(reg)
+                    vr = root.find(0x0116, volume.Key.name, 1)
                     vr.data.scenenode=SceneNodeRef
                     vr.data.BitFlags.append(plVisRegion.VecFlags["kReplaceNormal"])
                     vr.data.fRegion = volume

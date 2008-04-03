@@ -356,8 +356,13 @@ class plDirectionalLightInfo(plLightInfo):
         # Set the soft volume
         propString = FindInDict(objscript,"lamp.softvolume")
         propString = getTextPropertyOrDefault(obj,"softvolume",propString)
-        if (propString != None and self.softVolumeParser != None):
-            self.softvol = self.softVolumeParser.parseProperty(propString,str(self.Key.name))
+        if (propString != None):
+            if(self.softVolumeParser != None and self.softVolumeParser.isStringProperty(propString)):
+                self.softvol = self.softVolumeParser.parseProperty(propString,str(self.Key.name))
+            else:
+                refparser = ScriptRefParser(self.getRoot(),str(self.Key.name))
+                volume = refparser.MixedRef_FindCreate(propString)
+                self.softvol = volume.data.getRef()
         
         flags = FindInDict(objscript,"lamp.flags",None)
         if type(flags) == list:

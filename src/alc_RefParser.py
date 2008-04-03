@@ -30,6 +30,7 @@ class ScriptRefParser:
     NameToType = \
     { \
         "scnobj"        : 0x0001, \
+        "audioiface"    : 0x0011, \
         "logicmod"      : 0x002D, \
         "pyfileMod"     : 0x00A2, \
         "sitmod"        : 0x00AE, \
@@ -49,6 +50,10 @@ class ScriptRefParser:
         "swimstraight"  : 0x0136, \
         "clustergroup"  : 0x012B, \
         "layeranim"     : 0x0043, \
+        "softvolume"    : 0x0088, \
+        "svunion"       : 0x008A, \
+        "svintersect"   : 0x008B, \
+        "svinvert"      : 0x008C, \
     }
 
     def __init__(self,page,basename="",defaulttype = None, allowlist = [],version=5):

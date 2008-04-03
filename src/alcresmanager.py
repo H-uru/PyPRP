@@ -31,6 +31,7 @@ except ImportError:
 import glob, dircache, os
 from os.path import *
 from binascii import *
+import operator
 import alcconfig
 from alc_hsStream import *
 from alcm5crypt import *
@@ -266,6 +267,7 @@ class alcUruPage:
         objlist2 = []
         # Prepare the Soft Volume Parser
         softVolumeParser = alcSoftVolumeParser(self.prp)
+        complex_vols = [] #List of complex softvolumes
 
         # Get the list of objects in Blender 
         if selection:
@@ -283,43 +285,43 @@ class alcUruPage:
             if pagenum != int(self.num):
                 continue
             
-            ### \
-            ###  \
-            ### Deprecated code - still around to keep these objects invisible....   
-            ###  After February 2008 it can be removed
+#            ### \
+#            ###  \
+#            ### Deprecated code - still around to keep these objects invisible....   
+#            ###  After February 2008 it can be removed
+#            
+#            # if this object has a "book" property, ignore it
+#            try:
+#                p=obj.getProperty("book")
+#                continue
+#            except (AttributeError, RuntimeError):
+#                pass
+#            
+#            # if this object has a "page" property, ignore it too...
+#            try:
+#                p=obj.getProperty("page")
+#                continue
+#            except (AttributeError, RuntimeError):
+#                pass
+#                
+#            ###  / 
+#            ### /
             
-            # if this object has a "book" property, ignore it
-            try:
-                p=obj.getProperty("book")
-                continue
-            except (AttributeError, RuntimeError):
-                pass
-            
-            # if this object has a "page" property, ignore it too...
-            try:
-                p=obj.getProperty("page")
-                continue
-            except (AttributeError, RuntimeError):
-                pass
-                
-            ###  / 
-            ### /
-
             # Parse the objects quickscripts
             RunQuickScripts(obj)
-
+            
             # Get the name
             name=str(obj.name)
-
+            
             # Get it's initial dynamics settings
             if obj.rbFlags & Blender.Object.RBFlags["ACTOR"]:
                 isdynamic=1
             else:
                 isdynamic=0
-
+            
             # Get this object's AlcScript section
             objscript = AlcScript.objects.Find(obj.name)
-
+            
             # Get the "type" property, first from the alcscript, and next from the 'alctype' proprty 
             # (which overrides alsccript)
             try:
@@ -328,39 +330,86 @@ class alcUruPage:
                 alctype = 'object'
             alctype = getTextPropertyOrDefault(obj,"type",alctype)
             
-
+            
             # Soft Volumes are special kinds of meshes, 
-            obj_type=obj.getType()
-            if obj_type=="Mesh":
-
-
-                # Only if this object has the correct alcty, will we pocess it as a softvolume...
-                if (alctype == "softvolume") or (alctype == "svconvex"):  #Soft Volume
-
-                    ## This should be put in plSoftVolumeComplex.Export(page,obj,scnobj,name,SceneNodeRef,softvolumeparser):
-                    ## But I'm not touching the softvolume code yet 
-                    ## -- Trylon
-
-                    # Create the scene object
-                    scnobj = plSceneObject.FindCreate(self.prp,name)
-                    scnobj.data.scene=SceneNodeRef
-                    # Create the plSoftVolumeSimple within the scene object
-                    softVolume=self.prp.find(0x0088,name,1)
-                    softVolume.data.parentref=scnobj.data.getRef()
-                    softVolume.data.scenenode=SceneNodeRef
-                    softVolume.data.export_object(obj)
-                    for svRef in scnobj.data.data1.vector:
-                        if svRef.Key.object_type == 0x0088:
-                            scnobj.data.data1.remove(svRef)
-                    scnobj.data.data1.append(softVolume.data.getRef())
-                    # Add the plSoftVolumeSimple to the softvolume parser
-                    softVolumeParser.addSoftVolume(softVolume)
-
-                else: # Not a soft volume - save for next pass
-                    objlist2.append(obj)
-
-            else: # Not a mesh - save for next pass
+            #obj_type=obj.getType()
+            #if obj_type=="Mesh":
+            
+            #COMPLEX SOFTVOLUMES CAN BE CREATED FROM ANY OBJECT! Not only meshes
+            
+            # Only if this object has the correct alcty, will we pocess it as a softvolume...
+            if (alctype == "softvolume") or (alctype == "svconvex"):  #Soft Volume
+                ## This should be put in plSoftVolumeComplex.Export(page,obj,scnobj,name,SceneNodeRef,softvolumeparser):
+                ## But I'm not touching the softvolume code yet 
+                ## -- Trylon
+                # Export all simple softvolumes...
+                vols = FindInDict(objscript,"softvolume",None)
+                if type(vols) == dict: # It should be a list - if it's a dict, make it a list with one entry
+                    vols = [vols,]
+                if type(vols) == list:
+                    for volume in vols:
+                        _type = str(FindInDict(volume,'type','none'))
+                        if (_type == "invert") or (_type == "intersect") or (_type == "union"):
+                            _refs = FindInDict(volume,"regions",None)
+                            if type(_refs) == dict: # It should be a list - if it's a dict, make it a list with one entry
+                                _refs = [_refs,]
+                            complex_vols.append((name,_type,len(_refs),volume))
+                        else:
+                            scnobj = plSceneObject.FindCreate(self.prp,name)
+                            scnobj.data.scene = SceneNodeRef
+                            
+                            softVolume = plSoftVolumeSimple.FindCreate(self.prp,name)
+                            softVolume.data.parentref = scnobj.data.getRef()
+                            softVolume.data.scenenode = SceneNodeRef
+                            softVolume.data.export_object(obj, volume)
+                            
+                            scnobj.data.data1.append(softVolume.data.getRef())
+                            softVolumeParser.addSoftVolume(softVolume)
+#                    
+#                    
+#                    # Create the scene object
+#                    scnobj = plSceneObject.FindCreate(self.prp,name)
+#                    scnobj.data.scene=SceneNodeRef
+#                    # Create the plSoftVolumeSimple within the scene object
+#                    softVolume=self.prp.find(0x0088,name,1)
+#                    softVolume.data.parentref=scnobj.data.getRef()
+#                    softVolume.data.scenenode=SceneNodeRef
+#                    softVolume.data.export_object(obj)
+#                    for svRef in scnobj.data.data1.vector:
+#                        if svRef.Key.object_type == 0x0088:
+#                            scnobj.data.data1.remove(svRef)
+#                    scnobj.data.data1.append(softVolume.data.getRef())
+#                    # Add the plSoftVolumeSimple to the softvolume parser
+#                    softVolumeParser.addSoftVolume(softVolume)
+            
+            else: # Not a simple soft volume - save for next pass
                 objlist2.append(obj)
+            
+            #else: # Not a mesh - save for next pass
+            #    objlist2.append(obj)
+        
+        #Now we have the job of dealing with all of those complex softvolumes
+        #First sort them
+        complex_vols.sort(key=operator.itemgetter(2))
+        for name,_type,count,script in complex_vols:
+            print "Complex SoftVolume: %s" % name
+            if _type == "invert":
+                softVolume = plSoftVolumeInvert.FindCreate(self.prp,name)
+                softVolume.data.scenenode = SceneNodeRef
+                softVolume.data.export_object(obj, script, softVolumeParser)
+                softVolumeParser.addSoftVolume(softVolume)
+            elif _type == "intersect":
+                softVolume = plSoftVolumeIntersect.FindCreate(self.prp,name)
+                softVolume.data.scenenode = SceneNodeRef
+                softVolume.data.export_object(obj, script, softVolumeParser)
+                softVolumeParser.addSoftVolume(softVolume)
+            elif _type == "union":
+                softVolume = plSoftVolumeUnion.FindCreate(self.prp,name)
+                softVolume.data.scenenode = SceneNodeRef
+                softVolume.data.export_object(obj, script, softVolumeParser)
+                softVolumeParser.addSoftVolume(softVolume)
+        
+        #Carry on to the next objects
 
         objlist3 = []
 

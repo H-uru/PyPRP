@@ -2538,7 +2538,7 @@ class plLayerAnimation(plLayerAnimationBase):
             KeyList = []
             
             # We need to get the list of BezCurves
-            # Then get the value for each and create a point3
+            # Then get the value for each and create a matrix
             # Then store that in a frame and store than in the list
             curves = ipo[Ipo.MA_OFSX].bezierPoints
             for frm in range(len(curves)):
