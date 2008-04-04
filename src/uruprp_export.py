@@ -100,6 +100,7 @@ def export_age(agename,basepath,selection=0,merge=0,pagename=None):
     fnitxt=""
     for line in initxt.asLines():
         fnitxt=fnitxt + line + "\r\n"
+    fnitxt=fnitxt[:-2]
     if fnitxt!="":
         age.setInit(fnitxt)
     #generate sum files
