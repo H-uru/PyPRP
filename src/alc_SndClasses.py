@@ -692,8 +692,8 @@ class plWin32Sound(plSound):
         # Set the soft volume
         propString = FindInDict(objscript,"sound.softvolume")
         if (propString != None):
-            if(self.softVolumeParser != None and self.softVolumeParser.isStringProperty(propString)):
-                self.fSoftRegion = self.softVolumeParser.parseProperty(propString,str(self.Key.name))
+            if(softVolumeParser != None and softVolumeParser.isStringProperty(propString)):
+                self.fSoftRegion = softVolumeParser.parseProperty(propString,str(self.Key.name))
             else:
                 refparser = ScriptRefParser(self.getRoot(),str(self.Key.name))
                 volume = refparser.MixedRef_FindCreate(propString)

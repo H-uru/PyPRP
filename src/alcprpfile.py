@@ -217,6 +217,8 @@ class PrpObject:
                 self.data=plVisRegion(self)
             elif self.type==0x0117:
                 self.data=hsKeyedObject(self) #Not really... But close enough ;)
+            elif self.type==0x011E:
+                self.data=plRelevanceRegion(self)
             elif self.type==0x012E:
                 self.data=plSwimRegion(self)
             elif self.type==0x012F:

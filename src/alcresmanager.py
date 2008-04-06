@@ -331,11 +331,25 @@ class alcUruPage:
             alctype = getTextPropertyOrDefault(obj,"type",alctype)
             
             
-            # Soft Volumes are special kinds of meshes, 
-            #obj_type=obj.getType()
-            #if obj_type=="Mesh":
-            
-            #COMPLEX SOFTVOLUMES CAN BE CREATED FROM ANY OBJECT! Not only meshes
+            # Soft Volume Relevance Regions are special kinds of meshes, 
+            obj_type=obj.getType()
+            if (alctype == "relevanceregion"):
+                if obj_type=="Mesh":
+                    scnobj = plSceneObject.FindCreate(self.prp,name)
+                    scnobj.data.scene = SceneNodeRef
+                    
+                    relRgn = plRelevanceRegion.FindCreate(self.prp,name)
+                    relRgn.data.parentref = scnobj.data.getRef()
+                    relRgn.data.scenenode = SceneNodeRef
+                    
+                    softVolume = plSoftVolumeSimple.FindCreate(self.prp,name)
+                    softVolume.data.parentref = scnobj.data.getRef()
+                    softVolume.data.scenenode = SceneNodeRef
+                    softVolume.data.export_object(obj, objscript)
+                    
+                    relRgn.data.fRegion = softVolume.data.getRef()
+                    scnobj.data.data1.append(relRgn.data.getRef())
+                    scnobj.data.data1.append(softVolume.data.getRef())          
             
             # Only if this object has the correct alcty, will we pocess it as a softvolume...
             if (alctype == "softvolume") or (alctype == "svconvex"):  #Soft Volume
@@ -355,16 +369,17 @@ class alcUruPage:
                                 _refs = [_refs,]
                             complex_vols.append((name,_type,len(_refs),volume))
                         else:
-                            scnobj = plSceneObject.FindCreate(self.prp,name)
-                            scnobj.data.scene = SceneNodeRef
-                            
-                            softVolume = plSoftVolumeSimple.FindCreate(self.prp,name)
-                            softVolume.data.parentref = scnobj.data.getRef()
-                            softVolume.data.scenenode = SceneNodeRef
-                            softVolume.data.export_object(obj, volume)
-                            
-                            scnobj.data.data1.append(softVolume.data.getRef())
-                            softVolumeParser.addSoftVolume(softVolume)
+                            if obj_type=="Mesh":
+                              scnobj = plSceneObject.FindCreate(self.prp,name)
+                              scnobj.data.scene = SceneNodeRef
+                              
+                              softVolume = plSoftVolumeSimple.FindCreate(self.prp,name)
+                              softVolume.data.parentref = scnobj.data.getRef()
+                              softVolume.data.scenenode = SceneNodeRef
+                              softVolume.data.export_object(obj, volume)
+                              
+                              scnobj.data.data1.append(softVolume.data.getRef())
+                              softVolumeParser.addSoftVolume(softVolume)
 #                    
 #                    
 #                    # Create the scene object

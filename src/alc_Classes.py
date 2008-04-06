@@ -850,6 +850,31 @@ class plVisRegion(plObjInterface):
         self.fRegion.write(stream)
         self.fMgr.write(stream)
 
+class plRelevanceRegion(plObjInterface):
+    def __init__(self,parent,name="unnamed",type=0x011E):
+        plObjInterface.__init__(self,parent,name,type)
+        self.fRegion = UruObjectRef(self.getVersion())
+        
+    def _Find(page,name):
+        return page.find(0x011E,name,0)
+    Find = staticmethod(_Find)
+    
+    def _FindCreate(page,name):
+        return page.find(0x011E,name,1)
+    FindCreate = staticmethod(_FindCreate)
+    
+    def changePageRaw(self,sid,did,stype,dtype):
+        plObjInterface.changePageRaw(self,sid,did,stype,dtype)
+        self.fRegion.changePageRaw(sid,did,stype,dtype)
+    
+    def read(self,stream):
+        plObjInterface.read(self,stream)
+        self.fRegion.read(stream)
+    
+    def write(self,stream):
+        plObjInterface.write(self,stream)
+        self.fRegion.write(stream)
+
 from alcurutypes import *
 from alcdxtconv import *
 from alchexdump import *
