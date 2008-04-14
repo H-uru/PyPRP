@@ -1398,6 +1398,7 @@ class plDrawableSpans(plDrawable):
             lights.extend(root.listobjects(0x55)) # List of plDirectionalLight in this page
             lights.extend(root.listobjects(0x56)) # List of plOmniLight in this page
             lights.extend(root.listobjects(0x57)) # List of plSpotLight in this page
+            lights.extend(root.listobjects(0x6A)) # List of plLimitedDirLight in this page
             
             # Obtain light group
             lightGroup = MatGroup['mat'].lightGroup

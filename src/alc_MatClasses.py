@@ -784,6 +784,10 @@ class plLayer(plLayerInterface):             # Type 0x06
                 except:
                     print "    -> Err, Using first UV map"
                     self.fUVWSrc = 0
+            elif mtex.texco == Blender.Texture.TexCo["OBJECT"]:
+                print "    -> Mapping as projection light"
+                self.fState.fMiscFlags |= hsGMatState.hsGMatMiscFlags["kMiscOrthoProjection"]
+                self.fUVWSrc = plLayerInterface.plUVWSrcModifiers["kUVWPosition"]
             else:
                 print "    -> Using default first UV map"
                 # Other mappings will make the map default to first uv map
@@ -1052,19 +1056,19 @@ class plLayer(plLayerInterface):             # Type 0x06
 
             if not stencil:
                 # find the texture object, so we can get some values from it
-                
-                # first make a calculation of the uv transformation matrix.
-                uvmobj = Blender.Object.New ('Empty')
-                
-                trickscale = mtex.size[2]
-                # now set the scale (and rotation) to the object
-                uvmobj.SizeX = mtex.size[0] * trickscale
-                uvmobj.SizeY = mtex.size[1] * trickscale
-                uvmobj.LocX = mtex.ofs[0]
-                uvmobj.LocY = mtex.ofs[1]
-                uvm=getMatrix(uvmobj)
-                uvm.transpose()
-                self.fTransform.set(uvm)
+                if not mtex.texco == Blender.Texture.TexCo["OBJECT"]:
+                    # first make a calculation of the uv transformation matrix.
+                    uvmobj = Blender.Object.New ('Empty')
+                    
+                    trickscale = mtex.size[2]
+                    # now set the scale (and rotation) to the object
+                    uvmobj.SizeX = mtex.size[0] * trickscale
+                    uvmobj.SizeY = mtex.size[1] * trickscale
+                    uvmobj.LocX = mtex.ofs[0]
+                    uvmobj.LocY = mtex.ofs[1]
+                    uvm=getMatrix(uvmobj)
+                    uvm.transpose()
+                    self.fTransform.set(uvm)
     
                 self.fOpacity = mtex.colfac # factor how texture blends with color used as alpha blend value
     

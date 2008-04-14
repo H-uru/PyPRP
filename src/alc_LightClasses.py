@@ -86,7 +86,7 @@ class plLightInfo(plObjInterface):                          #Type 0x54 (Uru)
         "movable"              : 3, \
         "hasincludes"          : 4, \
         "includeschars"        : 5, \
-        "OBSOLECTE_0"          : 6, \
+        "obsolecte_0"          : 6, \
         "overall"              : 7, \
         "hasspecular"          : 8, \
         "shadowonly"           : 9, \
@@ -186,12 +186,30 @@ class plLightInfo(plObjInterface):                          #Type 0x54 (Uru)
             if obj.data.mode & Blender.Lamp.Modes["RayShadow"]:
                 # plPointShadowMaster
                 shadow = plPointShadowMaster.FindCreate(page,name)
+        elif obj.data.type==Blender.Lamp.Types["Area"]:
+            # plLimitedDirLightInfo
+            lamp=plLimitedDirLightInfo.FindCreate(page,name)
+            if obj.data.mode & Blender.Lamp.Modes["RayShadow"]:
+                # plDirectionalShadowMaster
+                shadow = plDirectShadowMaster.FindCreate(page,name)
         else:
             # plDirectionalLightInfo
             lamp=plDirectionalLightInfo.FindCreate(page,name)
             if obj.data.mode & Blender.Lamp.Modes["RayShadow"]:
                 # plDirectionalShadowMaster
                 shadow = plDirectShadowMaster.FindCreate(page,name)
+                
+        # --- Check if Lamp has a projection layer --- (HACK WARNING)
+        lampscript = AlcScript.objects.Find(obj.getName())
+        layername = FindInDict(lampscript,"lamp.layer","")
+        if(name != None):
+            print " Attatching layer: " + layername
+            layer = plLayer.FindCreate(page, layername)
+            lamp.data.fProjection = layer.data.getRef()
+            # now we set the uvw transform on the layer
+            texMatrix = getMatrix(obj)
+            texMatrix.transpose()
+            layer.data.fTransform.set(texMatrix)
 
         # --- Prepare and Export lamp object ---
         lamp.data.parentref=scnobj.data.getRef()
@@ -366,11 +384,57 @@ class plDirectionalLightInfo(plLightInfo):
         
         flags = FindInDict(objscript,"lamp.flags",None)
         if type(flags) == list:
-            self.fFlags = hsBitVector() # reset
+            self.BitFlags = hsBitVector() # reset
             for flag in flags:
                 if flag.lower() in plLightInfo.scriptProps:
+                    print "    set flag: " + flag.lower()
                     idx =  plLightInfo.scriptProps[flag.lower()]
-                    self.fFlags.SetBit(idx)
+                    self.BitFlags.SetBit(idx)
+
+#implemented in an attempt to make projection lights work
+class plLimitedDirLightInfo(plDirectionalLightInfo):
+    def __init__(self, parent, name="unnamed", type=0x006A):
+        plDirectionalLightInfo.__init__(self, parent, name, type)
+        self.fWidth = 256
+        self.fHeight = 256
+        self.fDepth = 256
+        
+    def _Find(page,name):
+        return page.find(0x006A,name,0)
+    Find = staticmethod(_Find)
+    
+    def _FindCreate(page,name):
+        return page.find(0x006A,name,1)
+    FindCreate = staticmethod(_FindCreate)
+    
+    def changePageRaw(self,sid,did,stype,dtype):
+        plDirectionalLightInfo.changePageRaw(self,sid,did,stype,dtype)
+    
+    def read(self, stream):
+        plDirectionalLightInfo.read(self,stream)
+        self.fWidth  = stream.ReadFloat()
+        self.fHeight = stream.ReadFloat()
+        self.fDepth  = stream.ReadFloat()
+        
+    def write(self, stream):
+        plDirectionalLightInfo.write(self,stream)
+        stream.WriteFloat(self.fWidth)
+        stream.WriteFloat(self.fHeight)
+        stream.WriteFloat(self.fDepth)
+        
+    def export_object(self, obj):
+        plDirectionalLightInfo.export_object(self, obj)
+        lamp=obj.data
+        objscript = AlcScript.objects.Find(obj.getName())
+        
+        self.fWidth = lamp.areaSizeX
+        self.fHeight = lamp.areaSizeY
+        self.fDepth = lamp.dist
+        
+        # Blender limits values to 100. Override via alcscript
+        self.fWidth = FindInDict(objscript, "lamp.width", self.fWidth)
+        self.fHeight = FindInDict(objscript, "lamp.height", self.fHeight)
+        self.fDepth = FindInDict(objscript, "lamp.depth", self.fDepth)
 
 #list1
 class plOmniLightInfo(plDirectionalLightInfo): #Incorrect, but I guess it can slip   
