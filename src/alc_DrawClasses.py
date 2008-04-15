@@ -1834,7 +1834,8 @@ class plDrawInterface(plObjInterface):
                         volume = refparser.MixedRef_FindCreateRef(reg)
                     vr = root.find(0x0116, volume.Key.name, 1)
                     vr.data.scenenode=SceneNodeRef
-                    vr.data.BitFlags.append(plVisRegion.VecFlags["kReplaceNormal"])
+                    vr.data.BitFlags.clear()
+                    vr.data.BitFlags.SetBit(plVisRegion.VecFlags["kReplaceNormal"])
                     vr.data.fRegion = volume
                     self.fRegions.append(vr.data.getRef())
         

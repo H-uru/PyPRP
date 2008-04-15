@@ -927,7 +927,7 @@ class plSoundMsg(plMessageWithCallbacks):
                 if cmd.lower() in plSoundMsg.ScriptModSoundCmds:
                     cidx = plSoundMsg.ScriptModSoundCmds[cmd.lower()]
                     self.fCmd.SetBit(cidx)
-            print "    plSoundMsg: Set command: %s" % cmd.lower()
+                    print "    plSoundMsg: Set command: %s" % cmd.lower()
 
 
 class plEnableMsg(plMessage):
