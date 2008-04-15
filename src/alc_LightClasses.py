@@ -201,8 +201,8 @@ class plLightInfo(plObjInterface):                          #Type 0x54 (Uru)
                 
         # --- Check if Lamp has a projection layer --- (HACK WARNING)
         lampscript = AlcScript.objects.Find(obj.getName())
-        layername = FindInDict(lampscript,"lamp.layer","")
-        if(name != None):
+        layername = FindInDict(lampscript,"lamp.layer",None)
+        if(layername != None):
             print " Attatching layer: " + layername
             layer = plLayer.FindCreate(page, layername)
             lamp.data.fProjection = layer.data.getRef()
