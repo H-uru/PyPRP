@@ -1831,6 +1831,8 @@ class plDrawInterface(plObjInterface):
                         volume = softVolParser.parseProperty(str(reg),str(self.Key.name))
                     else:
                         refparser = ScriptRefParser(self.getRoot(),str(self.Key.name))
+                        if reg.find(":") == -1:
+                            reg = "0088:" + reg
                         volume = refparser.MixedRef_FindCreateRef(reg)
                     vr = root.find(0x0116, volume.Key.name, 1)
                     vr.data.scenenode=SceneNodeRef
