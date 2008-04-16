@@ -206,6 +206,11 @@ class plLightInfo(plObjInterface):                          #Type 0x54 (Uru)
             print " Attatching layer: " + layername
             layer = plLayer.FindCreate(page, layername)
             lamp.data.fProjection = layer.data.getRef()
+            # set the projection flags depending on the lamp type
+            if obj.data.type==Blender.Lamp.Types["Spot"]:
+                layer.data.fState.fMiscFlags |= hsGMatState.hsGMatMiscFlags["kMiscPerspProjection"]
+            elif obj.data.type==Blender.Lamp.Types["Area"]:
+                layer.data.fState.fMiscFlags |= hsGMatState.hsGMatMiscFlags["kMiscOrthoProjection"]
             # now we set the uvw transform on the layer
             texMatrix = getMatrix(obj)
             texMatrix.transpose()
@@ -378,9 +383,7 @@ class plDirectionalLightInfo(plLightInfo):
             if(self.softVolumeParser != None and self.softVolumeParser.isStringProperty(propString)):
                 self.softvol = self.softVolumeParser.parseProperty(propString,str(self.Key.name))
             else:
-                refparser = ScriptRefParser(self.getRoot(),str(self.Key.name))
-                if propString.find(":") == -1:
-                    propString = "0088:" + propString
+                refparser = ScriptRefParser(self.getRoot(),str(self.Key.name),"softvolume")
                 volume = refparser.MixedRef_FindCreate(propString)
                 self.softvol = volume.data.getRef()
         

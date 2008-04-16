@@ -695,9 +695,7 @@ class plWin32Sound(plSound):
             if(softVolumeParser != None and softVolumeParser.isStringProperty(propString)):
                 self.fSoftRegion = softVolumeParser.parseProperty(propString,str(self.Key.name))
             else:
-                refparser = ScriptRefParser(self.getRoot(),str(self.Key.name))
-                if propString.find(":") == -1:
-                    propString = "0088:" + propString
+                refparser = ScriptRefParser(self.getRoot(),str(self.Key.name),"softvolume")
                 volume = refparser.MixedRef_FindCreate(propString)
                 self.fSoftRegion = volume.data.getRef()
 
