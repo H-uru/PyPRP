@@ -786,7 +786,6 @@ class plLayer(plLayerInterface):             # Type 0x06
                     self.fUVWSrc = 0
             elif mtex.texco == Blender.Texture.TexCo["OBJECT"]:
                 print "    -> Mapping as projection light"
-                self.fState.fMiscFlags |= hsGMatState.hsGMatMiscFlags["kMiscOrthoProjection"]
                 self.fUVWSrc = plLayerInterface.plUVWSrcModifiers["kUVWPosition"]
             else:
                 print "    -> Using default first UV map"
@@ -2584,3 +2583,171 @@ class plLayerAnimation(plLayerAnimationBase):
         # TODO: Implement this to set mtex.colfac, mtex.neg and obj.data.mode
         print "        WARNING: Layer animation settings have not been"
         print "        converted into Blender texture settings!"
+        
+
+class plRenderTarget(plBitmap):
+    def __init__(self,parent=None,name="unnamed",type=0x000D):
+        plBitmap.__init__(self, parent, name, type)
+        self.fWidth = 0
+        self.fHeight = 0
+        self.fPixelSize = 0
+        self.fZDepth = 0
+        self.fStencilDepth = 0
+        self.fApplyTexQuality = 0
+        self.fProportionalViewport = 1
+        self.fLeft = 0.0
+        self.fTop = 0.0
+        self.fRight = 1.0
+        self.fBottom = 1.0
+        self.fFlags = 0
+        self.fParent = None
+        
+    def _Find(page,name):
+        return page.find(0x000D,name,0)
+    Find = staticmethod(_Find)
+    
+    def _FindCreate(page,name):
+        return page.find(0x000D,name,1)
+    FindCreate = staticmethod(_FindCreate)
+        
+    def read(self, stream):
+        nRead = plBitmap.read(self, stream)
+        self.fWidth = stream.Read16()
+        self.fHeight = stream.Read16()
+        self.fProportionalViewport = stream.ReadBool()
+        if(self.fProportionalViewport):
+            sSize = 4
+            self.fLeft = stream.ReadFloat()
+            self.fTop = stream.ReadFloat()
+            self.fRight = stream.ReadFloat()
+            self.fBottom = stream.ReadFloat()
+        else:
+            sSize = 2
+            self.fLeft = stream.Read16()
+            self.fTop = stream.Read16()
+            self.fRight = stream.Read16()
+            self.fBottom = stream.Read16()
+        self.fZDepth = stream.ReadByte()
+        self.fStencilDepth = stream.ReadByte()
+        return (nRead + 10 + 4 * sSize)
+        
+    def write(self, stream):
+        nWrote = plBitmap.write(self, stream)
+        stream.Write16(self.fWidth)
+        stream.Write16(self.fHeight)
+        stream.WriteBool(self.fProportionalViewport)
+        if(self.fProportionalViewport):
+            sSize = 4
+            stream.WriteFloat(self.fLeft)
+            stream.WriteFloat(self.fTop)
+            stream.WriteFloat(self.fRight)
+            stream.WriteFloat(self.fBottom)
+        else:
+            sSize = 2
+            stream.Write16(self.fLeft)
+            stream.Write16(self.fTop)
+            stream.Write16(self.fRight)
+            stream.Write16(self.fBottom)
+        stream.WriteByte(self.fZDepth)
+        stream.WriteByte(self.fStencilDepth)
+        return (nWrote + 10 + 4 * sSize)
+        
+        
+class plCubicRenderTarget(plRenderTarget):
+    def __init__(self,parent=None,name="unnamed",type=0x000E):
+        plRenderTarget.__init__(self, parent, name, type)
+        fFaces[0] = None
+        fFaces[1] = None
+        fFaces[2] = None
+        fFaces[3] = None
+        fFaces[4] = None
+        fFaces[5] = None
+        
+    def _Find(page,name):
+        return page.find(0x000E,name,0)
+    Find = staticmethod(_Find)
+    
+    def _FindCreate(page,name):
+        return page.find(0x000E,name,1)
+    FindCreate = staticmethod(_FindCreate)
+    
+    def read(self, stream):
+        nRead = plRenderTarget.read(self, stream)
+        for i in range(6):
+            fFaces[i] = plRenderTarget()
+            fFaces[i].fParent = self
+            nRead += fFaces[i].read(self, stream)
+        return nRead
+        
+    def write(self, stream):
+        nWrote = plRenderTarget.write()
+        for i in range(6):
+            nWrote += fFaces[i].write()
+        return nWrote
+    
+class plDynamicEnvMap(plCubicRenderTarget):
+    def __init__(self,parent=None,name="unnamed",type=0x0106):
+        plCubicRenderTarget.__init__(self, parent, name, type)
+        self.fRootNode = UruObjectRef(self.getVersion()) #plKey
+        self.fPos = Vertex() #hsPoint3
+        self.fHither = 0.0
+        self.fYon = 0.0
+        self.fFogStart = 0.0
+        self.fColor = RGBA(0.5,0.5,0.5,1.0,type=1) #hsColorRGBA
+        self.fRefreshRate = 0.0
+        self.fLastRefresh = 0.0 #double
+        self.fLastRender = 1 #int
+        self.fOutStanding = 1 #int
+        self.fVisSet = None #hsBitVector
+        self.fVisRegions = hsTArray([], self.getVersion()) #hsTArray<plKey>
+        self.fVisRegionNames = hsTArray([], self.getVersion()) #hsTArray<plString>
+        self.fIncCharacters = 1 #int
+        
+    def _Find(page,name):
+        return page.find(0x0106,name,0)
+    Find = staticmethod(_Find)
+    
+    def _FindCreate(page,name):
+        return page.find(0x0106,name,1)
+    FindCreate = staticmethod(_FindCreate)
+        
+    def read(self, s):
+        plCubicRenderTarget.read(s)
+        self.fPos.read(s)
+        self.fHither = s.ReadFloat()
+        self.fYon = s.ReadFloat()
+        self.fFogStart = s.ReadFloat()
+        self.fColor.read(s)
+        self.fRefreshRate = s.ReadFloat()
+        #SetCameraMatrix(fPos)
+        self.fIncCharacters = s.ReadByte()
+        #SetIncludeCharacters(fIncCharacters)
+        count = s.Read32()
+        for i in range(count):
+            u = UruObjectRef()
+            u.Read(s)
+            self.fVisRegions.append(u)
+        count = s.Read32()
+        for i in range(count):
+            u = UruObjectRef()
+            u.Read(s)
+            self.fVisRegionNames.append(u)
+        self.fRootNode.read(s)
+
+    def write(self, s):
+        plCubicRenderTarget.write(self,s)
+        self.fPos.write(s)
+        s.WriteFloat(self.fHither)
+        s.WriteFloat(self.fYon)
+        s.WriteFloat(self.fFogStart)
+        self.fColor.write(s)
+        s.WriteFloat(self.fRefreshRate)
+        s.WriteByte(self.fIncCharacters)
+        for key in self.fVisRegions:
+            key.update(self.Key)
+            key.write(s)
+        for key in self.fVisRegionNames:
+            key.update(self.Key)
+            key.write(s)
+        self.fRootNode.write(s)
+        

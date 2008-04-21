@@ -83,6 +83,10 @@ class PrpObject:
                 self.data=plLayer(self)
             elif self.type==0x0007:
                 self.data=hsGMaterial(self)
+            elif self.type==0x000D:
+                self.data=plRenderTarget(self)
+            elif self.type==0x000E:
+                self.data=plCubicRenderTarget(self)
             elif self.type==0x0011:
                 self.data=plAudioInterface(self)
             elif self.type==0x0012:
@@ -205,6 +209,8 @@ class PrpObject:
                 self.data=plDynaBulletMgr(self) 
             elif self.type==0x00FC:
                 self.data=plPanicLinkRegion(self)
+            elif self.type==0x0106:
+                self.data=plDynamicEnvMap(self)
             elif self.type==0x0111:
                 self.data=plHardRegionPlanes(self)
             elif self.type==0x0112:
