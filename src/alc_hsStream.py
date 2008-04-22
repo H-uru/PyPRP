@@ -73,7 +73,10 @@ class hsStream:
         data, = struct.unpack("<H",self.fs.read(2))
         return data
     
-
+    def ReadShort(self):
+        data, = struct.unpack("<H",self.fs.read(2))
+        return data
+    
     def ReadSigned16(self):
         data, = struct.unpack("<h",self.fs.read(2))
         return data
@@ -83,6 +86,10 @@ class hsStream:
         data, = struct.unpack("<I",self.fs.read(4))
         return data
 
+    
+    def ReadInt(self):
+        data, = struct.unpack("<I",self.fs.read(4))
+        return data
     
     def ReadSigned32(self):
         data, = struct.unpack("<i",self.fs.read(4))
@@ -123,7 +130,9 @@ class hsStream:
     
     def Write16(self,data):
         self.fs.write(struct.pack("<H",data))
-
+    
+    def WriteShort(self,data):
+        self.fs.write(struct.pack("<H",data))
     
     def WriteSigned16(self,data):
         self.fs.write(struct.pack("<h",data))
@@ -131,7 +140,9 @@ class hsStream:
     
     def Write32(self,data):
         self.fs.write(struct.pack("<I",data))
-    
+        
+    def WriteInt(self,data):
+        self.fs.write(struct.pack("<I",data))
     
     def WriteSigned32(self,data):
         self.fs.write(struct.pack("<i",data))

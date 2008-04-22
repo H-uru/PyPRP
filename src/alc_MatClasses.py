@@ -801,17 +801,20 @@ class plLayer(plLayerInterface):             # Type 0x06
                 
                 # check 
                 if(tex.stype != Blender.Texture.STypes.ENV_LOAD or tex.image == None):
-                    raise "ERROR: Cannot set Environment map from static/anim render. Please render your EnvMap, save it, and then set the EnvMap to load your saved image!"
-                
-                #find or create the qmap
-
-                mipmapinfo = blMipMapInfo()
-                mipmapinfo.fName = tex.image.getName()
-                mipmapinfo.fMipMaps = True
-                mipmapinfo.fGauss = True
-                mipmapinfo.fResize = True
-
-                qmap = plCubicEnvironMap.Export(root,tex.image.getName(),tex.image,mipmapinfo,exportTexturesToPrp)
+                    #raise "ERROR: Cannot set Environment map from static/anim render. Please render your EnvMap, save it, and then set the EnvMap to load your saved image!"
+                    print "WARNING: No texture image found, using dynamic environment map with default settings" 
+                    qmap = plDynamicEnvMap.FindCreate(root, tex.getName())
+                    
+                else:
+                    #find or create the qmap
+    
+                    mipmapinfo = blMipMapInfo()
+                    mipmapinfo.fName = tex.image.getName()
+                    mipmapinfo.fMipMaps = True
+                    mipmapinfo.fGauss = True
+                    mipmapinfo.fResize = True
+    
+                    qmap = plCubicEnvironMap.Export(root,tex.image.getName(),tex.image,mipmapinfo,exportTexturesToPrp)
 
                 self.fTexture = qmap.data.getRef()
                 self.fHasTexture = 1
@@ -1534,11 +1537,15 @@ class plBitmap(hsKeyedObject):               # Type 0x03
         if (self.fCompressionType != plBitmap.Compression["kUncompressed"]  and  self.fCompressionType != plBitmap.Compression["kJPEGCompression"]):
             self.BitmapInfo.fDirectXInfo.fBlockSize = stream.ReadByte()
             self.BitmapInfo.fDirectXInfo.fCompressionType = stream.ReadByte()
+            nRead = 8
         else:
             self.BitmapInfo.fUncompressedInfo.fType = stream.ReadByte()
+            nRead = 7
         
         self.fLowModifiedTime = stream.Read32()
         self.fHighModifiedTime = stream.Read32()
+        
+        return nRead
 
     def write(self, stream, really=1):
         hsKeyedObject.write(self,stream,really)
@@ -1552,11 +1559,15 @@ class plBitmap(hsKeyedObject):               # Type 0x03
         if (self.fCompressionType != plBitmap.Compression["kUncompressed"]  and  self.fCompressionType != plBitmap.Compression["kJPEGCompression"]):
             stream.WriteByte(self.BitmapInfo.fDirectXInfo.fBlockSize)
             stream.WriteByte(self.BitmapInfo.fDirectXInfo.fCompressionType)
+            nWrote = 8
         else:
             stream.WriteByte(self.BitmapInfo.fUncompressedInfo.fType)
+            nWrote = 7
         
         stream.Write32(self.fLowModifiedTime)
         stream.Write32(self.fHighModifiedTime)
+        
+        return nWrote
 
     # Version header for texture cache files
     # Update the last two digits when changing the file format
@@ -2656,12 +2667,13 @@ class plRenderTarget(plBitmap):
 class plCubicRenderTarget(plRenderTarget):
     def __init__(self,parent=None,name="unnamed",type=0x000E):
         plRenderTarget.__init__(self, parent, name, type)
-        fFaces[0] = None
-        fFaces[1] = None
-        fFaces[2] = None
-        fFaces[3] = None
-        fFaces[4] = None
-        fFaces[5] = None
+	self.fFaces = range(6)
+        self.fFaces[0] = plRenderTarget(parent, name)
+        self.fFaces[1] = plRenderTarget(parent, name)
+	self.fFaces[2] = plRenderTarget(parent, name)
+        self.fFaces[3] = plRenderTarget(parent, name)
+        self.fFaces[4] = plRenderTarget(parent, name)
+        self.fFaces[5] = plRenderTarget(parent, name)
         
     def _Find(page,name):
         return page.find(0x000E,name,0)
@@ -2674,34 +2686,31 @@ class plCubicRenderTarget(plRenderTarget):
     def read(self, stream):
         nRead = plRenderTarget.read(self, stream)
         for i in range(6):
-            fFaces[i] = plRenderTarget()
-            fFaces[i].fParent = self
-            nRead += fFaces[i].read(self, stream)
+            self.fFaces[i] = plRenderTarget()
+            self.fFaces[i].fParent = self
+            nRead += self.fFaces[i].read(stream)
         return nRead
         
     def write(self, stream):
-        nWrote = plRenderTarget.write()
+        nWrote = plRenderTarget.write(self, stream)
         for i in range(6):
-            nWrote += fFaces[i].write()
+            nWrote += self.fFaces[i].write(stream)
         return nWrote
     
 class plDynamicEnvMap(plCubicRenderTarget):
     def __init__(self,parent=None,name="unnamed",type=0x0106):
         plCubicRenderTarget.__init__(self, parent, name, type)
-        self.fRootNode = UruObjectRef(self.getVersion()) #plKey
-        self.fPos = Vertex() #hsPoint3
+        self.fRootNode = UruObjectRef(self.getVersion()) 
+        self.fPos = Vertex()
         self.fHither = 0.0
         self.fYon = 0.0
         self.fFogStart = 0.0
-        self.fColor = RGBA(0.5,0.5,0.5,1.0,type=1) #hsColorRGBA
-        self.fRefreshRate = 0.0
-        self.fLastRefresh = 0.0 #double
-        self.fLastRender = 1 #int
-        self.fOutStanding = 1 #int
-        self.fVisSet = None #hsBitVector
-        self.fVisRegions = hsTArray([], self.getVersion()) #hsTArray<plKey>
-        self.fVisRegionNames = hsTArray([], self.getVersion()) #hsTArray<plString>
-        self.fIncCharacters = 1 #int
+        self.fColor = RGBA(0.5,0.5,0.5,1.0,type=1)
+        self.fRefreshRate = 1.0
+        self.fLastRender = 1
+        self.fOutStanding = 1
+        self.fVisRegions = hsTArray([], self.getVersion()) 
+        self.fIncCharacters = 1
         
     def _Find(page,name):
         return page.find(0x0106,name,0)
@@ -2711,43 +2720,28 @@ class plDynamicEnvMap(plCubicRenderTarget):
         return page.find(0x0106,name,1)
     FindCreate = staticmethod(_FindCreate)
         
-    def read(self, s):
-        plCubicRenderTarget.read(s)
-        self.fPos.read(s)
-        self.fHither = s.ReadFloat()
-        self.fYon = s.ReadFloat()
-        self.fFogStart = s.ReadFloat()
-        self.fColor.read(s)
-        self.fRefreshRate = s.ReadFloat()
-        #SetCameraMatrix(fPos)
-        self.fIncCharacters = s.ReadByte()
-        #SetIncludeCharacters(fIncCharacters)
-        count = s.Read32()
-        for i in range(count):
-            u = UruObjectRef()
-            u.Read(s)
-            self.fVisRegions.append(u)
-        count = s.Read32()
-        for i in range(count):
-            u = UruObjectRef()
-            u.Read(s)
-            self.fVisRegionNames.append(u)
-        self.fRootNode.read(s)
+    def read(self, stream):
+        plCubicRenderTarget.read(self, stream)
+        self.fPos.read(stream)
+        self.fHither = stream.ReadFloat()
+        self.fYon = stream.ReadFloat()
+        self.fFogStart = stream.ReadFloat()
+        self.fColor.read(stream)
+        self.fRefreshRate = stream.ReadFloat()
+        self.fIncCharacters = stream.ReadByte()
+        self.fVisRegions.read(stream)
+        self.fRootNode.read(stream)
 
-    def write(self, s):
-        plCubicRenderTarget.write(self,s)
-        self.fPos.write(s)
-        s.WriteFloat(self.fHither)
-        s.WriteFloat(self.fYon)
-        s.WriteFloat(self.fFogStart)
-        self.fColor.write(s)
-        s.WriteFloat(self.fRefreshRate)
-        s.WriteByte(self.fIncCharacters)
-        for key in self.fVisRegions:
-            key.update(self.Key)
-            key.write(s)
-        for key in self.fVisRegionNames:
-            key.update(self.Key)
-            key.write(s)
-        self.fRootNode.write(s)
+    def write(self, stream):
+        plCubicRenderTarget.write(self, stream)
+        self.fPos.write(stream)
+        stream.WriteFloat(self.fHither)
+        stream.WriteFloat(self.fYon)
+        stream.WriteFloat(self.fFogStart)
+        self.fColor.write(stream)
+        stream.WriteFloat(self.fRefreshRate)
+        stream.WriteByte(self.fIncCharacters)
+        stream.WriteInt(len(self.fVisRegions))
+        self.fVisRegions.write(stream)
+        self.fRootNode.write(stream)
         
