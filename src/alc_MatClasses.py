@@ -2597,21 +2597,46 @@ class plLayerAnimation(plLayerAnimationBase):
         
 
 class plRenderTarget(plBitmap):
+    class Proportional:
+        def __init__(self):
+            self.fLeft = 0.0
+            self.fTop = 0.0
+            self.fRight = 1.0
+            self.fBottom = 1.0
+            
+    class Absolute:
+        def __init__(self):
+            self.fLeft = 0
+            self.fTop = 0
+            self.fRight = 1
+            self.fBottom = 1
+            
+    class Viewport:
+        def __init__(self):
+            self.fProportional = plRenderTarget.Proportional()
+            self.fAbsolute = plRenderTarget.Absolute()
+            
     def __init__(self,parent=None,name="unnamed",type=0x000D):
         plBitmap.__init__(self, parent, name, type)
-        self.fWidth = 0
-        self.fHeight = 0
+        self.fViewport = plRenderTarget.Viewport()
+        self.fWidth = 1
+        self.fHeight = 1
         self.fPixelSize = 0
-        self.fZDepth = 0
+        self.fZDepth = 0x18
         self.fStencilDepth = 0
         self.fApplyTexQuality = 0
-        self.fProportionalViewport = 1
-        self.fLeft = 0.0
-        self.fTop = 0.0
-        self.fRight = 1.0
-        self.fBottom = 1.0
+        self.fProportionalViewport = 0
+        self.fViewport.fProportional.fLeft = 0.0
+        self.fViewport.fProportional.fTop = 0.0
+        self.fViewport.fProportional.fRight = 1.0
+        self.fViewport.fProportional.fBottom = 1.0
         self.fFlags = 0
         self.fParent = None
+        # bitmap defaults
+        self.fCompressionType = 0
+        self.fPixelSize = 0x20
+        self.fSpace = 0
+        self.fFlags |= plBitmap.Flags["kIsTexture"]
         
     def _Find(page,name):
         return page.find(0x000D,name,0)
@@ -2622,43 +2647,44 @@ class plRenderTarget(plBitmap):
     FindCreate = staticmethod(_FindCreate)
         
     def read(self, stream):
-        nRead = plBitmap.read(self, stream)
+        # this reads an unKeyedObject >.>
+        nRead = plBitmap.read(self, stream, 0)
         self.fWidth = stream.Read16()
         self.fHeight = stream.Read16()
         self.fProportionalViewport = stream.ReadBool()
         if(self.fProportionalViewport):
             sSize = 4
-            self.fLeft = stream.ReadFloat()
-            self.fTop = stream.ReadFloat()
-            self.fRight = stream.ReadFloat()
-            self.fBottom = stream.ReadFloat()
+            self.fViewport.fProportional.fLeft = stream.ReadFloat()
+            self.fViewport.fProportional.fTop = stream.ReadFloat()
+            self.fViewport.fProportional.fRight = stream.ReadFloat()
+            self.fViewport.fProportional.fBottom = stream.ReadFloat()
         else:
             sSize = 2
-            self.fLeft = stream.Read16()
-            self.fTop = stream.Read16()
-            self.fRight = stream.Read16()
-            self.fBottom = stream.Read16()
+            self.fViewport.fAbsolute.fLeft = stream.Read16()
+            self.fViewport.fAbsolute.fTop = stream.Read16()
+            self.fViewport.fAbsolute.fRight = stream.Read16()
+            self.fViewport.fAbsolute.fBottom = stream.Read16()
         self.fZDepth = stream.ReadByte()
         self.fStencilDepth = stream.ReadByte()
         return (nRead + 10 + 4 * sSize)
         
     def write(self, stream):
-        nWrote = plBitmap.write(self, stream)
+        nWrote = plBitmap.write(self, stream, 0)
         stream.Write16(self.fWidth)
         stream.Write16(self.fHeight)
         stream.WriteBool(self.fProportionalViewport)
         if(self.fProportionalViewport):
             sSize = 4
-            stream.WriteFloat(self.fLeft)
-            stream.WriteFloat(self.fTop)
-            stream.WriteFloat(self.fRight)
-            stream.WriteFloat(self.fBottom)
+            stream.WriteFloat(self.fViewport.fProportional.fLeft)
+            stream.WriteFloat(self.fViewport.fProportional.fTop)
+            stream.WriteFloat(self.fViewport.fProportional.fRight)
+            stream.WriteFloat(self.fViewport.fProportional.fBottom)
         else:
             sSize = 2
-            stream.Write16(self.fLeft)
-            stream.Write16(self.fTop)
-            stream.Write16(self.fRight)
-            stream.Write16(self.fBottom)
+            stream.Write16(self.fViewport.fAbsolute.fLeft)
+            stream.Write16(self.fViewport.fAbsolute.fTop)
+            stream.Write16(self.fViewport.fAbsolute.fRight)
+            stream.Write16(self.fViewport.fAbsolute.fBottom)
         stream.WriteByte(self.fZDepth)
         stream.WriteByte(self.fStencilDepth)
         return (nWrote + 10 + 4 * sSize)
@@ -2667,13 +2693,13 @@ class plRenderTarget(plBitmap):
 class plCubicRenderTarget(plRenderTarget):
     def __init__(self,parent=None,name="unnamed",type=0x000E):
         plRenderTarget.__init__(self, parent, name, type)
-	self.fFaces = range(6)
-        self.fFaces[0] = plRenderTarget(parent, name)
-        self.fFaces[1] = plRenderTarget(parent, name)
-	self.fFaces[2] = plRenderTarget(parent, name)
-        self.fFaces[3] = plRenderTarget(parent, name)
-        self.fFaces[4] = plRenderTarget(parent, name)
-        self.fFaces[5] = plRenderTarget(parent, name)
+        self.fFaces = range(6)
+        self.fFaces[0] = plRenderTarget(parent, "")
+        self.fFaces[1] = plRenderTarget(parent, "")
+        self.fFaces[2] = plRenderTarget(parent, "")
+        self.fFaces[3] = plRenderTarget(parent, "")
+        self.fFaces[4] = plRenderTarget(parent, "")
+        self.fFaces[5] = plRenderTarget(parent, "")
         
     def _Find(page,name):
         return page.find(0x000E,name,0)
@@ -2700,15 +2726,12 @@ class plCubicRenderTarget(plRenderTarget):
 class plDynamicEnvMap(plCubicRenderTarget):
     def __init__(self,parent=None,name="unnamed",type=0x0106):
         plCubicRenderTarget.__init__(self, parent, name, type)
-        self.fRootNode = UruObjectRef(self.getVersion()) 
         self.fPos = Vertex()
         self.fHither = 0.0
         self.fYon = 0.0
         self.fFogStart = 0.0
         self.fColor = RGBA(0.5,0.5,0.5,1.0,type=1)
         self.fRefreshRate = 1.0
-        self.fLastRender = 1
-        self.fOutStanding = 1
         self.fVisRegions = hsTArray([], self.getVersion()) 
         self.fIncCharacters = 1
         
@@ -2721,6 +2744,10 @@ class plDynamicEnvMap(plCubicRenderTarget):
     FindCreate = staticmethod(_FindCreate)
         
     def read(self, stream):
+        # fun hack, this would be a call to the void write of plBitmap, 
+        # which writes it with the keyedObject index. When renderTarget calls
+        # plBitmap.write this is not written.
+        hsKeyedObject.read(self,stream)
         plCubicRenderTarget.read(self, stream)
         self.fPos.read(stream)
         self.fHither = stream.ReadFloat()
@@ -2730,9 +2757,9 @@ class plDynamicEnvMap(plCubicRenderTarget):
         self.fRefreshRate = stream.ReadFloat()
         self.fIncCharacters = stream.ReadByte()
         self.fVisRegions.read(stream)
-        self.fRootNode.read(stream)
 
     def write(self, stream):
+        hsKeyedObject.write(self,stream)
         plCubicRenderTarget.write(self, stream)
         self.fPos.write(stream)
         stream.WriteFloat(self.fHither)
@@ -2741,7 +2768,5 @@ class plDynamicEnvMap(plCubicRenderTarget):
         self.fColor.write(stream)
         stream.WriteFloat(self.fRefreshRate)
         stream.WriteByte(self.fIncCharacters)
-        stream.WriteInt(len(self.fVisRegions))
         self.fVisRegions.write(stream)
-        self.fRootNode.write(stream)
         
