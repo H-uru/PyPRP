@@ -104,10 +104,11 @@ def export_age(agename,basepath,selection=0,merge=0,pagename=None):
     if fnitxt!="":
         age.setInit(fnitxt)
     #generate sum files
-    #print "Computing Checksums..."
+    print "Computing Checksums..."
     old_style=0
     if alcconfig.ver2==11:
         old_style=1
+    age.mfs.update()
     print "Writing %s" %(agename + ".sum")
     age.mfs.writesum(basepath + "/" + agename + ".sum",old_style)
 
