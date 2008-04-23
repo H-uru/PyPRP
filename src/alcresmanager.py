@@ -362,6 +362,10 @@ class alcUruPage:
                 ## -- Trylon
                 # Export all simple softvolumes...
                 vols = FindInDict(objscript,"softvolume",None)
+                # how about a little backwards compatability dox?
+                # Mesh objects with the svconvex property should be exported as simple softvols
+                if vols == None:
+                    vols = [{'regions': [{'softvolume': obj.getName()}], 'type': 'convex'}]
                 if type(vols) == dict: # It should be a list - if it's a dict, make it a list with one entry
                     vols = [vols,]
                 if type(vols) == list:
