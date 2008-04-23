@@ -39,7 +39,7 @@ class VertexCoderElement:
     def __init__(self,base=0,count=0):
         self.base = base #FLOAT
         self.count = count #WORD
-    
+
     def read(self,buf,granularity):
         if (self.count == 0):
             self.base = buf.ReadFloat()
@@ -54,8 +54,8 @@ class VertexCoderColorElement:
         self.base = base
         self.count = count
         self.RLE = None #Bool
-    
-    
+
+
     def read(self,buf):
         if (self.count == 0):
             self.count = buf.Read16()
@@ -86,7 +86,7 @@ class plVertexCoder:
         self.Colors=[]
         for i in range(4):
             self.Colors.append(VertexCoderColorElement())
-    
+
     def read(self,bufferGroup,buf,count):
         #read encoded vertex info
         for i in range(count):
@@ -106,10 +106,10 @@ class plVertexCoder:
             vert.ny = (buf.Read16() / 32767.0)
             vert.nz = (buf.Read16() / 32767.0)
             #colors
-            vert.color.b = self.Colors[0].read(buf)                 
-            vert.color.g = self.Colors[1].read(buf)                 
-            vert.color.r = self.Colors[2].read(buf)                 
-            vert.color.a = self.Colors[3].read(buf)                 
+            vert.color.b = self.Colors[0].read(buf)
+            vert.color.g = self.Colors[1].read(buf)
+            vert.color.r = self.Colors[2].read(buf)
+            vert.color.a = self.Colors[3].read(buf)
             #texture coordinates
             for j in range(bufferGroup.GetUVCount()):
                 tex=[]
@@ -119,7 +119,7 @@ class plVertexCoder:
                 vert.tex.append(tex)
             bufferGroup.fVertBuffStorage.append(vert)
 
-    
+
     def write(self,bufferGroup,buf,count):
         #State vars
         VarA=[] #vertex coords (3)
@@ -140,7 +140,7 @@ class plVertexCoder:
             VBase.append(0)
             offset.append(0)
         for i in range(bufferGroup.GetNumSkinWeights()):
-            VarB.append(0)          
+            VarB.append(0)
             BBase.append(0)
         for i in range(4):
             VarC.append(0)
@@ -287,16 +287,16 @@ class plGBufferCell:
         self.VertexIndex = 0 #DWORD
         self.ColorIndex = -1 #DWORD
         self.NumVerts = 0 #DWORD
-    
-    
+
+
     def read(self,buf):
         self.VertexIndex = buf.Read32()
         assert(self.VertexIndex == 0)
         self.ColorIndex = buf.ReadSigned32()
         assert(self.ColorIndex == -1)
         self.NumVerts = buf.Read32()
-    
-    
+
+
     def write(self,buf):
         buf.Write32(self.VertexIndex)
         buf.WriteSigned32(self.ColorIndex)
@@ -313,8 +313,8 @@ class plGBufferColor:
         self.SGreen = 0
         self.SBlue = 0
         self.SAlpha = 0
-    
-    
+
+
     def read(self,buf):
         self.DRed = buf.ReadByte()
         self.DGreen = buf.ReadByte()
@@ -324,8 +324,8 @@ class plGBufferColor:
         self.SGreen = buf.ReadByte()
         self.SBlue = buf.ReadByte()
         self.SAlpha = buf.ReadByte()
-    
-    
+
+
     def write(self,buf):
         buf.WriteByte(self.DRed)
         buf.WriteByte(self.DGreen)
@@ -358,7 +358,7 @@ class plGBufferGroup:
         "kReserveSeparated"     :  0x8, \
         "kReserveIsolate"       : 0x10  \
     }
-    
+
     def __init__(self):
         self.VertStrideLength = 0 #Byte
         #...
@@ -373,10 +373,10 @@ class plGBufferGroup:
         #self.fSkinIndices=0       # Was self .blend # PyPRP unique - (int)(fFormat & kSkinIndices > 0)
         #self.fNumSkinWeights=0  # Was self .NumBlendWeights
         #self.fUVCount=0 # Was self .ntex
-    
+
     def GetSkinIndices(self):
         return (self.fFormat & plGBufferGroup.Formats["kSkinIndices"] > 0)
-    
+
     def SetSkinIndices(self,value):
         if value == True:
             self.fFormat = self.fFormat | plGBufferGroup.Formats["kSkinIndices"]
@@ -389,30 +389,30 @@ class plGBufferGroup:
     def SetUVCount(self,value):
         # force to maximum of 8, to avoid trouble
         if(value > 8):
-            value = 8 
-        
+            value = 8
+
         # clear mask
         self.fFormat = self.fFormat & ~plGBufferGroup.Formats["kUVCountMask"]
         # set new value
         self.fFormat = self.fFormat | (value & plGBufferGroup.Formats["kUVCountMask"])
 
     def GetNumSkinWeights(self):
-        return (self.fFormat & plGBufferGroup.Formats["kSkinWeightMask"]) >> 4        
+        return (self.fFormat & plGBufferGroup.Formats["kSkinWeightMask"]) >> 4
 
     def SetNumSkinWeights(self,value):
         # force to maximum of 3
         if(value > 3):
             value = 3
-        
+
         # clean out the old value
         self.fFormat = self.fFormat & ~plGBufferGroup.Formats["kSkinWeightMask"]
         # and set the value
         self.fFormat = self.fFormat | (( value << 4 ) & plGBufferGroup.Formats["kSkinWeightMask"])
 
-    
+
     def ICalcVertexSize(self):
         lStride = ((self.fFormat & plGBufferGroup.Formats["kUVCountMask"]) + 2) * 12;
-        
+
         SkinWeightField = self.fFormat & plGBufferGroup.Formats["kSkinWeightMask"]
         if   SkinWeightField == plGBufferGroup.Formats["kSkinNoWeights"]:
             fNumSkinWeights = 0
@@ -428,22 +428,22 @@ class plGBufferGroup:
 
         else:
             fNumSkinWeights = 0
-        
+
         if fNumSkinWeights != 0:
             lStride = lStride + fNumSkinWeights * 4
             if self.fFormat & plGBufferGroup.Formats["kSkinIndices"] > 0:
                 lStride = lStride + 4
-        
+
         return lStride + 8;
-    
-    
+
+
     def read(self,buf):
         self.fFormat = buf.ReadByte()                # was self-PackedVertexFormat
         self.fStride = self.ICalcVertexSize()  # was self-VertAndColorStrideLength
         # This is written out in write(), but when read in, it
         # doesn't seem to be used anywhere
         buf.Read32()
-        
+
         coder = plVertexCoder() # initialize new Vertex Coder
         VertexStorageCount = buf.Read32()
         #assert(VertexStorageCount == 1)
@@ -452,15 +452,15 @@ class plGBufferGroup:
                 count = buf.Read16()
 #                print "reading geometry (%i vertexs (%i,%i,%i)) - this will take several minutes..." %(count,self.fSkinIndices,self.fNumSkinWeights,self.fUVCount)
                 coder.read(self,buf,count)
-            elif 1: 
+            elif 1:
                 # Support for uncompressed data below is untested, and
                 # Isn't neccessary, since plasma doesn't do uncompressed
                 # vertices :)
-                
+
                 # set "elif 1:" to "elif 0:" to test the code below should it become
                 # neccessary
                 raise RuntimeError, "Encountered non-compressed vertex data - not supported"
-            else: 
+            else:
                 # This should work in theory....
                 vtxSize = buf.Read32()
                 self.fVertBuffSizes.append(vtxSize) # was self-VertexStorageLengths
@@ -470,9 +470,9 @@ class plGBufferGroup:
                 vData = [vtxSize]
                 for i in range(vtxSize):
                     vData[i] = buf.ReadByte()
-                
+
                 self.fVertBuffStorage.append(vData) # was self-VertexStorage
- 
+
                 colorCount = buf.Read32()
                 self.fColorBuffCounts.append(colorCount) # was self-ColorStorageLengths
                 if colorCount:
@@ -480,15 +480,15 @@ class plGBufferGroup:
                     for i in range(colorCount):
                         colors.append(plGBufferColor())
                     self.fColorBuffStorage.append(colors)
-        
+
         count = buf.Read32()
-        for j in range(count): 
+        for j in range(count):
             idxCount = buf.Read32()
             indexList = hsTArray()
             for k in range(idxCount):
                 indexList.append(buf.Read16())
             self.fIdxBuffStorage.append(indexList) # was self-IndexStorage
-        
+
         for j in range(VertexStorageCount):
             count = buf.Read32()
             assert(count == 1)
@@ -499,10 +499,10 @@ class plGBufferGroup:
                 cells.append(cell)
             self.fCells.append(cells) # Was self.fCells
 
-        
+
     def write(self,buf): #Compressed Output ONLY (just as in plasma :) )
         # Ensure some format bits that are always set
-        
+
         self.fFormat |= 0x80
         # RTR: We only write out one vertex storage - and so does Cyan!
         VertexStorageCount = 1
@@ -544,7 +544,7 @@ class plGBufferGroup:
         for i in range(VertexStorageCount):
             buf.Write32(len(self.fCells.vector[i]))
             for j in range(len(self.fCells.vector[i])):
-                self.fCells.vector[i].vector[j].write(buf)    
+                self.fCells.vector[i].vector[j].write(buf)
 
 class plDISpanIndex: #NOTE: This is a pile of guesswork (it still is on 28/nov/07)
     Flags = \
@@ -554,17 +554,17 @@ class plDISpanIndex: #NOTE: This is a pile of guesswork (it still is on 28/nov/0
     }
 
     def __init__(self):
-        self.fFlags = 0 
+        self.fFlags = 0
         self.fIndices = hsTArray()#<Int32>
-    
-    
+
+
     def read(self,buf):
         self.fFlags = buf.Read32()
         i = buf.Read32()
         for j in range(i):
             self.fIndices.append(buf.Read32())
-    
-    
+
+
     def write(self,buf):
         buf.Write32(self.fFlags)
         buf.Write32(len(self.fIndices))
@@ -590,8 +590,8 @@ class plSpaceTreeNode:
         # left child node if branch, link to mesh if leave
         self.right = 0 #WORD
         # 0 if leave, else child node
-    
-    
+
+
     def read(self,buf):
         self.box.read(buf)
         self.flags = buf.Read16()
@@ -602,8 +602,8 @@ class plSpaceTreeNode:
         self.right = buf.Read16()
         if self.flags & 0x01:
             assert(self.right==0)
-   
-    
+
+
     def write(self,buf):
         self.box.write(buf)
         buf.Write16(self.flags)
@@ -611,7 +611,7 @@ class plSpaceTreeNode:
         buf.Write16(self.left)
         buf.Write16(self.right)
 
-        
+
     def __str__(self):
         return "b:%s,t:%X,p:%04i,l:%04i,r:%04i" %(str(self.box),self.flags,self.parent,self.left,self.right)
 
@@ -623,8 +623,8 @@ class plSpaceTree:
         self.totalNodesMinusRoot = 0
         self.numLeaves = 0
         self.nodes = hsTArray() #plSpaceTreeNode
-    
-    
+
+
     def read(self,buf,numIcicles):
         self.type = buf.Read16()
         if (self.type == 0x8000): # NULL
@@ -662,8 +662,8 @@ class plSpaceTree:
                 if node.right not in [0x070F,0x676E,0x0000,0x3F80]:
                     raise "tree right is %04X" % node.right
             self.nodes.append(node)
-    
-    
+
+
     def write(self,buf):
         buf.Write16(self.type)
         if self.type == 0x8000: # NULL
@@ -743,7 +743,7 @@ class plDrawable(hsKeyedObject):
         "Sphere": 3 \
     }
 
-class plDrawableSpans(plDrawable):    
+class plDrawableSpans(plDrawable):
     def __init__(self,parent,name="unnamed",type=0x004C):
         hsKeyedObject.__init__(self,parent,name,type)
 
@@ -776,8 +776,8 @@ class plDrawableSpans(plDrawable):
 
         self.fSceneNode=UruObjectRef(self.getVersion()) #link to the plSceneNode
         self.fSourceSpans = hsTArray([],self.getVersion()) #plGeometrySpan
-    
-    
+
+
     def changePageRaw(self,sid,did,stype,dtype):
         hsKeyedObject.changePageRaw(self,sid,did,stype,dtype)
         for i in self.fMaterials:
@@ -789,7 +789,7 @@ class plDrawableSpans(plDrawable):
                 light.changePageRaw(sid,did,stype,dtype)
         self.fSceneNode.changePageRaw(sid,did,stype,dtype)
 
-    
+
     def read(self,buf):
         hsKeyedObject.read(self,buf)
         self.fProps = buf.Read32()
@@ -865,7 +865,7 @@ class plDrawableSpans(plDrawable):
         self.fSceneNode.read(buf)
         assert(self.fSceneNode.verify(self.Key))
 
-    
+
     def write(self,buf):
         hsKeyedObject.write(self,buf)
         buf.Write32(self.fProps)
@@ -932,7 +932,7 @@ class plDrawableSpans(plDrawable):
         testname=str(root.name) + "_District_" + str(root.page) + "_" + one + "_" + two + sfx
         self.Key.name.set(testname)
 
-    
+
     def import_all(self):
         for i in range(len(self.fDIIndices)):
             self.import_object(i,"obj%02i" % i)
@@ -947,7 +947,7 @@ class plDrawableSpans(plDrawable):
             return []
         if self.fDIIndices[groupidx].fFlags==plDISpanIndex.Flags["kBone"]:
             return []
-        
+
         resmanager=self.getResManager()
 
         # Find span index
@@ -986,7 +986,7 @@ class plDrawableSpans(plDrawable):
                 if bmat == BlenderMat:
                     print "   Material %s is already in the list"%(bmat.name)
                     midx = i
-            
+
             if midx == -1:
                 # append to the list
                 MatList.append(BlenderMat)
@@ -1008,11 +1008,11 @@ class plDrawableSpans(plDrawable):
         # assign these materials (Has to be assigned to the object)
         obj.setMaterials(MatList)
         obj.colbits=(1<< len(MatList)) - 1 # set all materials to be used
-        obj.activeMaterial = 1            
+        obj.activeMaterial = 1
 
         print "   Mesh's material list:",obj.getMaterials()
 
-        
+
         # Ensure that we have the correct vertexcolor layers
         list = mesh.getColorLayerNames()
         if not ("Alpha" in list and "Color" in list and len(list) == 2):
@@ -1020,25 +1020,25 @@ class plDrawableSpans(plDrawable):
                 mesh.removeColorLayer(layer)
             mesh.addColorLayer("Color")
             mesh.addColorLayer("Alpha")
-            
+
         # Create a list of all lights in this page....
         lights = []
         lights.extend(root.listobjects(0x55)) # List of plDirectionalLight in this page
         lights.extend(root.listobjects(0x56)) # List of plOmniLight in this page
         lights.extend(root.listobjects(0x57)) # List of plSpotLight in this page
-            
-            
-        
+
+
+
         # Parse Vertex Group Mesh Data
         for i in range(len(spanIndex.fIndices)):
             print "   Material group",i
             VGroup_StartIdx = len(mesh.verts) # Store the Start index for this vertex group
             VGroup_StartFace = len(mesh.faces)
             VGroup_GroupName = "VtxGroup" + str(len(mesh.getVertGroupNames())+1)
-            
+
             # get the icicle (contains material info and info about which vertexes to extract from the buffer group)
             icicle = self.fIcicles[spanIndex.fIndices[i]]
-            
+
             # get the buffergroup that stores the vertices of this span
             bufferGroup = self.fGroups[icicle.fGroupIdx]
 
@@ -1049,18 +1049,18 @@ class plDrawableSpans(plDrawable):
                     mesh.addUVLayer("UVLayer" + str(i))
             UVLayers = mesh.getUVLayerNames()
 
-                        
+
             # verts is a list of all vertices in the buffergroup
             verts=bufferGroup.fVertBuffStorage
 
             print "    Vertices... (%d of them)"%(icicle.fVLength)
             # Create the Vertex Group
-            mesh.addVertGroup(VGroup_GroupName) 
+            mesh.addVertGroup(VGroup_GroupName)
             for e in range(icicle.fVLength):
                 s=icicle.fVStartIdx + e  # originally used icicle.fCellOffset
                 plvert = verts[s]
                 mesh.verts.extend((Mathutils.Vector(plvert.X(),plvert.Y(),plvert.Z())))
-                
+
                 vertidx = len(mesh.verts)-1
                 vert = mesh.verts[vertidx]
                 normalVector = Mathutils.Vector(plvert.nx,plvert.ny,plvert.nz)
@@ -1071,11 +1071,11 @@ class plDrawableSpans(plDrawable):
                 else:
                     weight = bufferGroup.GetSkinIndices()
                 mesh.assignVertsToGroup(VGroup_GroupName, [vertidx,] , weight, Blender.Mesh.AssignModes.REPLACE)
-                
+
                 if e%500 == 0 and not e == 0:
                     print "\r     %d"%(e),
             print "\n",
-            
+
             # #
             # # Blender Stores U/V Coordinates in the faces, as well as vertex colors and materials
             # # This makes the face extractor a bit more painful as a process, sigh....
@@ -1102,7 +1102,7 @@ class plDrawableSpans(plDrawable):
                          ]
                 mesh.faces.extend((myface))
                 face = mesh.faces[len(mesh.faces)-1]
-                
+
                 if MatIndices[icicle.fMaterialIdx] < len(MatList):
                     face.mat = MatIndices[icicle.fMaterialIdx]
 
@@ -1129,34 +1129,34 @@ class plDrawableSpans(plDrawable):
                         mesh.activeUVLayer = UVLayerName
                         face.uv[vi].x = vert.tex[uvidx][0]
                         face.uv[vi].y = 1-vert.tex[uvidx][1]
-                
+
                 fcount = e/3
                 if fcount%500 == 0 and not fcount == 0:
                     print "\r     %d"%(fcount),
                 e=e+3 # put the base index 3 places further
             print "\n",
-               
+
             # Set the first UV Layer as the active one
             if len(UVLayers) > 0:
                 mesh.activeUVLayer = UVLayers[0]
-            
+
             L2W=icicle.fLocalToWorld.get()
             L2W.transpose()
-            
+
             # Update the normals
             mesh.calcNormals()
 
              # Lighting - Still need to find a way to have lamps being processed first....
- 
+
             if MatIndices[icicle.fMaterialIdx] < len(MatList):
                 mat = MatList[MatIndices[icicle.fMaterialIdx]]
                 if len(icicle.fPermaLights.vector) + len(icicle.fPermaProjs.vector) > 0:
                     mat.mode &= ~Blender.Material.Modes["SHADELESS"]
-                    
+
                     # Only assign a lightgroup if not all lamps in the page are linked to this object
                     if (len(icicle.fPermaLights.vector) + len(icicle.fPermaProjs.vector)) < len(lights):
                         print "    Limited light sources (%d sources)"%(len(icicle.fPermaLights.vector) + len(icicle.fPermaProjs.vector))
-    
+
                         lightgroup = Blender.Group.New(str(mat.name))
                         objlist = Blender.Scene.GetCurrent().objects
                         for obj in objlist:
@@ -1166,7 +1166,7 @@ class plDrawableSpans(plDrawable):
                                     if str(a.Key.name) == str(obj.name) or str(a.Key.name) == dataname:
                                         print "     Connecting Light",str(a.Key.name),"to lamp",str(obj.name)
                                         lightgroup.objects.link(obj)
-                                    
+
                                 for a in icicle.fPermaProjs.vector:
                                     if str(a.Key.name) == str(obj.name) or str(a.Key.name) == dataname:
                                         print "     Connecting Light",str(a.Key.name),"to lamp",str(obj.name)
@@ -1177,19 +1177,19 @@ class plDrawableSpans(plDrawable):
                         mat.mode |= Blender.Material.Modes["GROUP_EXCLUSIVE"]
                     else:
                         print "    Fully lit object (%d sources)"%(len(icicle.fPermaLights.vector) + len(icicle.fPermaProjs.vector))
-                    
+
                 else:
                     print "    Shadeless object"
-    
+
                     mat.mode |= Blender.Material.Modes["SHADELESS"]
- 
+
          # set object to display in first layer
         obj.layers=[1,]
-        
+
 
     def find_buffer_group(self,HasSkinIdx,NumSkinWeights,UVCount,num_vertexs):
         # Find or create a buffer group corresponding to current format
-        
+
         # Each Buffergroup can store a maximum of 0x8000 vertices of a specific format
         # Format is based on:
         #
@@ -1201,7 +1201,7 @@ class plDrawableSpans(plDrawable):
             if bufferGroup.GetSkinIndices()==bool(HasSkinIdx) and bufferGroup.GetNumSkinWeights()==NumSkinWeights \
                 and bufferGroup.GetUVCount()==UVCount and len(bufferGroup.fVertBuffStorage)+num_vertexs<0x8000:
                 return idx
-        
+
         #not found - create a new bufferGroup with the required format
         bufferGroup=plGBufferGroup()
         bufferGroup.SetSkinIndices(HasSkinIdx)
@@ -1210,7 +1210,7 @@ class plDrawableSpans(plDrawable):
         # add it to the list
         self.fGroups.append(bufferGroup)
         # and return new index in list
-        return len(self.fGroups)-1 
+        return len(self.fGroups)-1
 
 
     def findMaterial(self,name):
@@ -1220,25 +1220,25 @@ class plDrawableSpans(plDrawable):
                 return i
 
         # If it isn't here yet, add it to the list
-        
+
         # Find plMaterial
         root=self.getRoot()
         mat=root.find(0x07,name,0)
-        
+
         # if it's not here, return None
         if mat==None:
             #print "WARNING: I cannot find material %s" %name
             return None
-         
+
         # append plMaterial to list
         self.fMaterials.append(mat.data.getRef())
-        
+
         # return index of new material
         return len(self.fMaterials)-1
 
     def addMaterial(self,mat,obj,prp):
         # Creates new material object, and runs material exporter on it
-        # Afterwards, calls self.findMaterial to put the material in the 
+        # Afterwards, calls self.findMaterial to put the material in the
         # DrawableSpan's material list, and returns an index to it.
 
         name=mat.name
@@ -1248,13 +1248,13 @@ class plDrawableSpans(plDrawable):
         if(not pmat.isProcessed):
             pmat.data.FromBlenderMat(mat,obj,prp)
             pmat.isProcessed = 1
-            
+
         return self.findMaterial(name)
 
     def export_obj(self,obj,dynamic,MaterialGroups=[]):
         print "  [DrawableSpans %08x_%x]"%(self.fRenderLevel.fLevel,self.fCriteria)
         root=self.getRoot()
-        
+
         # Now, we must store the vertices group by group.
 
         # first get the object's matrix so we can transform vertices
@@ -1264,29 +1264,29 @@ class plDrawableSpans(plDrawable):
         obj_l2w.transpose()
         LocalToWorld=hsMatrix44()
         LocalToWorld.set(obj_l2w)
-        
+
         # Prepare a span index object, in which we can add our span indices
         spanIndex = plDISpanIndex()
 
         print "   Processing Faces per Material - Totalling",len(MaterialGroups),"materials"
-       
+
         # loop through the groups
         for MatGroup in MaterialGroups:
             mat = MatGroup['mat'] # For Quick reference...
             matidx = self.addMaterial(MatGroup['mat'],obj,root)
-            
+
             print "   Material",MatGroup["mat"].name
 
             if len(MatGroup["vertices"]) > 0x8000:
                 raise RuntimeError, "Vertex count on this material is too high, consider breaking up your object into several materials...."
-        
-            # Find the correct buffer group to store this, depending on 
+
+            # Find the correct buffer group to store this, depending on
             # having skin indices, nr of vertex weights, nr of uvmaps and amount of vertices
-            
+
             ThisIsJustToTeaseJennifer_P=self.find_buffer_group(False,MatGroup['WeightCount'],MatGroup['UVCount'],len(MatGroup["vertices"]))
             bufferGroup=self.fGroups[ThisIsJustToTeaseJennifer_P]
 
-            
+
             # Mapping through the vertices :)
             vstart=len(bufferGroup.fVertBuffStorage)
 
@@ -1298,7 +1298,7 @@ class plDrawableSpans(plDrawable):
 
             # store each vertex
             for vert in MatGroup["vertices"]:
-                # Transform the vertex 
+                # Transform the vertex
                 if not dynamic:
                     vert.transform(LocalToWorld)
 
@@ -1322,21 +1322,21 @@ class plDrawableSpans(plDrawable):
 
                 bufferGroup.fVertBuffStorage.append(vert)
             vstop = len(bufferGroup.fVertBuffStorage)
-            
+
             # Default to a 0,0,0 by 0,0,0 bounding box if no vertices processed
             if lboundsmin is None or lboundsmax is None:
                 lboundsmin = Vertex(0,0,0)
                 lboundsmax = Vertex(0,0,0)
-            
+
 
 
             #Set the Faces
-            
+
             # In plasma, plGBufferGroups, only use on index storage buffer
             # Set the index buffer to 0 - we always use only one index buffer, just as Cyan does
             # We just store the position we start and end in that buffer
-            IndexBufferIdx=0 
-            
+            IndexBufferIdx=0
+
             # Create the index buffer if it isn't there yet
             if len(bufferGroup.fIdxBuffStorage) == 0:
                 faces=hsTArray()
@@ -1345,7 +1345,7 @@ class plDrawableSpans(plDrawable):
 
             idxstart=len(bufferGroup.fIdxBuffStorage[IndexBufferIdx])
 
-            # Append vertex indices of these faces 
+            # Append vertex indices of these faces
             # (Append vstart to vertex index, to convert from local index to buffer index)
             for face in MatGroup["faces"]:
                 nface = []
@@ -1353,30 +1353,30 @@ class plDrawableSpans(plDrawable):
                     bufferGroup.fIdxBuffStorage[IndexBufferIdx].append(vstart + index)
 
             idxstop=len(bufferGroup.fIdxBuffStorage[IndexBufferIdx])
-    
+
             # Now create a new icicle for this group
             icicle = plIcicle(self.getVersion())
             icicle.fSubType = plDrawable.plSubDrawableType["kSubNormal"]# <- could also be plSpan.plSpanType["kVertexSpan"]
             icicle.fMaterialIdx=matidx
-            
+
             # Determine Properties!
             icicle.fProps=0
             if MatGroup["vtxalphacol"] == True:
                 icicle.fProps |= plSpan.Props["kLiteVtxNonPreshaded"]
-            
-            
+
+
             # Store info about the Vertex Storage
-            icicle.fGroupIdx=ThisIsJustToTeaseJennifer_P 
-            icicle.fCellOffset=vstart 
+            icicle.fGroupIdx=ThisIsJustToTeaseJennifer_P
+            icicle.fCellOffset=vstart
             icicle.fVStartIdx=vstart
-            icicle.fVLength=vstop-vstart 
-            
+            icicle.fVLength=vstop-vstart
+
             # Store info about the Face Storage
-            icicle.fIBufferIdx=IndexBufferIdx 
-            icicle.fIPackedIdx=idxstart 
+            icicle.fIBufferIdx=IndexBufferIdx
+            icicle.fIPackedIdx=idxstart
             icicle.fILength=(idxstop - idxstart)
-            
-            
+
+
             # set transformation info
             # If the object has no CoordinateInterface, we must pass the matrix by which they are
             # transformed.
@@ -1390,8 +1390,8 @@ class plDrawableSpans(plDrawable):
                 icicle.fWorldToLocal.set(matrix)
             else: #information already transformed on non-dynamic objects
                 icicle.fLocalToWorld.identity()
-                icicle.fWorldToLocal.identity()            
-            
+                icicle.fWorldToLocal.identity()
+
 
             # Create a list of all lights in this page....
             lights = []
@@ -1399,10 +1399,10 @@ class plDrawableSpans(plDrawable):
             lights.extend(root.listobjects(0x56)) # List of plOmniLight in this page
             lights.extend(root.listobjects(0x57)) # List of plSpotLight in this page
             lights.extend(root.listobjects(0x6A)) # List of plLimitedDirLight in this page
-            
+
             # Obtain light group
             lightGroup = MatGroup['mat'].lightGroup
-            
+
             mylights = []
 
             # Only add lights for this icicle if we are not "SHADELESS"
@@ -1418,7 +1418,7 @@ class plDrawableSpans(plDrawable):
                     mylights = lights
             else:
                 print "    Object is Shadeless, not appending any lamps"
-            
+
             for pllamp in mylights:
                 print "    Appending Light %s as lightobject to object %s" % (str(pllamp.data.Key.name),obj.name)
                 pllampref = pllamp.data.getRef()
@@ -1427,7 +1427,7 @@ class plDrawableSpans(plDrawable):
                     icicle.fPermaLights.append(pllampref)
                 else:
                     icicle.fPermaProjs.append(pllampref)
-        
+
             #Set the local bounding box:
             # we already determined the minimum and maximum coordinates in local space
             icicle.fLocalBounds.min=Vertex(lboundsmin.x,lboundsmin.y,lboundsmin.z)
@@ -1445,7 +1445,7 @@ class plDrawableSpans(plDrawable):
             icicle.fWorldBounds.min=wboundsmin
             icicle.fWorldBounds.max=wboundsmax
             icicle.fWorldBounds.flags=0x01
-            
+
             # Append the icicle to the Drawable Spans
             self.fIcicles.append(icicle)
             # Add a reference to this icicle to our spanindex list
@@ -1453,8 +1453,8 @@ class plDrawableSpans(plDrawable):
 
         # append the index list
         self.fDIIndices.append(spanIndex)
-        
-        
+
+
         # Return the index of this plDISpanIndex object
         return len(self.fDIIndices) - 1
 
@@ -1465,7 +1465,7 @@ class plDrawInterface(plObjInterface):
         plObjInterface.__init__(self,parent,name,type)
         self.reset() # contains initialization of f-variables
 
-        self.blenderobjects=[] 
+        self.blenderobjects=[]
 
     def reset(self):
         if self.getVersion()==6:
@@ -1521,7 +1521,7 @@ class plDrawInterface(plObjInterface):
     def import_obj(self,obj):
         root = self.getRoot()
         print " [DrawInterface %s]"%(str(self.Key.name))
-                  
+
         # Import all drawables in this list
         for i in range(len(self.fDrawableIndices)):
             print "  Importing set",(i+1),"of",len(self.fDrawableIndices)
@@ -1529,13 +1529,13 @@ class plDrawInterface(plObjInterface):
             spanref = self.fDrawables[i]
             drawspans = root.findref(spanref)
             drawspans.data.import_mesh(obj,group)
-        
+
     def _Import(scnobj,prp,obj):
         if not scnobj.draw.isNull():
             draw = prp.findref(scnobj.draw)
             if draw!=None:
                 draw.data.import_obj(obj)
-    
+
     Import = staticmethod(_Import)
 
 
@@ -1555,13 +1555,13 @@ class plDrawInterface(plObjInterface):
         drawi.data.parentref=scnobj.data.getRef()
 
     Export = staticmethod(_Export)
-        
+
     def export_obj(self,obj,SceneNodeRef,isdynamic,softVolParser):
         if obj.getType() != "Mesh":
             return
-            
+
         # Get Object Name
-        name = obj.name 
+        name = obj.name
         mesh = obj.getData(False,True) # gets a Mesh object instead of an NMesh
         root = self.getRoot()
 
@@ -1579,7 +1579,7 @@ class plDrawInterface(plObjInterface):
             mat = Blender.Material.New(str(obj.name) + '/AutoMaterial')
             mat.setAmb(1.0)
             # append the material to the mesh
-            mesh.materials = [mat,]        
+            mesh.materials = [mat,]
 
 
     ######################################
@@ -1591,22 +1591,22 @@ class plDrawInterface(plObjInterface):
 
         # Calculate the amount of UV Maps
         Count_UvMaps = len(mesh.getUVLayerNames())
-    
+
         # Store active UV map
         if Count_UvMaps > 0:
             StoredActiveUVMap = mesh.activeUVLayer
-        
+
 
         # Weight Count is Global....
         WeightCount = 0
         # build up a weight map if neccessary, and fill it with the default value to start with
         if len(mesh.getVertGroupNames()) > 0:
             WeightCount = 1 # Blender supports only one weight :)
-                    
+
         # Now, we need to make groups of faces for each assigned material :)
-        
+
         MaterialGroups = []
-        
+
         # initialize the MaterialGroups list
         for mat in mesh.materials:
             if not mat is None:
@@ -1623,7 +1623,7 @@ class plDrawInterface(plObjInterface):
             else:
                 # Failsafe mechanism....
                 MaterialGroups.append(None)
-                                
+
         # process the faces and their vertices, and store them based on their material
 
         # some maps that will be heavily used
@@ -1644,7 +1644,7 @@ class plDrawInterface(plObjInterface):
             for vector in mface.verts:
                 # convert to Plasma vertex
                 v = Vertex()
-                
+
                 # coordinates
                 v.x = vector.co[0]
                 v.y = vector.co[1]
@@ -1654,10 +1654,10 @@ class plDrawInterface(plObjInterface):
                 v.nx = vector.no[0]
                 v.ny = vector.no[1]
                 v.nz = vector.no[2]
-                
+
                 # vertex colors
                 if mesh.vertexColors:
-                    
+
                     if len(ColorLayers) > 0:
                         try:
                             col_a=1.0
@@ -1672,34 +1672,34 @@ class plDrawInterface(plObjInterface):
                                     mesh.activeColorLayer = ColorLayers[vc]
                                     col_a=mface.col[index].g
                                     MaterialGroups[mface.mat]["vtxalphacol"] = True
-                            
+
                             v.color = RGBA(col_r,col_g,col_b,col_a)
                         except IndexError:
                             pass
-                
+
                 # skin index
-                
+
                 # Blend weights.
                 if WeightCount > 0:
                     bone,weight = mesh.getVertexInfluences(vector.index)
                     v.blends = [weight,]
-                    
+
                 # UV Maps Always Go in front...
                 for uvlayer in UVLayers:
                     mesh.activeUVLayer = uvlayer
-                    
+
                     tex_u = mface.uv[index][0]
                     tex_v = 1-mface.uv[index][1]
                     v.tex.append([tex_u,tex_v,0])
-                    
+
                 # Sticky Coordinates Next
                 if MaterialGroups[mface.mat]["Use_Sticky"]:
                     sticky = [vector.uv[0], 1 - vector.uv[1],0]
                     v.tex.append(sticky)
-                
+
                 # to avoid unneccesary copying of vertices do the following
                 v_idx = -1 # initialize index to invalid value
-                
+
                 # This adds a really long waiting time.....
                 if True:
                     # see if we already have saved this vertex
@@ -1707,19 +1707,19 @@ class plDrawInterface(plObjInterface):
                         VertexDict = MaterialGroups[mface.mat]["vtxdict"]
                         for j in VertexDict[v.x][v.y][v.z]:
                             vertex = MaterialGroups[mface.mat]["vertices"][j]
-                            
+
                             if vertex.isfullyequal(v):
                                 # if vertex is the same, set index to that one
                                 v_idx = j
                                 break # and end the search
                     except:
                         pass
-                
+
                 # if vertex is unique, add it
                 if v_idx == -1:
                     MaterialGroups[mface.mat]["vertices"].append(v)
                     v_idx = len(MaterialGroups[mface.mat]["vertices"]) -1
-                    
+
                     # Store this one in the dict
                     VertexDict = MaterialGroups[mface.mat]["vtxdict"]
                     if not VertexDict.has_key(v.x):
@@ -1729,7 +1729,7 @@ class plDrawInterface(plObjInterface):
                     if not VertexDict[v.x][v.y].has_key(v.z):
                         VertexDict[v.x][v.y][v.z] = []
                     VertexDict[v.x][v.y][v.z].append(v_idx)
-                    
+
                 # and store the vertex index in our face list
                 MyVertIdcs.append(v_idx)
                 index += 1
@@ -1746,7 +1746,7 @@ class plDrawInterface(plObjInterface):
 
         # Restore active UV map
         if Count_UvMaps > 0:
-            mesh.activeUVLayer = StoredActiveUVMap 
+            mesh.activeUVLayer = StoredActiveUVMap
 
 
 
@@ -1765,13 +1765,13 @@ class plDrawInterface(plObjInterface):
 
                 # export the material if needed (if it's not done before)
                 ## This will create all texture layers, cubic envmaps and mipmaps, and set the blendings
-                ## If no textures are associated with the material, it will take the (first) uvmap texture of 
+                ## If no textures are associated with the material, it will take the (first) uvmap texture of
                 ## the objects mesh, and use that. (For Backwards compatibility)
-                 
+
                 if(not pmat.isProcessed):
                     pmat.data.export_mat(mat,obj)
                     pmat.isProcessed = 1
-                
+
                 # Create the name of this spanset
                 # (RenderLevel Level at 0x00000000)
                 RenderLevel = plRenderLevel()
@@ -1794,20 +1794,20 @@ class plDrawInterface(plObjInterface):
                     suffix="Spans"
                 else:
                     suffix="BlendSpans"
-            
+
                 Name_RenderLevel="%08x" % RenderLevel.fLevel
                 Name_Crit="%x" % Criteria
                 DSpansName=str(root.name) + "_District_" + str(root.page) + "_" + Name_RenderLevel + "_" + Name_Crit + suffix
-                
+
                 # Create the entry if it doesn't exist yet...
                 if not DrawableSpansList.has_key(DSpansName):
                     DrawableSpansList[DSpansName] = {'MatGroups': [],'RenderLevel': RenderLevel.fLevel,'Criteria': Criteria,'Props': Props}
-                
+
                 # And append this material to it...
                 DrawableSpansList[DSpansName]['MatGroups'].append(MatGroup)
-        
+
         # --- Drawable Spans
-        
+
         for DSpans_key in DrawableSpansList.keys():
             DSpans = DrawableSpansList[DSpans_key]
             drawspans=plDrawableSpans.FindCreate(root,DSpans_key)
@@ -1818,11 +1818,11 @@ class plDrawInterface(plObjInterface):
             #export the object
             setnum=drawspans.data.export_obj(obj,isdynamic,DSpans['MatGroups'])
             self.addSpanSet(setnum,drawspans.data.getRef())
-        
+
         # --- Export the Vis Region
-        
+
         objscript = AlcScript.objects.Find(obj.getName())
-        
+
         propString = FindInDict(objscript,"visual.visregions", [])
         if type(propString) == list:
             for reg in propString:
@@ -1836,51 +1836,52 @@ class plDrawInterface(plObjInterface):
                     vr.data.scenenode=SceneNodeRef
                     vr.data.BitFlags.clear()
                     vr.data.BitFlags.SetBit(plVisRegion.VecFlags["kReplaceNormal"])
+                    vr.data.BitFlags.SetBit(plVisRegion.VecFlags["kIsNot"])
                     vr.data.fRegion = volume
                     self.fRegions.append(vr.data.getRef())
-        
+
 
 class plInstanceDrawInterface(plDrawInterface):
     def __init__(self,parent,name="unnamed",type=0x00D2):
         plDrawInterface.__init__(self,parent,name,type)
-        
+
         self.fTargetID=-1
         self.fDrawable = UruObjectRef()
-    
+
     def _Find(page,name):
         return page.find(0x00D2,name,0)
     Find = staticmethod(_Find)
-    
+
     def _FindCreate(page,name):
         return page.find(0x00D2,name,1)
     FindCreate = staticmethod(_FindCreate)
-    
+
     def read(self,stream):
         plDrawInterface.read(self,stream)
-        
+
         self.fTargetID = stream.Read32()
         self.fDrawable.read(stream)
-    
+
     def write(self,stream):
         plDrawInterface.write(self,stream)
-        
+
         stream.Write32(self.fTargetID )
         self.fDrawable.write(stream)
-    
+
     def import_obj(self,obj):
         plDrawInterface.import_obj(self,obj)
         root = self.getRoot()
         print " [InstanceDrawInterface %s]"%(str(self.Key.name))
-        
+
         # Import all drawables in this list
-        
+
         drawspans = root.findref(self.fDrawable)
         drawspans.data.import_mesh(obj,self.fTargetID)
-    
+
     def _Import(scnobj,prp,obj):
         plDrawInterface.Import(scnobj,prp,obj)
     Import = staticmethod(_Import)
-    
+
     def _Export(page,obj,scnobj,name,SceneNodeRef,isdynamic=0):
         plDrawInterface.Export(page,obj,scnobj,name,SceneNodeRef,isdynamic)
     Export = staticmethod(_Export)

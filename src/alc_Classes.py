@@ -512,7 +512,8 @@ class plSoftVolumeSimple(plSoftVolume):
         outstr = FindInDict(objscript,"outstrength", 0)
         self.fOutsideStrength = float(outstr)
         
-        isect = FindInDict(objscript,"type", "convex")
+        isect = str(FindInDict(objscript,"type", "convex"))
+        print "%s has volume type %s" % (self.Key.name, isect)
         
         if (isect.lower() == "convex"):
             self.fVolume = PrpVolumeIsect(0x02F5,self.getVersion())

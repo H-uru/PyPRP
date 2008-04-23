@@ -684,13 +684,12 @@ class plOneShotCallback:
 
     def export_script(self,script,refparser):
         self.fMarker = str(FindInDict(script,"marker",""))
+        print "   -> OSM Callback has Marker: %s" % self.fMarker
         ref = FindInDict(script,"receiver","/")
         if ref == "/":
             self.fReceiver = self.parent.fSender
         else:
-            refparser.SetDefaultType("respondermod")
-            refparser.SetAllowList([]) # Type of OneShotMod
-            self.rReceiver = refparser.RefString_FindCreateRef(ref)
+            self.fReceiver = refparser.RefString_FindCreateRef(ref)
         
         self.fUser = int(FindInDict(script,"user",0x00))
 
@@ -712,12 +711,15 @@ class plOneShotCallbacks:
         stream.Write32(len(self.fCallbacks))
         
         for cb in self.fCallbacks:
-            cb.write()
+            cb.write(stream)
             
     def export_script(self,script,refparser):
-        for cbscript in script:
-            cb = plOneShotCallback(self.parent)
-            cb.export_script(cbscript,refparser)
+        print "  Generating OSM Callbacks..."
+        if type(script) == list:
+            for cbscript in script:
+                cb = plOneShotCallback(self.parent)
+                cb.export_script(cbscript,refparser)
+                self.fCallbacks.append(cb)
             
 class plOneShotMsg(plMessage):
     def __init__(self,parent=None,type=0x0302):
@@ -735,25 +737,8 @@ class plOneShotMsg(plMessage):
     def export_script(self,script,refparser):
         plMessage.export_script(self,script,refparser)
 
-        # Quick option to make it easier to set the receivers
-        # does the same as setting it the default plmessage way
-        refparser.SetDefaultType("oneshotmod")
-        refparser.SetAllowList([0x0077]) # Type of OneShotMod
-
-        receivers = list(FindInDict(script,'oneshotreceivers',[]))
-        for keystr in receivers:
-            # try to parse it as a tag or name if we have an associated sceneobj
-            if type(keystr) != dict and type(keystr) != list:
-
-                plref = refparser.MixedRef_FindCreateRef(keystr)
-                if not plref.isNull():
-                    self.fReceivers.append(plref)
-        
         callbacks = list(FindInDict(script,'callbacks',[]))
         self.fCallbacks.export_script(callbacks,refparser)    
-
-        refparser.ClearDefaultType()
-        refparser.ClearAllowList()
         
 class plMessageWithCallbacks(plMessage):
     def __init__(self,parent=None,type=0x0302):

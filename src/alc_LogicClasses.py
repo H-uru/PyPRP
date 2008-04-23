@@ -1965,11 +1965,13 @@ class plResponderState:
         
         # and the waitto dictionary
         waittocmd = FindInDict(script,"waittocmd",None)
-        if type(waittocmd) == dict:
-            for key in waittocmd.keys():
+        if type(waittocmd) == list:
+            for wait in waittocmd:
+            	key = int(FindInDict(wait,"key",-1))
+            	msg = int(FindInDict(wait,"msg",0))
                 if type(key) == int and key >= 0 and key < len(self.fCmds):
-                    if type(waittocmd[key]) == int:
-                        self.fWaitToCmd[key] == waittocmd[key]
+                    if type(msg) == int:
+                        self.fWaitToCmd[key] = msg
 
     def addMessage(self,msg,waiton=-1):
         cmd = plResponderCmd()

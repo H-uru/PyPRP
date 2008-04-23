@@ -56,7 +56,7 @@ class alcUruPage:
         "kReserved"  :  0x4, \
         "kBuiltIn"   :  0x8, \
         "kItinerant" : 0x10  \
-    }    
+    }
     def __init__(self,parent,name="unnamed",num=0,hide=0,type=0x00):
         self.type="page"
         self.age=parent
@@ -70,8 +70,8 @@ class alcUruPage:
             self.ignore=[0x00,]
         else:
             self.ignore=[0x00,0x4C,]
-    
-    
+
+
     def getPath(self,version=None):
         if version==None:
             version=self.age.version
@@ -79,8 +79,8 @@ class alcUruPage:
             return self.age.base + "/" + self.age.name + "_District_" + self.name + ".prp"
         else:
             return self.age.base + "/" + self.age.name + "_" + self.name + ".prp"
-    
-    
+
+
     def preLoad(self):
         #print " PreLoading %s" %(self.name)
         prpinfo=PrpFileInfo()
@@ -114,7 +114,7 @@ class alcUruPage:
             raise "%s Page Id mismatch %08X in manifest, %08X in page" \
                   %(prpinfo.name.name + " " + prpinfo.page.name,pid2.getRaw(),pid.getRaw())
 
-    
+
     def load(self):
         if self.prp==None:
             self.prp=PrpFile(self)
@@ -128,13 +128,13 @@ class alcUruPage:
             #self.resmanager.addPrp(self.prp)
             f.close()
 
-    
+
     def unload(self):
         if self.prp!=None:
             #self.prp.resmanager.delPrp(self.prp)
             del self.prp
 
-    
+
     def save(self):
         if self.prp==None:
             return
@@ -145,7 +145,7 @@ class alcUruPage:
         self.prp.write(f)
         f.close()
 
-    
+
     def update_page(self):
         thenum=self.num
         if self.type in (0x04,0x00):
@@ -172,21 +172,21 @@ class alcUruPage:
             return self.prp.find(type,name,create)
         else:
             return None
-            
+
     def findref(self,ref,create=0):
         if not self.prp is None:
             return self.prp.findref(ref,create)
         else:
             return None
-    
+
     def import_all(self):
         print "#########################################"
         print "##"
         print "## => Importing page %s %i <=" %(self.name,self.num)
         print "##"
         print "#########################################"
-        
-        
+
+
         if self.prp==None:
             print ""
             print "-> LOADING PAGE - This can take a while...."
@@ -196,7 +196,7 @@ class alcUruPage:
             self.load()
             if self.prp==None:
                 return
-            
+
         #import
         if self.type in (0x04,0x00):
             #find sceneNode and import all sceneobjects linked to it
@@ -204,16 +204,16 @@ class alcUruPage:
             if scn==None:
                 raise RuntimeError, "This age does not have a Scene Node?"
 
-    
+
             scene = Blender.Scene.New(self.name)
-            
+
             scn.data.import_all(scene)
         elif self.num == -2:
             # Check for an AgeSDLHook
-            
+
             if not self.age.attach.has_key('AgeSDLHook'):
                 self.age.attach['AgeSDLHook'] = False
-           
+
             scenobj = plSceneObject.Find(self.prp,"AgeSDLHook")
             if scenobj != None:
                 # Check for the python file mod
@@ -245,9 +245,9 @@ class alcUruPage:
         elif self.num == -2:
             # If this is a "BuiltIn" PRP, check if we need to make an AgeSDLHook
             # and a VeryVerySpecialPythonFileMod
-            
+
             # Check if the AgeSDLHook property is set to true
-            
+
             if self.age.attach.has_key('AgeSDLHook') and self.age.attach['AgeSDLHook'] == True:
                 # Form a plSceneObject for the hook
                 name = str("AgeSDLHook")
@@ -262,99 +262,103 @@ class alcUruPage:
                 print ">>> Added AgeSDLHook scene object and python file mod"
 
         # Now we will commence export....
-        
+
         # Prepare a second object list to put objects that don't make it throug the first pass
         objlist2 = []
         # Prepare the Soft Volume Parser
         softVolumeParser = alcSoftVolumeParser(self.prp)
         complex_vols = [] #List of complex softvolumes
 
-        # Get the list of objects in Blender 
+        # Get the list of objects in Blender
         if selection:
             objlist = list(Blender.Scene.GetCurrent().objects.selected)
         else:
             objlist = list(Blender.Scene.GetCurrent().objects)
 
-        
-        # First pass: 
+
+        # First pass:
         #  Soft Volumes
-        
+
         for obj in objlist:
             # In this first pass, we also check if it has the correct page number
             pagenum = getStrIntPropertyOrDefault(obj,"page_num",0)
             if pagenum != int(self.num):
                 continue
-            
+
 #            ### \
 #            ###  \
-#            ### Deprecated code - still around to keep these objects invisible....   
+#            ### Deprecated code - still around to keep these objects invisible....
 #            ###  After February 2008 it can be removed
-#            
+#
 #            # if this object has a "book" property, ignore it
 #            try:
 #                p=obj.getProperty("book")
 #                continue
 #            except (AttributeError, RuntimeError):
 #                pass
-#            
+#
 #            # if this object has a "page" property, ignore it too...
 #            try:
 #                p=obj.getProperty("page")
 #                continue
 #            except (AttributeError, RuntimeError):
 #                pass
-#                
-#            ###  / 
+#
+#            ###  /
 #            ### /
-            
+
             # Parse the objects quickscripts
             RunQuickScripts(obj)
-            
+
             # Get the name
             name=str(obj.name)
-            
+
             # Get it's initial dynamics settings
             if obj.rbFlags & Blender.Object.RBFlags["ACTOR"]:
                 isdynamic=1
             else:
                 isdynamic=0
-            
+
             # Get this object's AlcScript section
             objscript = AlcScript.objects.Find(obj.name)
-            
-            # Get the "type" property, first from the alcscript, and next from the 'alctype' proprty 
+
+            # Get the "type" property, first from the alcscript, and next from the 'alctype' proprty
             # (which overrides alsccript)
             try:
                 alctype = objscript['type']
             except:
                 alctype = 'object'
             alctype = getTextPropertyOrDefault(obj,"type",alctype)
-            
-            
-            # Soft Volume Relevance Regions are special kinds of meshes, 
+
+
+            # Soft Volume Relevance Regions are special kinds of meshes,
             obj_type=obj.getType()
             if (alctype == "relevanceregion"):
                 if obj_type=="Mesh":
                     scnobj = plSceneObject.FindCreate(self.prp,name)
                     scnobj.data.scene = SceneNodeRef
-                    
+
                     relRgn = plRelevanceRegion.FindCreate(self.prp,name)
                     relRgn.data.parentref = scnobj.data.getRef()
                     relRgn.data.scenenode = SceneNodeRef
-                    
-                    softVolume = plSoftVolumeSimple.FindCreate(self.prp,name)
-                    softVolume.data.parentref = scnobj.data.getRef()
-                    softVolume.data.scenenode = SceneNodeRef
-                    softVolume.data.export_object(obj, objscript)
-                    
-                    relRgn.data.fRegion = softVolume.data.getRef()
-                    scnobj.data.data1.append(relRgn.data.getRef())
-                    scnobj.data.data1.append(softVolume.data.getRef())          
-            
+
+                    vol = FindInDict(objscript,"softvolume",None)
+                    if(vol != None):
+                        softVolume = plSoftVolumeSimple.FindCreate(self.prp,name)
+                        softVolume.data.parentref = scnobj.data.getRef()
+                        softVolume.data.scenenode = SceneNodeRef
+                        softVolume.data.export_object(obj, vol)
+
+                        relRgn.data.fRegion = softVolume.data.getRef()
+                        scnobj.data.data1.append(relRgn.data.getRef())
+                        scnobj.data.data1.append(softVolume.data.getRef())
+                    else:
+                        scnobj.data.data1.append(relRgn.data.getRef())
+
             # Only if this object has the correct alcty, will we pocess it as a softvolume...
-            if (alctype == "softvolume") or (alctype == "svconvex"):  #Soft Volume
+            elif (alctype == "softvolume") or (alctype == "svconvex"):  #Soft Volume
                 ## This should be put in plSoftVolumeComplex.Export(page,obj,scnobj,name,SceneNodeRef,softvolumeparser):
-                ## But I'm not touching the softvolume code yet 
+                ## But I'm not touching the softvolume code yet
                 ## -- Trylon
                 # Export all simple softvolumes...
                 vols = FindInDict(objscript,"softvolume",None)
@@ -372,16 +376,16 @@ class alcUruPage:
                             if obj_type=="Mesh":
                               scnobj = plSceneObject.FindCreate(self.prp,name)
                               scnobj.data.scene = SceneNodeRef
-                              
+
                               softVolume = plSoftVolumeSimple.FindCreate(self.prp,name)
                               softVolume.data.parentref = scnobj.data.getRef()
                               softVolume.data.scenenode = SceneNodeRef
                               softVolume.data.export_object(obj, volume)
-                              
+
                               scnobj.data.data1.append(softVolume.data.getRef())
                               softVolumeParser.addSoftVolume(softVolume)
-#                    
-#                    
+#
+#
 #                    # Create the scene object
 #                    scnobj = plSceneObject.FindCreate(self.prp,name)
 #                    scnobj.data.scene=SceneNodeRef
@@ -396,13 +400,13 @@ class alcUruPage:
 #                    scnobj.data.data1.append(softVolume.data.getRef())
 #                    # Add the plSoftVolumeSimple to the softvolume parser
 #                    softVolumeParser.addSoftVolume(softVolume)
-            
+
             else: # Not a simple soft volume - save for next pass
                 objlist2.append(obj)
-            
+
             #else: # Not a mesh - save for next pass
             #    objlist2.append(obj)
-        
+
         #Now we have the job of dealing with all of those complex softvolumes
         #First sort them
         complex_vols.sort(key=operator.itemgetter(2))
@@ -423,16 +427,16 @@ class alcUruPage:
                 softVolume.data.scenenode = SceneNodeRef
                 softVolume.data.export_object(obj, script, softVolumeParser)
                 softVolumeParser.addSoftVolume(softVolume)
-        
+
         #Carry on to the next objects
 
         objlist3 = []
 
-        # Second pass: 
-        #  Lights 
+        # Second pass:
+        #  Lights
         #  Empties
         #  Camera Regions
-        
+
         AlcLogicHelper.clickregion_list=[]
         camregion_list=[]
 
@@ -442,7 +446,7 @@ class alcUruPage:
             # Get this object's AlcScript section
             objscript = AlcScript.objects.Find(obj.name)
 
-            # Get the "type" property, first from the alcscript, and next from the 'alctype' proprty 
+            # Get the "type" property, first from the alcscript, and next from the 'alctype' proprty
             # (which overrides alsccript)
             try:
                 alctype = objscript['type']
@@ -462,61 +466,61 @@ class alcUruPage:
             # Check if the object is a Lamp
             if obj_type=="Lamp":
                 if (alctype == 'lamp') or (alctype == 'object'):
-                    print "" 
+                    print ""
                     print "[Lamp %s]" % name
-                    
+
                     # --- Obtain scene object ---
                     scnobj = plSceneObject.FindCreate(self.prp,name)
                     scnobj.data.scene=SceneNodeRef
-                    
+
                     #
                     plLightInfo.Export(self,obj,scnobj,name,SceneNodeRef,softVolumeParser)
-                    
+
                     # Coordinate export
-                    plCoordinateInterface.Export(self,obj,scnobj,name,True,objlist) 
-                
+                    plCoordinateInterface.Export(self,obj,scnobj,name,True,objlist)
+
             elif obj_type=="Empty":
                 # Support for Sound emission points (basically point with some added stuff)
                 if alctype=="soundemit":
-                    print "" 
+                    print ""
                     print "[Sound Emitter %s]" % name
-                    
+
                     #find the sceneobject or create it
                     scnobj = plSceneObject.FindCreate(self.prp,name)
                     scnobj.data.scene=SceneNodeRef
-                    
+
                     plCoordinateInterface.Export(self,obj,scnobj,name,1,objlist)
-                    
+
                     plAudioInterface.Export(self,obj,scnobj,name,SceneNodeRef,softVolumeParser)
                     # Logical Export
                     AlcLogicHelper.Export(self,obj,scnobj,name)
-                
+
                 elif alctype=="oneshot":
-                    print "" 
+                    print ""
                     print "[OneShot Seek Point %s]" % name
-                    
+
                     #find the sceneobject or create it
                     scnobj = plSceneObject.FindCreate(self.prp,name)
                     scnobj.data.scene=SceneNodeRef
-                    
+
                     plCoordinateInterface.Export(self,obj,scnobj,name,1,objlist)
-                    
+
                     plobj = plOneShotMod.FindCreate(self.prp,name)
                     objscript = AlcScript.objects.Find(name)
                     pscript = FindInDict(objscript,"oneshot",{})
                     plobj.data.export_script(pscript,scnobj)
-                    
+
                     # Logical Export
                     AlcLogicHelper.Export(self,obj,scnobj,name)
 
                 elif alctype=="swpoint": #A spawnPoint
-                    print "" 
+                    print ""
                     print "[SpawnPoint %s]" % name
 
                     #find the sceneobject or create it
                     scnobj = plSceneObject.FindCreate(self.prp,name)
                     scnobj.data.scene=SceneNodeRef
-                    
+
                     plSpawnModifier.Export(self,obj,scnobj,name)
 
                     # Coordinate Export
@@ -524,9 +528,9 @@ class alcUruPage:
 
                     # Logical Export
                     AlcLogicHelper.Export(self,obj,scnobj,name)
-                
+
                 else: # Any other point
-                    print "" 
+                    print ""
                     print "[Point %s]" % name
                     #find the sceneobject or create it
                     scnobj = plSceneObject.FindCreate(self.prp,name)
@@ -541,23 +545,23 @@ class alcUruPage:
 
             elif obj_type=="Mesh":
                 # See if it is a region
-                
+
                 if (alctype=="region"):
-                    
+
                     regiontype = str(FindInDict(objscript,'regiontype',"logic"))
                     regiontype = getTextPropertyOrDefault(obj,"regiontype",regiontype)
-                    
+
                     if(regiontype == "climbable"):
                         # Special space to process climbable regions....
                         # Code must be reviewed....
-                        
-                        print "" 
+
+                        print ""
                         print "[Climbable Region %s]" % name
 
                         # create ladder regions from this object
                         AlcLogicHelper.CreateLadderRegions(self,obj)
                         # and do not process this region any further
-   
+
                     else: # not a click or camera region
                         objlist3.append(obj)
                 else: # Not a click region - leave it for later
@@ -568,7 +572,7 @@ class alcUruPage:
         # Reset the objlist2
         objlist2 = []
 
-        # Third pass: 
+        # Third pass:
         #  Other Objects
 
         for obj in objlist3:
@@ -579,7 +583,7 @@ class alcUruPage:
             # Get the name
             name=str(obj.name)
 
-            # Get the "type" property, first from the alcscript, and next from the 'alctype' proprty 
+            # Get the "type" property, first from the alcscript, and next from the 'alctype' proprty
             # (which overrides alsccript)
             try:
                 alctype = objscript['type']
@@ -595,27 +599,27 @@ class alcUruPage:
 
             if obj_type=="Mesh":
                 if alctype=="region": #region export
-                    print "" 
+                    print ""
                     print "[Region Object %s]" % name
 
                     try:
                         regiontype = objscript['regiontype']
                     except:
                         regiontype = "unknown"
-                    
+
                     regiontype = getTextPropertyOrDefault(obj,"regiontype",regiontype)
 
-                    print " Region type: %s"% regiontype 
-                    
+                    print " Region type: %s"% regiontype
+
                     #find the sceneobject or create it
                     scnobj = plSceneObject.FindCreate(self.prp,name)
                     scnobj.data.scene=SceneNodeRef
 
                     # handle any special col_type settings here:
-                    
+
                     isdynamic = AlcLogicHelper.IsRegionDynamic(obj)
                     AlcLogicHelper.ExportRegions(self,obj,scnobj,name)
-                    
+
                     # Region-specific settings are processed in the plHKPhysical exporter
                     plSimulationInterface.Export(self,obj,scnobj,name,SceneNodeRef,isdynamic)
 
@@ -631,21 +635,21 @@ class alcUruPage:
                     scnobj = plSceneObject.FindCreate(self.prp,name)
                     scnobj.data.scene=SceneNodeRef
 
-                    # ######################## 
+                    # ########################
                     # #   Check for sprite   #
                     # ########################
-                                        
+
                     if alctype == "sprite" or FindInDict(objscript,"visual.sprite","false") != "false" :
-                        print "" 
+                        print ""
                         print "[Sprite %s]" % name
                         isdynamic = 1 # Force the sprite to be dynamic
-                        
+
                         # and export the viewfacemodifier
                         plViewFaceModifier.Export(self,obj,scnobj,name)
                     else:
-                        print "" 
+                        print ""
                         print "[Visual Object %s]" % name
-                    
+
 
                     isClimbable = getBoolPropertyOrDefault(obj,"climbable",0)
                     if(isClimbable):
@@ -673,19 +677,19 @@ class alcUruPage:
 
                     # Coordinate Export
                     plCoordinateInterface.Export(self,obj,scnobj,name,isdynamic,objlist)
-                    
+
                     # Audio export :) - Waiting for fixes in implement
                     plAudioInterface.Export(self,obj,scnobj,name,SceneNodeRef,softVolumeParser)
- 
+
             elif obj_type=="Camera":
                 if (alctype == 'camera') or (alctype == 'object'):
-                    print "" 
+                    print ""
                     print "[Camera %s]" % name
                     #find the sceneobject or create it
                     scnobj = plSceneObject.FindCreate(self.prp,name)
                     scnobj.data.scene=SceneNodeRef
 
-                    
+
                     # Export the coordinate interface ('self' is passed as ref to this resmgr)
                     plCoordinateInterface.Export(self,obj,scnobj,name,True,objlist)
 
@@ -693,13 +697,13 @@ class alcUruPage:
                     AlcLogicHelper.Export(self,obj,scnobj,name)
 
                     plCameraModifier1.Export(self,obj,scnobj,name)
-                
+
             else: # Not a mesh - save for next pass
                 objlist2.append(obj)
-                    
-        # Fourth pass: 
-        #  Colliders 
-        
+
+        # Fourth pass:
+        #  Colliders
+
         objlist4 = []
 
         for obj in objlist2:
@@ -708,7 +712,7 @@ class alcUruPage:
             # Get this object's AlcScript section
             objscript = AlcScript.objects.Find(obj.name)
 
-            # Get the "type" property, first from the alcscript, and next from the 'alctype' proprty 
+            # Get the "type" property, first from the alcscript, and next from the 'alctype' proprty
             # (which overrides alsccript)
             try:
                 alctype = objscript['type']
@@ -728,12 +732,12 @@ class alcUruPage:
             # Check if the object is a Lamp
             if obj_type=="Mesh":
                 if alctype=="collider": #Physical export
-                    print "" 
+                    print ""
                     print "[Collider %s]" % name
-                    
-                    # if this contains the collision info for another object, obtain that name here, 
+
+                    # if this contains the collision info for another object, obtain that name here,
                     # so we will find not make a new object, but link to that one
-                    
+
                     name = getTextPropertyOrDefault(obj,"collider-for",name)
 
 
@@ -749,7 +753,7 @@ class alcUruPage:
                     #find the sceneobject or create it
                     scnobj = plSceneObject.FindCreate(self.prp,name)
                     scnobj.data.scene=SceneNodeRef
-                    
+
                     # Region-specific settings are processed in the plHKPhysical exporter
                     plSimulationInterface.Export(self,obj,scnobj,name,SceneNodeRef,isdynamic)
 
@@ -760,8 +764,8 @@ class alcUruPage:
                     objlist4.append(obj)
             else: # Not recognized here
                 objlist4.append(obj)
-        
-        
+
+
 
                 ### End export code
         if self.type in (0x04,0x00):
@@ -769,7 +773,7 @@ class alcUruPage:
             self.prp.updateSceneNode()
             pass
         #end
-       
+
 
 class alcUruAge:
     def __init__(self,parent,name="test",basename="./",prefix=0,version=5):
@@ -780,14 +784,14 @@ class alcUruAge:
         self.book=None
         self.version=version
         self.attach = {}
-        
+
         self.specialtex = []
 
         self.options = {}
         self.pages=[]
-        
+
         self.setDefaults(prefix)
-    
+
     def setDefaults(self,prefix=None):
         self.options={}
         self.pages=[]
@@ -804,36 +808,36 @@ class alcUruAge:
         self.addOpt("LingerTime",180)
         self.addOpt("SequencePrefix",prefix)
         self.attach["AgeSDLHook"] = False
-    
+
     def addOpt(self,name,value):
         if name=="SequencePrefix":
             self.mfs.seq=int(value)
         if name == "StartDateTime":
             value = int(value,10)
-        
+
         self.options[name] = value
-    
-    
+
+
     def getOpt(self,name):
         try:
             return self.options[name]
         except:
             return None
-    
+
     def findPage(self,name,agename=None):
         for page in self.pages:
             if page.name==name:
                 return page
         return None
-    
-    
+
+
     def findPageByNum(self,num):
         for page in self.pages:
             if page.num==num:
                 return page
         return None
-    
-    
+
+
     def addPage(self,name,num,hide,type=0x00):
         page=self.findPageByNum(num)
         self.mfs.addFile(self.base + "/" + self.name + "_District_" + name + ".prp")
@@ -844,8 +848,8 @@ class alcUruAge:
             return
         page=alcUruPage(self,name,num,hide,type)
         self.pages.append(page)
-    
-    
+
+
     def getInit(self):
         fpath=self.base + "/" + self.name + ".fni"
         if self.version==6:
@@ -859,8 +863,8 @@ class alcUruAge:
         except IOError:
             txt=""
         return txt
-    
-    
+
+
     def setInit(self,txt):
         fpath=self.base + "/" + self.name + ".fni"
         if self.version==6:
@@ -870,8 +874,8 @@ class alcUruAge:
         f.open(fpath,"wb")
         f.write(txt)
         f.close()
-    
-    
+
+
     def read(self):
         fpath=self.base + "/" + self.name + ".age"
         f=Wdys()
@@ -907,13 +911,13 @@ class alcUruAge:
                 self.addPage(x[0],int(x[1]),flag)
         buf.close()
         self.preLoadAllPages()
-    
-    
+
+
     def preLoadAllPages(self):
         for page in self.pages:
             page.preLoad()
-    
-    
+
+
     def write(self):
         print self.options
         if self.resmanager.prp_version==6:
@@ -930,16 +934,16 @@ class alcUruAge:
                 else:
                     self.f.write("Page=%s,%i\r\n" %(page.name,page.num))
         self.f.close()
-    
-    
+
+
     def setSeq(self,val):
         self.addOpt("SequencePrefix",str(val))
-    
-    
+
+
     def getSeq(self):
         return(int(self.getOpt("SequencePrefix")))
-    
-    
+
+
     def addBuiltInPages(self):
         seq=self.getSeq()
         if seq<0:
@@ -951,29 +955,29 @@ class alcUruAge:
 
     def import_book(self):
         self.book=alcBook(self)
-        
+
         if self.resmanager.filesystem:
             self.book.save2xml()
         else:
              self.book.storeToBlender()
-    
-    
+
+
     def export_book(self,selection):
         self.book=alcBook(self)
         self.book.getFromBlender()
         print self.options
         print self.attach
         print self.specialtex
-    
-    
+
+
     def import_page(self,name):
         for page in self.pages:
             if page.name==name:
                 page.import_all()
                 return
         #raise RunTimeError"The page %s is not in the %s manifest" %(name,self.name)
-    
-    
+
+
     def find(self,type,name,agename=None):
         for page in self.pages:
             if page.prp!=None:
@@ -981,8 +985,8 @@ class alcUruAge:
                 if res!=None:
                     return res
         return None
-    
-    
+
+
     def findref(self,ref):
         if ref.flag==0x01:
             seq=self.getSeq()
@@ -1003,20 +1007,20 @@ class alcResManager:
         self.datadir=datadir
         self.ages=[]
         self.filesystem=0
-    
-    
+
+
     def setFilesystem(self):
         self.filesystem=1
-    
-    
+
+
     def getPRPVersion(self):
         return self.prp_version
-    
-    
+
+
     def getBasePath(self):
         return self.datadir
-    
-    
+
+
     def preload(self,datadir=None,age=None):
         if datadir==None:
             datadir=self.datadir
@@ -1026,9 +1030,9 @@ class alcResManager:
             a=basename(a)[:-4]
             if(age == None or age == a):# or a[0:6] == 'Global' or a == 'GUI'):
                 self.preLoadAge(a,datadir)
-            
-    
-    
+
+
+
     def findAge(self,age,create=0,datadir=None,version=None):
         if version==None:
             version=self.prp_version
@@ -1042,26 +1046,26 @@ class alcResManager:
         a=alcUruAge(self,age,datadir,None,version)
         self.ages.append(a)
         return a
-    
-    
+
+
     def preLoadAge(self,age,datadir=None):
         print "PreLoading %s" %age
         a=self.findAge(age,create=1,datadir=datadir)
         a.read()
-    
-    
+
+
     def import_book(self,agename):
         age=self.findAge(agename)
         if age==None:
             raise "Age %s does not exists!" %(agename)
         age.import_book()
-    
-    
+
+
     def export_book(self,agename,selection):
         age=self.findAge(agename,1)
         age.export_book(selection)
 
-    
+
     def find(self,type,name,agename=None):
         if agename==None:
             for a in self.ages:
@@ -1073,8 +1077,8 @@ class alcResManager:
             if a.name==agename:
                 return a.find(type,name)
         return None
-    
-    
+
+
     def findref(self,ref):
         if ref.flag==0x01:
             for a in self.ages:
@@ -1083,7 +1087,7 @@ class alcResManager:
                     return ret
         return None
 
-    
+
     def xfindPage(self,pagename,agename=None):
         if agename==None:
             for age in self.ages:
@@ -1097,7 +1101,7 @@ class alcResManager:
             return age.findPage(pagename)
         return None
 
-    
+
     def findPrp(self,name,agename=None):
         for age in self.ages:
             for page in age.pages:
