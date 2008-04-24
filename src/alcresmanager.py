@@ -650,6 +650,12 @@ class alcUruPage:
 
                         # and export the viewfacemodifier
                         plViewFaceModifier.Export(self,obj,scnobj,name)
+                    elif alctype == "waveset" or FindInDict(objscript, "visual.waveset", False):
+                        print ""
+                        print "[WaveSet %s]" % name
+                        
+                        # WaveSet Export
+                        plWaveSet7.Export(self,obj,scnobj,name)
                     else:
                         print ""
                         print "[Visual Object %s]" % name

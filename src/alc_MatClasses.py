@@ -804,6 +804,7 @@ class plLayer(plLayerInterface):             # Type 0x06
                     #raise "ERROR: Cannot set Environment map from static/anim render. Please render your EnvMap, save it, and then set the EnvMap to load your saved image!"
                     print "WARNING: No texture image found, using dynamic environment map with default settings" 
                     qmap = plDynamicEnvMap.FindCreate(root, tex.getName())
+                    qmap.data.export_obj(obj)
                     
                 else:
                     #find or create the qmap
@@ -2742,6 +2743,9 @@ class plDynamicEnvMap(plCubicRenderTarget):
     def _FindCreate(page,name):
         return page.find(0x0106,name,1)
     FindCreate = staticmethod(_FindCreate)
+    
+    def export_obj(self, obj):
+        self.fPos = Vertex(obj.loc[0], obj.loc[1], obj.loc[2])
         
     def read(self, stream):
         # fun hack, this would be a call to the void write of plBitmap, 
@@ -2771,13 +2775,14 @@ class plDynamicEnvMap(plCubicRenderTarget):
         self.fVisRegions.write(stream)
         
 
-###########################################################
-# Begin waveset stuff. This likely belongs in DrawClasses #
-###########################################################
+#############################################################
+# Begin waveset stuff. This likely belongs in DrawClasses.  #
+# Howver, it is also likely that no one will move it there, #
+# and so it will rest here in MatClasses for all eternity.  #
+#############################################################
 
 
 class plWaveSet7(plMultiModifier):
-
     fFlags = \
     { \
         "kHasRefObject" : 0x10\
@@ -2794,22 +2799,57 @@ class plWaveSet7(plMultiModifier):
         self.fEnvMap = UruObjectRef(self.getVersion()) 
         self.fRefObj = UruObjectRef(self.getVersion())
 
+    def _Export(page, obj, scnobj, name):
+        # create waveset
+        waveset = plWaveSet7.FindCreate(page, name)
+        waveset.data.export_obj(obj)
+        # attach to sceneobject
+        scnobj.data.addModifier(waveset)
+    Export = staticmethod(_Export)
+
     def export_obj(self, obj):
-        
-        self.fstate = plFixedWaterState7()
         self.fMaxLen = 0.0
-
-        
-##        self.fShores.append(Env.data.getRef())
-##        self.fDecals.append(Env.data.getRef())
-        page = self.getRoot()
-        resmgr = page.resmanager
-        page2=resmgr.findPrp("Textures")
-        env_qmap=plCubicEnvironMap.FindCreate(page2,tex.image.getName())
-        self.fEnvMap = env_qmap.data.getRef()
-
-        
-##        self.fRefObj = UruObjectRef(self.getVersion())
+        # make a dummy dyanmic envmap for the waveset
+        # dunno why cyan uses 1x1x4 maps and it works. :P
+        envmap = plDynamicEnvMap.FindCreate(self.getRoot(),obj.getName() + "_Env")
+        envmap.data.export_obj(obj)
+        self.fEnvMap = envmap.data.getRef()
+        # now we create a default waveset based on a nb01's LakeBasin waveset
+        # this currently renders the surface invisible. 
+        # Anyone who feels like tweaking the values for a while is welcome to it
+        geostate = self.fState.fGeoState
+        geostate.fMaxLength = 2
+        geostate.fMinLength = 0.5
+        geostate.fAmpOverLen = 0.1
+        geostate.fChop = 0.5
+        geostate.fAngleDev = 1.00356
+        texstate = self.fState.fTexState
+        texstate.fMaxLength = 6.25
+        texstate.fMinLength = 0.78125
+        texstate.fAmpOverLen = 0.013
+        texstate.fChop = 0.5
+        texstate.fAngleDev = 1.00356
+        self.fState.fRippleScale = 50
+        self.fState.fWindDir = Vertex(0.0871562,0.996195,0)
+        self.fState.fSpecVec = Vertex(0.5,250,1000)
+        #self.fState.fWaterHeight = obj.loc[2]
+        #self.fState.fWaterOffset = Vertex(1, 1, 1)
+        self.fState.fMaxAtten = Vertex(1, 1, 1)
+        self.fState.fMinAtten = Vertex(0, 0, 0)
+        #self.fState.fDepthFalloff = Vertex(12, 1, 1)
+        self.fState.fWispiness = 0.5
+        self.fState.fShoreTint = RGBA(1, 1, 1, 1, type=1)
+        self.fState.fMaxColor = RGBA(1, 1, 1, 1, type=1)
+        self.fState.fMinColor = RGBA(0.184314, 0.172549, 0.113725, 1, type=1)
+        #self.fState.fEdgeOpac = 1
+        #self.fState.fEdgeRadius = 1
+        self.fState.fPeriod = 1
+        #self.fState.fFingerLength = 1
+        self.fState.fWaterTint = RGBA(1, 1, 1, 1, type=1)
+        self.fState.fSpecularTint = RGBA(1, 1, 1, 0.983333, type=1)
+        self.fState.fEnvCenter = Vertex(obj.loc[0], obj.loc[1], obj.loc[2])
+        self.fState.fEnvRefresh = 3
+        self.fState.fEnvRadius = 500
         
     def _Find(page,name):
         return page.find(0x00FB,name,0)
@@ -2819,46 +2859,27 @@ class plWaveSet7(plMultiModifier):
         return page.find(0x00FB,name,1)
     FindCreate = staticmethod(_FindCreate)
     
-    def read(self, s):
-        plMultiModifier.read(self, s)
-        self.fMaxLen = s.ReadFloat()
-        fState = plFixedWaveState7()
-        fState.Read(s)
-        count = s.Read32()
-        for i in range(count):
-            u = UruObjectRef()
-            u.Read(s)
-            self.fShores.append(u)
-            
-        count = s.Read32()
-        for i in range(count):
-            u = UruObjectRef()
-            u.Read(s)
-            self.fDecals.append(u)
-##        self.fEnvMap.read(s)
-##        
-##        if(self.bitVector[plWaveSet7.fFlags["kHasRefObject"]]):
-##            self.fRefObject.read(s)
+    def read(self, stream):
+        plMultiModifier.read(self, stream)
+        self.fMaxLen = stream.ReadFloat()
+        self.fState.read(stream)
+        self.fShores.read(stream)
+        self.fDecals.read(stream)
+        self.fEnvMap.read(stream)
+        # self.BitVector == self.fFlags in plMultiModifier
+        if(self.BitVector[plWaveSet7.fFlags["kHasRefObject"]]):
+            self.fRefObject.read(stream)
 
-    def write(self, s):
-        plMultiModifier.write(self, s)
-        s.WriteFloat(self.fMaxLen)
-        self.fState.write(s)
-        
-        for key in self.fShores:
-            key.update(self.Key)
-            key.write(s)
-
-        for key in self.fDecals:
-            key.update(self.Key)
-            key.write(s)
-
-        if(plWaveSet7.fFlags["kHasRefObject"]):
-            self.fEnvMap.write(s)
-
-
-        if(plWaveSet7.fFlags["kHasRefObject"]):
-            self.fRefObj.write(s)
+    def write(self, stream):
+        plMultiModifier.write(self, stream)
+        stream.WriteFloat(self.fMaxLen)
+        self.fState.write(stream)
+        self.fShores.write(stream)
+        self.fDecals.write(stream)
+        self.fEnvMap.write(stream)
+        # self.BitVector == self.fFlags in plMultiModifier
+        if(self.BitVector[plWaveSet7.fFlags["kHasRefObject"]]):
+            self.fRefObj.write(stream)
 
 
 class plFixedWaterState7():
@@ -2868,115 +2889,7 @@ class plFixedWaterState7():
         "kSpecStart"  : 0x01, \
         "kSpecEnd"    : 0x02 \
     }
-    def __init__(self):
-        self.fGeoState = None #WaveState
-        self.fTexState = plFixedWaterState7.WaveState()
-    
-        self.fRippleScale = 0.0
-        self.fWaterHeight = 0.0
-    
-        self.fWindDir = Vertex() #hsVector3
-        self.fSpecVec = Vertex()
-        self.fWaterOffset = Vertex()
-    
-        self.fMaxAtten = Vertex() #hsVector3
-        self.fMinAtten = Vertex()
-        self.fDepthFalloff = Vertex()
-    
-        self.fWispiness = 0.0
-
-        
-        self.fShoreTint = RGBA(0.5,0.5,0.5,1.0,type=1) #hsColorRGBA
-        self.fMaxColor = RGBA(0.5,0.5,0.5,1.0,type=1)
-        self.fMinColor = RGBA(0.5,0.5,0.5,1.0,type=1)
-    
-        self.fEdgeOpac = 0.0
-        self.fEdgeRadius = 0.0
-        self.fPeriod = 0.0
-        self.fFingerLength = 0.0
-    
-        self.fWaterTint = RGBA(0.5,0.5,0.5,1.0,type=1) #hsColorRGBA
-        self.fSpecularTint = RGBA(0.5,0.5,0.5,1.0,type=1)
-    
-        self.fEnvCenter = Vertex() #hsPoint3
-        
-        self.fEnvRefresh = 0.0
-        self.fEnvRadius = 0.0
-    
-    def read(self, s):
-        fGeoState = plFixedWaterState7.WaveState()
-        fGeoState.read(s)
-        fTexState = plFixedWaterState7.WaveState()
-        
-        fTexState.read(s)
-        self.fRippleScale = s.ReadFloat()
-
-        self.fWindDir = s.ReadVector()
-        self.fSpecVec = s.ReadVector()
-        
-        self.fWaterHeight = s.ReadFloat()
-        
-        self.fWaterOffset = s.ReadVector()        
-        self.fMaxAtten = s.ReadVector()
-        self.fMinAtten = s.ReadVector()
-        self.fDepthFalloff = s.ReadVector()
-
-        self.fWispiness = s.ReadFloat()
-
-        self.fShoreTint = RGBA.read()
-        self.fMaxColor = RGBA.read()
-        self.fMinColor = RGBA.read()
-        
-        self.fEdgeOpac = s.ReadFloat()
-        self.fEdgeRadius = s.ReadFloat()
-        self.fPeriod = s.ReadFloat()
-        self.fFingerLength = s.ReadFloat()
-
-        self.fWaterTint = RGBA.read()
-        self.fSpecularTint = RGBA.read()
-
-        self.fEnvCenter = Vertex.read()
-        self.fEnvRefresh = s.ReadFloat()
-        self.fEnvRadius = s.ReadFloat()
-        
-    def write(self, s):
-        fGeoState = plFixedWaterState7.WaveState()
-        fGeoState.write(s)
-        fTexState = plFixedWaterState7.WaveState()
-        fTexState.write(s)
-        s.WriteFloat(self.fRippleScale)
-        
-        s.WriteVector(self.fWindDir)
-        s.WriteVector(self.fSpecVec)
-
-        s.WriteFloat(self.fWaterHeight)
-
-        s.WriteVector(self.fWaterOffset)
-        s.WriteVector(self.fMaxAtten)
-        s.WriteVector(self.fMinAtten)
-        s.WriteVector(self.fDepthFalloff)
-        
-        s.WriteFloat(self.fWispiness)
-        
-        self.fShoreTint.write(s) 
-        self.fMaxColor.write(s)
-        self.fMinColor.write(s)
-
-        s.WriteFloat(self.fEdgeOpac)
-        s.WriteFloat(self.fEdgeRadius)
-        s.WriteFloat(self.fPeriod)
-        s.WriteFloat(self.fFingerLength)
-
-        self.fWaterTint.write(s)
-        self.fSpecularTint.write(s)
-
-        self.fEnvCenter.write(s)
-        
-        s.WriteFloat(self.fEnvRefresh)
-        s.WriteFloat(self.fEnvRadius)
-
     class WaveState():
-        
         def __init__(self):
             self.fMaxLength = 0.0
             self.fMinLength = 0.0
@@ -2984,16 +2897,91 @@ class plFixedWaterState7():
             self.fChop = 0.0
             self.fAngleDev = 0.0
             
-        def read(self, s):
-            self.fMaxLength = s.ReadFloat()
-            self.fMinLength = s.ReadFloat()
-            self.fAmpOverLen = s.ReadFloat()
-            self.fChop = s.ReadFloat()
-            self.fAngleDev = s.ReadFloat()
+        def read(self, stream):
+            self.fMaxLength = stream.ReadFloat()
+            self.fMinLength = stream.ReadFloat()
+            self.fAmpOverLen = stream.ReadFloat()
+            self.fChop = stream.ReadFloat()
+            self.fAngleDev = stream.ReadFloat()
             
-        def write(self, s):
-            s.WriteFloat(self.fMaxLength)
-            s.WriteFloat(self.fMinLength)
-            s.WriteFloat(self.fAmpOverLen)
-            s.WriteFloat(self.fChop)
-            s.WriteFloat(self.fAngleDev)
+        def write(self, stream):
+            stream.WriteFloat(self.fMaxLength)
+            stream.WriteFloat(self.fMinLength)
+            stream.WriteFloat(self.fAmpOverLen)
+            stream.WriteFloat(self.fChop)
+            stream.WriteFloat(self.fAngleDev)
+            
+    def __init__(self):
+        self.fGeoState = self.WaveState()
+        self.fTexState = self.WaveState()
+        self.fRippleScale = 0.0
+        self.fWindDir = Vertex() #hsVector3
+        self.fSpecVec = Vertex()
+        self.fWaterHeight = 0.0
+        self.fWaterOffset = Vertex()
+        self.fMaxAtten = Vertex() #hsVector3
+        self.fMinAtten = Vertex()
+        self.fDepthFalloff = Vertex()
+        self.fWispiness = 0.0
+        self.fShoreTint = RGBA(0.5,0.5,0.5,1.0,type=1) #hsColorRGBA
+        self.fMaxColor = RGBA(0.5,0.5,0.5,1.0,type=1)
+        self.fMinColor = RGBA(0.5,0.5,0.5,1.0,type=1)
+        self.fEdgeOpac = 0.0
+        self.fEdgeRadius = 0.0
+        self.fPeriod = 0.0
+        self.fFingerLength = 0.0
+        self.fWaterTint = RGBA(0.5,0.5,0.5,1.0,type=1) #hsColorRGBA
+        self.fSpecularTint = RGBA(0.5,0.5,0.5,1.0,type=1)
+        self.fEnvCenter = Vertex() #hsPoint3
+        self.fEnvRefresh = 0.0
+        self.fEnvRadius = 0.0
+    
+    def read(self, stream):
+        self.fGeoState.read(stream)
+        self.fTexState.read(stream)
+        self.fRippleScale = stream.ReadFloat()
+        self.fWindDir.read(stream)
+        self.fSpecVec.read(stream)
+        self.fWaterHeight = stream.ReadFloat()
+        self.fWaterOffset.read(stream)
+        self.fMaxAtten.read(stream)
+        self.fMinAtten.read(stream)
+        self.fDepthFalloff.read(stream)
+        self.fWispiness = stream.ReadFloat()
+        self.fShoreTint.read(stream)
+        self.fMaxColor.read(stream)
+        self.fMinColor.read(stream)
+        self.fEdgeOpac = stream.ReadFloat()
+        self.fEdgeRadius = stream.ReadFloat()
+        self.fPeriod = stream.ReadFloat()
+        self.fFingerLength = stream.ReadFloat()
+        self.fWaterTint.read(stream)
+        self.fSpecularTint.read(stream)
+        self.fEnvCenter.read(stream)
+        self.fEnvRefresh = stream.ReadFloat()
+        self.fEnvRadius = stream.ReadFloat()
+        
+    def write(self, stream):
+        self.fGeoState.write(stream)
+        self.fTexState.write(stream)
+        stream.WriteFloat(self.fRippleScale)
+        self.fWindDir.write(stream)
+        self.fSpecVec.write(stream)
+        stream.WriteFloat(self.fWaterHeight)
+        self.fWaterOffset.write(stream)
+        self.fMaxAtten.write(stream)
+        self.fMinAtten.write(stream)
+        self.fDepthFalloff.write(stream)
+        stream.WriteFloat(self.fWispiness)
+        self.fShoreTint.write(stream)
+        self.fMaxColor.write(stream)
+        self.fMinColor.write(stream)
+        stream.WriteFloat(self.fEdgeOpac)
+        stream.WriteFloat(self.fEdgeRadius)
+        stream.WriteFloat(self.fPeriod)
+        stream.WriteFloat(self.fFingerLength)
+        self.fWaterTint.write(stream)
+        self.fSpecularTint.write(stream)
+        self.fEnvCenter.write(stream)
+        stream.WriteFloat(self.fEnvRefresh)
+        stream.WriteFloat(self.fEnvRadius)
