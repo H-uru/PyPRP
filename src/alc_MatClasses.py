@@ -2609,8 +2609,8 @@ class plRenderTarget(plBitmap):
         def __init__(self):
             self.fLeft = 0
             self.fTop = 0
-            self.fRight = 1
-            self.fBottom = 1
+            self.fRight = 256
+            self.fBottom = 256
             
     class Viewport:
         def __init__(self):
@@ -2620,22 +2620,22 @@ class plRenderTarget(plBitmap):
     def __init__(self,parent=None,name="unnamed",type=0x000D):
         plBitmap.__init__(self, parent, name, type)
         self.fViewport = plRenderTarget.Viewport()
-        self.fWidth = 1
-        self.fHeight = 1
+        self.fWidth = 256
+        self.fHeight = 256
         self.fPixelSize = 0
-        self.fZDepth = 0x18
+        self.fZDepth = 24
         self.fStencilDepth = 0
         self.fApplyTexQuality = 0
         self.fProportionalViewport = 0
-        self.fViewport.fProportional.fLeft = 0.0
-        self.fViewport.fProportional.fTop = 0.0
-        self.fViewport.fProportional.fRight = 1.0
-        self.fViewport.fProportional.fBottom = 1.0
+        self.fViewport.fAbsolute.fLeft = 0
+        self.fViewport.fAbsolute.fTop = 0
+        self.fViewport.fAbsolute.fRight = 256
+        self.fViewport.fAbsolute.fBottom = 256
         self.fFlags = 0
         self.fParent = None
         # bitmap defaults
         self.fCompressionType = 0
-        self.fPixelSize = 0x20
+        self.fPixelSize = 32
         self.fSpace = 0
         self.fFlags |= plBitmap.Flags["kIsTexture"]
         
@@ -2728,11 +2728,11 @@ class plDynamicEnvMap(plCubicRenderTarget):
     def __init__(self,parent=None,name="unnamed",type=0x0106):
         plCubicRenderTarget.__init__(self, parent, name, type)
         self.fPos = Vertex()
-        self.fHither = 0.0
-        self.fYon = 0.0
-        self.fFogStart = 0.0
-        self.fColor = RGBA(0.5,0.5,0.5,1.0,type=1)
-        self.fRefreshRate = 1.0
+        self.fHither = 0.3
+        self.fYon = 10000
+        self.fFogStart = -1
+        self.fColor = RGBA(0.0,0.0,0.0,1.0,type=1)
+        self.fRefreshRate = 0.5
         self.fVisRegions = hsTArray([], self.getVersion()) 
         self.fIncCharacters = 1
         
@@ -2829,11 +2829,11 @@ class plWaveSet7(plMultiModifier):
         texstate.fAmpOverLen = 0.013
         texstate.fChop = 0.5
         texstate.fAngleDev = 1.00356
-        self.fState.fRippleScale = 50
+        self.fState.fRippleScale = 100
         self.fState.fWindDir = Vertex(0.0871562,0.996195,0)
         self.fState.fSpecVec = Vertex(0.5,250,1000)
-        #self.fState.fWaterHeight = obj.loc[2]
-        #self.fState.fWaterOffset = Vertex(1, 1, 1)
+        self.fState.fWaterHeight = obj.loc[2]
+        self.fState.fWaterOffset = Vertex(0, 0, 0)
         self.fState.fMaxAtten = Vertex(1, 1, 1)
         self.fState.fMinAtten = Vertex(0, 0, 0)
         #self.fState.fDepthFalloff = Vertex(12, 1, 1)
