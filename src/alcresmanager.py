@@ -337,6 +337,7 @@ class alcUruPage:
                 if obj_type=="Mesh":
                     scnobj = plSceneObject.FindCreate(self.prp,name)
                     scnobj.data.scene = SceneNodeRef
+                    scnobj.data.export_object(obj, objscript)
 
                     relRgn = plRelevanceRegion.FindCreate(self.prp,name)
                     relRgn.data.parentref = scnobj.data.getRef()
@@ -380,6 +381,7 @@ class alcUruPage:
                             if obj_type=="Mesh":
                               scnobj = plSceneObject.FindCreate(self.prp,name)
                               scnobj.data.scene = SceneNodeRef
+                              scnobj.data.export_object(obj, objscript)
 
                               softVolume = plSoftVolumeSimple.FindCreate(self.prp,name)
                               softVolume.data.parentref = scnobj.data.getRef()
@@ -476,6 +478,7 @@ class alcUruPage:
                     # --- Obtain scene object ---
                     scnobj = plSceneObject.FindCreate(self.prp,name)
                     scnobj.data.scene=SceneNodeRef
+                    scnobj.data.export_object(obj, objscript)
 
                     #
                     plLightInfo.Export(self,obj,scnobj,name,SceneNodeRef,softVolumeParser)
@@ -492,6 +495,7 @@ class alcUruPage:
                     #find the sceneobject or create it
                     scnobj = plSceneObject.FindCreate(self.prp,name)
                     scnobj.data.scene=SceneNodeRef
+                    scnobj.data.export_object(obj, objscript)
 
                     plCoordinateInterface.Export(self,obj,scnobj,name,1,objlist)
 
@@ -506,6 +510,7 @@ class alcUruPage:
                     #find the sceneobject or create it
                     scnobj = plSceneObject.FindCreate(self.prp,name)
                     scnobj.data.scene=SceneNodeRef
+                    scnobj.data.export_object(obj, objscript)
 
                     plCoordinateInterface.Export(self,obj,scnobj,name,1,objlist)
 
@@ -524,6 +529,7 @@ class alcUruPage:
                     #find the sceneobject or create it
                     scnobj = plSceneObject.FindCreate(self.prp,name)
                     scnobj.data.scene=SceneNodeRef
+                    scnobj.data.export_object(obj, objscript)
 
                     plSpawnModifier.Export(self,obj,scnobj,name)
 
@@ -539,6 +545,7 @@ class alcUruPage:
                     #find the sceneobject or create it
                     scnobj = plSceneObject.FindCreate(self.prp,name)
                     scnobj.data.scene=SceneNodeRef
+                    scnobj.data.export_object(obj, objscript)
                     # Coordinate Export
                     plCoordinateInterface.Export(self,obj,scnobj,name,1,objlist)
 
@@ -618,6 +625,7 @@ class alcUruPage:
                     #find the sceneobject or create it
                     scnobj = plSceneObject.FindCreate(self.prp,name)
                     scnobj.data.scene=SceneNodeRef
+                    scnobj.data.export_object(obj, objscript)
 
                     # handle any special col_type settings here:
 
@@ -638,6 +646,7 @@ class alcUruPage:
                     #find the sceneobject or create it
                     scnobj = plSceneObject.FindCreate(self.prp,name)
                     scnobj.data.scene=SceneNodeRef
+                    scnobj.data.export_object(obj, objscript)
 
                     # ########################
                     # #   Check for sprite   #
@@ -698,6 +707,7 @@ class alcUruPage:
                     #find the sceneobject or create it
                     scnobj = plSceneObject.FindCreate(self.prp,name)
                     scnobj.data.scene=SceneNodeRef
+                    scnobj.data.export_object(obj, objscript)
 
 
                     # Export the coordinate interface ('self' is passed as ref to this resmgr)
@@ -763,6 +773,7 @@ class alcUruPage:
                     #find the sceneobject or create it
                     scnobj = plSceneObject.FindCreate(self.prp,name)
                     scnobj.data.scene=SceneNodeRef
+                    scnobj.data.export_object(obj, objscript)
 
                     # Region-specific settings are processed in the plHKPhysical exporter
                     plSimulationInterface.Export(self,obj,scnobj,name,SceneNodeRef,isdynamic)

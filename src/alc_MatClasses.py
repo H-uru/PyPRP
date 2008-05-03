@@ -2728,13 +2728,13 @@ class plDynamicEnvMap(plCubicRenderTarget):
     def __init__(self,parent=None,name="unnamed",type=0x0106):
         plCubicRenderTarget.__init__(self, parent, name, type)
         self.fPos = Vertex()
-        self.fHither = 0.3
-        self.fYon = 10000
+        self.fHither = 1.0
+        self.fYon = 10000.0
         self.fFogStart = -1
         self.fColor = RGBA(0.0,0.0,0.0,1.0,type=1)
         self.fRefreshRate = 0.5
         self.fVisRegions = hsTArray([], self.getVersion()) 
-        self.fIncCharacters = 1
+        self.fIncCharacters = 0
         
     def _Find(page,name):
         return page.find(0x0106,name,0)
@@ -2836,15 +2836,15 @@ class plWaveSet7(plMultiModifier):
         self.fState.fWaterOffset = Vertex(0, 0, 0)
         self.fState.fMaxAtten = Vertex(1, 1, 1)
         self.fState.fMinAtten = Vertex(0, 0, 0)
-        #self.fState.fDepthFalloff = Vertex(12, 1, 1)
+        self.fState.fDepthFalloff = Vertex(12, 1, 1)
         self.fState.fWispiness = 0.5
         self.fState.fShoreTint = RGBA(1, 1, 1, 1, type=1)
         self.fState.fMaxColor = RGBA(1, 1, 1, 1, type=1)
         self.fState.fMinColor = RGBA(0.184314, 0.172549, 0.113725, 1, type=1)
-        #self.fState.fEdgeOpac = 1
-        #self.fState.fEdgeRadius = 1
+        self.fState.fEdgeOpac = 1
+        self.fState.fEdgeRadius = 1
         self.fState.fPeriod = 1
-        #self.fState.fFingerLength = 1
+        self.fState.fFingerLength = 1
         self.fState.fWaterTint = RGBA(1, 1, 1, 1, type=1)
         self.fState.fSpecularTint = RGBA(1, 1, 1, 0.983333, type=1)
         self.fState.fEnvCenter = Vertex(obj.loc[0], obj.loc[1], obj.loc[2])

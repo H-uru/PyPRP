@@ -220,6 +220,9 @@ class plSceneObject(plSynchedObject):                       #Type 0x01
         
     def addModifier(self,plobj):
         self.data2.append(plobj.data.getRef())
+    
+    def export_object(self, obj, objscript):
+        plSynchedObject.export_obj(self, obj, objscript)
 
     def import_all(self,scene):
         #assert(self.draw.checktype(0x0016)) #or self.draw.checktype(0x00D2))

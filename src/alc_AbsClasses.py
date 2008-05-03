@@ -31,6 +31,7 @@ import math, struct
 from alchexdump import *
 from alcurutypes import *
 import alcconfig, alchexdump
+from alc_AlcScript import *
 #from alc_Messages import *
 #from alc_GeomClasses import *
 
@@ -46,6 +47,19 @@ class plSynchedObject(hsKeyedObject):                       #Type 0x28
         "kLocalOnly"                 : 0x28, \
         "kHasVolatileState"          : 0x40, \
         "kAllStateIsVolatile"        : 0x80  \
+    }
+    
+    alcflags = \
+    { \
+        "dontdirty"                 :  0x1, \
+        "sendreliably"              :  0x2, \
+        "hasconstantnetgroup"       :  0x4, \
+        "dontsynchgamemessages"     :  0x8, \
+        "excludepersistentstate"    : 0x10, \
+        "excludeallpersistentstate" : 0x20, \
+        "localonly"                 : 0x28, \
+        "hasvolatilestate"          : 0x40, \
+        "allstateisvolatile"        : 0x80  \
     }
 
     def __init__(self,parent,name="unnamed",type=0x28):
@@ -95,7 +109,23 @@ class plSynchedObject(hsKeyedObject):                       #Type 0x28
 
     def changePageRaw(self,sid,did,stype,dtype):
         hsKeyedObject.changePageRaw(self,sid,did,stype,dtype)
-
+    
+    def export_obj(self, obj, objscript):
+        flags = FindInDict(objscript,"synchflags",[])
+        if type(flags) == list:
+            self.fSynchFlags = 0 # reset
+            for flag in flags:
+                if flag.lower() in plSynchedObject.alcflags:
+                    idx =  plSynchedObject.alcflags[flag.lower()]
+                    self.fSynchFlags |= idx
+         
+        states = FindInDict(objscript,"synchstates",[])
+        if type(states) == list:
+            for string in states:
+                if self.fSynchFlags & plSynchedObject.Flags["kExcludePersistentState"]:
+                    self.fSDLExcludeList.append(string)
+                if self.fSynchFlags & plSynchedObject.Flags["kHasVolatileState"]:
+                    self.fSDLVolatileList.append(string)
 
 class plObjInterface(plSynchedObject):                      #Type 0x10
     def __init__(self,parent,name="unnamed",type=None):
@@ -117,11 +147,17 @@ class plObjInterface(plSynchedObject):                      #Type 0x10
     def changePageRaw(self,sid,did,stype,dtype):
         plSynchedObject.changePageRaw(self,sid,did,stype,dtype)
         self.parentref.changePageRaw(sid,did,stype,dtype)
+    
+    def export_obj(self, obj, objscript):
+        plSynchedObject.export_obj(self, obj, objscript)
 
 
 class plModifier(plSynchedObject):                          #Type 0x1E
     def __init__(self,parent,name="unnamed",type=None):
         plSynchedObject.__init__(self,parent,name,type)
+    
+    def export_obj(self, obj, objscript):
+        plSynchedObject.export_obj(self, obj, objscript)
 
 
 class plSingleModifier(plModifier):                         #Type 0x1F
@@ -138,6 +174,9 @@ class plSingleModifier(plModifier):                         #Type 0x1F
     def write(self,stream):
         plModifier.write(self,stream)
         self.bitVector.write(stream)
+    
+    def export_obj(self, obj, objscript):
+        plModifier.export_obj(self, obj, objscript)
 
 class plMultiModifier(plModifier):                          #Type 0x27
     def __init__(self,parent,name="unnamed",type=None):
@@ -153,6 +192,9 @@ class plMultiModifier(plModifier):                          #Type 0x27
     def write(self,stream):
         plModifier.write(self,stream)
         self.BitVector.write(stream)
+    
+    def export_obj(self, obj, objscript):
+        plModifier.export_obj(self, obj, objscript)
 
 
 class plAGAnim(plSynchedObject):                #Type 0x6B
@@ -181,7 +223,13 @@ class plAGAnim(plSynchedObject):                #Type 0x6B
         stream.Write32(len(self.AGApp))
         for i in range(len(self.AGApp)):
             self.AGApp[i].write(stream)
+    
+    def export_obj(self, obj, objscript):
+        plSynchedObject.export_obj(self, obj, objscript)
 
 class plRegionBase(plObjInterface):             #Type 0x0118
     def __init__(self,parent,name="unnamed",type=None):
         plObjInterface.__init__(self,parent,name,type)
+    
+    def export_obj(self, obj, objscript):
+        plObjInterface.export_obj(self, obj, objscript)
