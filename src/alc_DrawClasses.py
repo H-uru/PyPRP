@@ -1546,7 +1546,7 @@ class plDrawInterface(plObjInterface):
             drawi=page.prp.find(0x16,name,1)
             scnobj.data.draw=drawi.data.getRef()
         else:
-            drawi=self.prp.findref(drawiref)
+            drawi=page.prp.findref(drawiref)
         if drawi==None:
             raise "ERROR: DrawInterface %s - %s not found!" %(str(scnobj.data.Key),str(drawiref))
 
