@@ -1785,8 +1785,12 @@ class plDrawInterface(plObjInterface):
                 Props = 0
                 if ZBias > 0:
                     # this seems to cause issues for my ages. Consider using sort faces (vs spans), or have an option for removing this?
-                    Criteria |= plDrawable.Crit["kCritSortSpans"] | plDrawable.Crit["kCritSortFaces"]
-                    Props = plDrawable.Props["kPropSortSpans"] | plDrawable.Props["kPropSortFaces"]
+                    Criteria |= plDrawable.Crit["kCritSortSpans"]
+                    Props |= plDrawable.Props["kPropSortSpans"]
+                    # there, if you have transparent textures _and_ you push up the zoffset, sortfaces will be enabled.
+                    if ZBias > 1:
+                        Criteria |= plDrawable.Crit["kCritSortFaces"]
+                        Props |= plDrawable.Props["kPropSortFaces"]
 
 
                 SpansLevel = plRenderLevel(plRenderLevel.MajorLevel["kOpaqueMajorLevel"],plRenderLevel.MinorLevel["kDefRendMinorLevel"])

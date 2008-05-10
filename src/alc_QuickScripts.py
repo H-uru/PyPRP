@@ -378,25 +378,30 @@ def QuickScript_SDLBoolShowHide(obj):
 def QuickScript_SimpleClickable(obj):
     objscript = AlcScript.objects.FindOrCreate(obj.name)
 
-    clickfile = getTextPropertyOrDefault(obj,"clickfile",None)
-    if not clickfile is None:
-        region = getTextPropertyOrDefault(obj,"region",None)
-        if not region is None:
-            animation = getTextPropertyOrDefault(obj,"animation",None)
-            animtarget = getTextPropertyOrDefault(obj,"animtarget","/")
-            soundemitter = getTextPropertyOrDefault(obj,"soundemitter",None)
+    region = getTextPropertyOrDefault(obj,"region",None)
+    if not region is None:
+        clickfile = getTextPropertyOrDefault(obj,"clickfile",None)
+        animation = getTextPropertyOrDefault(obj,"animation",None)
+        animtarget = getTextPropertyOrDefault(obj,"animtarget","/")
+        autorun = getTextPropertyOrDefault(obj,"autorun","false")
+        soundemitter = getTextPropertyOrDefault(obj,"soundemitter",None)
     else:
         clickfile =     FindInDict(objscript,"quickscript.simpleclick.pythonfile",None)
         region =        FindInDict(objscript,"quickscript.simpleclick.region",None)
         animation =     FindInDict(objscript,"quickscript.simpleclick.animation",None)
         animtarget =    FindInDict(objscript,"quickscript.simpleclick.animtarget","/")
+        autorun =       FindInDict(objscript,"quickscript.simpleclick.autorun","false")
         soundemitter =  FindInDict(objscript,"quickscript.simpleclick.soundemitter",None)
-    
+
+    if not animation is None and clickfile is None:
+        # User wants animation but does not use python file: force autorun
+        autorun = "true"
+
     if not soundemitter is None:
         emitscript = AlcScript.objects.FindOrCreate(soundemitter)
         emitvolume = FindInDict(emitscript,"sound.volume",1)
-    
-    if not clickfile is None and not region is None:
+
+    if not region is None:
         print "  [QuickScript - Simple Clickable]"
         # Force the object's physical logic to 'detect'
         StoreInDict(objscript,"physical.physlogic","detect")
@@ -421,27 +426,39 @@ def QuickScript_SimpleClickable(obj):
         modtxt += "      satisfied: true\n"
         modtxt += "      directional: true\n"
         modtxt += "  actions:\n"
-        modtxt += "    - type: pythonfile\n"
-        modtxt += "      ref: $AutoClick\n"
+
+        if not clickfile is None:
+            modtxt += "    - type: pythonfile\n"
+            modtxt += "      ref: $AutoClick\n"
+
+        if not animation is None:
+            if str(autorun).lower() == "true":
+                modtxt += "    - type: oneshot\n"
+                modtxt += "      ref: $AutoClick\n"
 
         if not soundemitter is None:
             modtxt += "    - type: responder\n"
             modtxt += "      ref: $SoundResp\n"
 
-        acttxt  = "- type: pythonfile\n"
-        acttxt += "  tag: AutoClick\n"
-        acttxt += "  pythonfile:\n"
-        acttxt += "      file: "+str(clickfile)+"\n"
-        acttxt += "      parameters:\n"
-        acttxt += "        - type: activator\n"
-        acttxt += "          ref: logicmod:$AutoClick\n"
-        acttxt += "        - type: string\n"
-        acttxt += "          value: "+str(obj.name) +"\n"
+        acttxt = ""
+
+        if not clickfile is None:
+            acttxt += "- type: pythonfile\n"
+            acttxt += "  tag: AutoClick\n"
+            acttxt += "  pythonfile:\n"
+            acttxt += "      file: "+str(clickfile)+"\n"
+            acttxt += "      parameters:\n"
+            acttxt += "        - type: activator\n"
+            acttxt += "          ref: logicmod:$AutoClick\n"
+            acttxt += "        - type: string\n"
+            acttxt += "          value: "+str(obj.name) +"\n"
+
+            if not animation is None:
+                if str(autorun).lower() == "false":
+                    acttxt += "        - type: behavior\n"
+                    acttxt += "          ref: oneshotmod:$AutoClick\n"
 
         if not animation is None:
-            acttxt += "        - type: behavior\n"
-            acttxt += "          ref: oneshotmod:$AutoClick\n"
-
             acttxt += "- type: oneshot\n"
             acttxt += "  tag: AutoClick\n"
             acttxt += "  oneshot:\n"
