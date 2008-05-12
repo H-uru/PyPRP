@@ -2728,10 +2728,10 @@ class plDynamicEnvMap(plCubicRenderTarget):
     def __init__(self,parent=None,name="unnamed",type=0x0106):
         plCubicRenderTarget.__init__(self, parent, name, type)
         self.fPos = Vertex()
-        self.fHither = 1.0
-        self.fYon = 10000.0
+        self.fHither = 0.3
+        self.fYon = 10000
         self.fFogStart = -1
-        self.fColor = RGBA(0.0,0.0,0.0,1.0,type=1)
+        self.fColor = RGBA(1.0,1.0,1.0,1.0,type=1)
         self.fRefreshRate = 0.5
         self.fVisRegions = hsTArray([], self.getVersion()) 
         self.fIncCharacters = 0
@@ -2745,7 +2745,17 @@ class plDynamicEnvMap(plCubicRenderTarget):
     FindCreate = staticmethod(_FindCreate)
     
     def export_obj(self, obj):
+        objscript = AlcScript.objects.Find(obj.name)
+        # dynenv props
+        self.fHither = FindInDict(objscript,'dynenv.hither',0.3)
+        self.fYon = FindInDict(objscript,'dynenv.yon',10000)
+        self.fIncCharacters = FindInDict(objscript,'dynenv.inccharacters',0)
         self.fPos = Vertex(obj.loc[0], obj.loc[1], obj.loc[2])
+        # rendertarget props
+        self.fWidth = FindInDict(objscript,'dynenv.width',256)
+        self.fHeight = FindInDict(objscript,'dynenv.height',256)
+        self.fViewport.fAbsolute.fRight = self.fWidth
+        self.fViewport.fAbsolute.fBottom = self.fHeight
         
     def read(self, stream):
         # fun hack, this would be a call to the void write of plBitmap, 
@@ -2808,7 +2818,9 @@ class plWaveSet7(plMultiModifier):
     Export = staticmethod(_Export)
 
     def export_obj(self, obj):
-        self.fMaxLen = 0.0
+        # now we get all the values. >.<
+        objscript = AlcScript.objects.Find(obj.name)
+        
         # make a dummy dyanmic envmap for the waveset
         # dunno why cyan uses 1x1x4 maps and it works. :P
         envmap = plDynamicEnvMap.FindCreate(self.getRoot(),obj.getName() + "_Env")
@@ -2817,39 +2829,44 @@ class plWaveSet7(plMultiModifier):
         # now we create a default waveset based on a nb01's LakeBasin waveset
         # this currently renders the surface invisible. 
         # Anyone who feels like tweaking the values for a while is welcome to it
+        self.fMaxLen = FindInDict(objscript,'waveset.maxlen',0.0)
         geostate = self.fState.fGeoState
-        geostate.fMaxLength = 2
-        geostate.fMinLength = 0.5
-        geostate.fAmpOverLen = 0.1
-        geostate.fChop = 0.5
-        geostate.fAngleDev = 1.00356
+        geostate.fMaxLength = FindInDict(objscript,'waveset.geostate.maxlen',0.0)
+        geostate.fMinLength = FindInDict(objscript,'waveset.geostate.minlen',0.0)
+        geostate.fAmpOverLen = FindInDict(objscript,'waveset.geostate.ampoverlen',0.0)
+        geostate.fChop = FindInDict(objscript,'waveset.geostate.chop',0.0)
+        geostate.fAngleDev = FindInDict(objscript,'waveset.geostate.angledev',0.0)
         texstate = self.fState.fTexState
-        texstate.fMaxLength = 6.25
-        texstate.fMinLength = 0.78125
-        texstate.fAmpOverLen = 0.013
-        texstate.fChop = 0.5
-        texstate.fAngleDev = 1.00356
-        self.fState.fRippleScale = 100
+        texstate.fMaxLength = FindInDict(objscript,'waveset.texstate.maxlen',6.25)
+        texstate.fMinLength = FindInDict(objscript,'waveset.texstate.minlen',0.78125)
+        texstate.fAmpOverLen = FindInDict(objscript,'waveset.texstate.ampoverlen',0.013)
+        texstate.fChop = FindInDict(objscript,'waveset.texstate.chop',0.5)
+        texstate.fAngleDev = FindInDict(objscript,'waveset.texstate.angledev',1.00356)
+        self.fState.fRippleScale = FindInDict(objscript,'waveset.ripplescale',100)
+        # this should be based on an empty used as a vector. I'm not doin it now. :P
         self.fState.fWindDir = Vertex(0.0871562,0.996195,0)
-        self.fState.fSpecVec = Vertex(0.5,250,1000)
+        # expects list [noise, start, end]
+        specvec = FindInDict(objscript,'waveset.specvec',[0.5,250,1000])
+        self.fState.fSpecVec = Vertex(specvec[0],specvec[1],specvec[2])
         self.fState.fWaterHeight = obj.loc[2]
-        self.fState.fWaterOffset = Vertex(0, 0, 0)
+        self.fState.fWaterOffset = Vertex(1, 1, 1)
         self.fState.fMaxAtten = Vertex(1, 1, 1)
         self.fState.fMinAtten = Vertex(0, 0, 0)
         self.fState.fDepthFalloff = Vertex(12, 1, 1)
-        self.fState.fWispiness = 0.5
+        self.fState.fWispiness = FindInDict(objscript,'waveset.wispiness',0.5)
         self.fState.fShoreTint = RGBA(1, 1, 1, 1, type=1)
         self.fState.fMaxColor = RGBA(1, 1, 1, 1, type=1)
         self.fState.fMinColor = RGBA(0.184314, 0.172549, 0.113725, 1, type=1)
-        self.fState.fEdgeOpac = 1
-        self.fState.fEdgeRadius = 1
-        self.fState.fPeriod = 1
-        self.fState.fFingerLength = 1
+        self.fState.fEdgeOpac = FindInDict(objscript,'waveset.edgeopac',1)
+        self.fState.fEdgeRadius = FindInDict(objscript,'waveset.edgeradius',1)
+        self.fState.fPeriod = FindInDict(objscript,'waveset.period',1)
+        self.fState.fFingerLength = FindInDict(objscript,'waveset.fingerlength',1)
+        # should be able to set these colors, the mat color will do for now. 
         self.fState.fWaterTint = RGBA(1, 1, 1, 1, type=1)
         self.fState.fSpecularTint = RGBA(1, 1, 1, 0.983333, type=1)
         self.fState.fEnvCenter = Vertex(obj.loc[0], obj.loc[1], obj.loc[2])
-        self.fState.fEnvRefresh = 3
-        self.fState.fEnvRadius = 500
+        self.fState.fEnvRefresh = FindInDict(objscript,'waveset.envrefresh',3)
+        self.fState.fEnvRadius = FindInDict(objscript,'waveset.envradius',1000)
         
     def _Find(page,name):
         return page.find(0x00FB,name,0)

@@ -647,6 +647,7 @@ class alcUruPage:
                     scnobj = plSceneObject.FindCreate(self.prp,name)
                     scnobj.data.scene=SceneNodeRef
                     scnobj.data.export_object(obj, objscript)
+                    water = False
 
                     # ########################
                     # #   Check for sprite   #
@@ -662,6 +663,8 @@ class alcUruPage:
                     elif alctype == "waveset" or FindInDict(objscript, "visual.waveset", False):
                         print ""
                         print "[WaveSet %s]" % name
+                        
+                        water = True
                         
                         # WaveSet Export
                         plWaveSet7.Export(self,obj,scnobj,name)
@@ -686,7 +689,7 @@ class alcUruPage:
                     AlcLogicHelper.Export(self,obj,scnobj,name)
 
                     # Visual Export (Also contains drawablespans export code)
-                    plDrawInterface.Export(self,obj,scnobj,name,SceneNodeRef,isdynamic,softVolumeParser)
+                    plDrawInterface.Export(self,obj,scnobj,name,SceneNodeRef,isdynamic,softVolumeParser, water)
 
                     # Shadow Caster Export
                     plShadowCaster.Export(self,obj,scnobj,name,isdynamic)

@@ -1251,7 +1251,7 @@ class plDrawableSpans(plDrawable):
 
         return self.findMaterial(name)
 
-    def export_obj(self,obj,dynamic,MaterialGroups=[]):
+    def export_obj(self,obj,dynamic,MaterialGroups=[],water = False):
         print "  [DrawableSpans %08x_%x]"%(self.fRenderLevel.fLevel,self.fCriteria)
         root=self.getRoot()
 
@@ -1363,6 +1363,10 @@ class plDrawableSpans(plDrawable):
             icicle.fProps=0
             if MatGroup["vtxalphacol"] == True:
                 icicle.fProps |= plSpan.Props["kLiteVtxNonPreshaded"]
+            
+            if water:
+                icicle.fProps |= (plSpan.Props["kWaterHeight"] | plSpan.Props["kLiteVtxNonPreshaded"] | plSpan.Props["kPropRunTimeLight"] | plSpan.Props["kPropReverseSort"] | plSpan.Props["kPropNoShadow"])
+                icicle.fWaterHeight = obj.loc[2]
 
 
             # Store info about the Vertex Storage
@@ -1539,24 +1543,24 @@ class plDrawInterface(plObjInterface):
     Import = staticmethod(_Import)
 
 
-    def _Export(page,obj,scnobj,name,SceneNodeRef,isdynamic,softVolParser):
+    def _Export(page,obj,scnobj,name,SceneNodeRef,isdynamic,softVolParser, water = False):
         # --- Draw Interface ---
         drawiref=scnobj.data.draw
         if drawiref.isNull():
             drawi=page.prp.find(0x16,name,1)
             scnobj.data.draw=drawi.data.getRef()
         else:
-            drawi=page.prp.findref(drawiref)
+            drawi=self.prp.findref(drawiref)
         if drawi==None:
             raise "ERROR: DrawInterface %s - %s not found!" %(str(scnobj.data.Key),str(drawiref))
 
-        drawi.data.export_obj(obj,SceneNodeRef,isdynamic,softVolParser)
+        drawi.data.export_obj(obj,SceneNodeRef,isdynamic,softVolParser, water)
         # update draw interface
         drawi.data.parentref=scnobj.data.getRef()
 
     Export = staticmethod(_Export)
 
-    def export_obj(self,obj,SceneNodeRef,isdynamic,softVolParser):
+    def export_obj(self,obj,SceneNodeRef,isdynamic,softVolParser, water = False):
         if obj.getType() != "Mesh":
             return
 
@@ -1785,12 +1789,8 @@ class plDrawInterface(plObjInterface):
                 Props = 0
                 if ZBias > 0:
                     # this seems to cause issues for my ages. Consider using sort faces (vs spans), or have an option for removing this?
-                    Criteria |= plDrawable.Crit["kCritSortSpans"]
-                    Props |= plDrawable.Props["kPropSortSpans"]
-                    # there, if you have transparent textures _and_ you push up the zoffset, sortfaces will be enabled.
-                    if ZBias > 1:
-                        Criteria |= plDrawable.Crit["kCritSortFaces"]
-                        Props |= plDrawable.Props["kPropSortFaces"]
+                    Criteria |= plDrawable.Crit["kCritSortSpans"] | plDrawable.Crit["kCritSortFaces"]
+                    Props = plDrawable.Props["kPropSortSpans"] | plDrawable.Props["kPropSortFaces"]
 
 
                 SpansLevel = plRenderLevel(plRenderLevel.MajorLevel["kOpaqueMajorLevel"],plRenderLevel.MinorLevel["kDefRendMinorLevel"])
@@ -1798,6 +1798,12 @@ class plDrawInterface(plObjInterface):
                     suffix="Spans"
                 else:
                     suffix="BlendSpans"
+                
+                if water:
+                    suffix="BlendSpans"
+                    RenderLevel = plRenderLevel(plRenderLevel.MajorLevel["kBlendRendMajorLevel"],plRenderLevel.MinorLevel["kOpaqueMinorLevel"])
+                    Criteria = plDrawable.Crit["kCritSortFaces"]
+                    Props = plDrawable.Props["kPropSortFaces"]
 
                 Name_RenderLevel="%08x" % RenderLevel.fLevel
                 Name_Crit="%x" % Criteria
@@ -1820,7 +1826,7 @@ class plDrawInterface(plObjInterface):
             drawspans.data.fCriteria = DSpans['Criteria']
             drawspans.data.fProps = DSpans['Props']
             #export the object
-            setnum=drawspans.data.export_obj(obj,isdynamic,DSpans['MatGroups'])
+            setnum=drawspans.data.export_obj(obj,isdynamic,DSpans['MatGroups'], water)
             self.addSpanSet(setnum,drawspans.data.getRef())
 
         # --- Export the Vis Region
