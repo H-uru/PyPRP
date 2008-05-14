@@ -337,7 +337,7 @@ def QuickScript_SelfAnimationRegion(obj):
     return False
 
 
-# Hub for different types of SDL - currently only "boolvis"
+# Hub for different types of SDL - currently only "SDLBoolShowHide" and "RandomBool"
 def QuickScript_SDL(obj):
     objscript = AlcScript.objects.FindOrCreate(obj.name)
     sdltype = getTextPropertyOrDefault(obj,"sdltype",None)
@@ -347,10 +347,12 @@ def QuickScript_SDL(obj):
     if not sdltype is None:
         if sdltype == "boolshowhide":
             return QuickScript_SDLBoolShowHide(obj)
+        elif sdltype == "randombool":
+            return QuickScript_RandomBool(obj)
 
     return False
 
-# add BoolSho
+# add BoolShowHide
 def QuickScript_SDLBoolShowHide(obj):
     print "  [QuickScript - SDLBoolShowHide]"
     objscript = AlcScript.objects.FindOrCreate(obj.name)
@@ -375,6 +377,106 @@ def QuickScript_SDLBoolShowHide(obj):
     
     return True
 
+# add RandomBool
+def QuickScript_RandomBool(obj):
+    print "  [QuickScript - RandomBool]"
+    objscript = AlcScript.objects.FindOrCreate(obj.name)
+
+    region = getTextPropertyOrDefault(obj,"region",None)
+    if region is None:
+        region = FindInDict(objscript,"quickscript.sdl.region",None)
+
+    if not region is None:
+        modtxt  = "- tag: ProxiSensor_Enter\n"
+        modtxt += "  cursor: nochange\n"
+        modtxt += "  flags:\n"
+        modtxt += "    - multitrigger\n"
+        modtxt += "  activators:\n"
+        modtxt += "    - type: objectinvolume\n"
+        modtxt += "      remote: " + str(region) + "\n"
+        modtxt += "      triggers:\n"
+        modtxt += "        - enter\n"
+        modtxt += "  conditions:\n"
+        modtxt += "    - type: volumesensor\n"
+        modtxt += "      satisfied: true\n"
+        modtxt += "      direction: enter\n"
+        modtxt += "  actions:\n"
+        modtxt += "    - type: pythonfile\n"
+        modtxt += "      ref: $RandomBool\n"
+        modtxt += "- tag: ProxiSensor_Exit\n"
+        modtxt += "  cursor: nochange\n"
+        modtxt += "  flags:\n"
+        modtxt += "    - multitrigger\n"
+        modtxt += "  activators:\n"
+        modtxt += "    - type: objectinvolume\n"
+        modtxt += "      remote: " + str(region) + "\n"
+        modtxt += "      triggers:\n"
+        modtxt += "        - exit\n"
+        modtxt += "  conditions:\n"
+        modtxt += "    - type: volumesensor\n"
+        modtxt += "      satisfied: true\n"
+        modtxt += "      direction: exit\n"
+        modtxt += "  actions:\n"
+        modtxt += "    - type: pythonfile\n"
+        modtxt += "      ref: $RandomBool\n"
+
+        acttxt  = "- type: pythonfile\n"
+        acttxt += "  tag: RandomBool\n"
+        acttxt += "  pythonfile:\n"
+        acttxt += "      file: xRandomBoolChange\n"
+        acttxt += "      parameters:\n"
+        acttxt += "        - type: string\n"
+        acttxt += "          value: " + str(obj.name) + "Vis\n"
+        acttxt += "        - type: string\n"
+        acttxt += "          value: " + str(obj.name) + "Enabled\n"
+        acttxt += "        - type: string\n"
+        acttxt += "          value: " + str(obj.name) + "Chance\n"
+        acttxt += "        - type: string\n"
+        acttxt += "          value: " + str(obj.name) + "Proximity\n"
+        acttxt += "        - type: activatorlist\n"
+        acttxt += "          refs: [\'logicmod:$ProxiSensor_Enter\',\'logicmod:$ProxiSensor_Exit\']\n"
+        acttxt += "        - type: bool\n"
+        acttxt += "          value: true\n"
+        acttxt += "        - type: sceneobject\n"
+        acttxt += "          ref: scnobj:" + str(obj.name) + "\n"
+        acttxt += "- type: pythonfile\n"
+        acttxt += "  tag: BoolShowHide\n"
+        acttxt += "  pythonfile:\n"
+        acttxt += "      file: xAgeSDLBoolShowHide\n"
+        acttxt += "      parameters:\n"
+        acttxt += "        - type: string\n"
+        acttxt += "          value: " + str(obj.name) + "Vis\n"
+        acttxt += "        - type: bool\n"
+        acttxt += "          value: true\n"
+
+
+        print "Resulting Code for .logic.modifiers:\n",modtxt
+        print "Resulting Code for .logic.actions:\n",acttxt
+
+        # Parse the code
+        myactscript = AlcScript(acttxt).GetRootScript()
+        mymodscript = AlcScript(modtxt).GetRootScript()
+
+        # Add the parsed script to the correct space in the dictionary, or create that space
+        actscript = FindInDict(objscript,"logic.actions",None)
+        if actscript is None or type(actscript) != list:
+            StoreInDict(objscript,"logic.actions", myactscript)
+        else:
+            for script in myactscript:
+                actscript.append(script)
+
+        modscript = FindInDict(objscript,"logic.modifiers",None)
+        if actscript is None or type(modscript) != list:
+            StoreInDict(objscript,"logic.modifiers",mymodscript)
+        else:
+            for script in mymodscript:
+                modscript.append(script)
+
+        return True
+
+    return False
+
+
 def QuickScript_SimpleClickable(obj):
     objscript = AlcScript.objects.FindOrCreate(obj.name)
 
@@ -385,6 +487,7 @@ def QuickScript_SimpleClickable(obj):
         animtarget = getTextPropertyOrDefault(obj,"animtarget","/")
         autorun = getTextPropertyOrDefault(obj,"autorun","false")
         soundemitter = getTextPropertyOrDefault(obj,"soundemitter",None)
+        facevalue = getTextPropertyOrDefault(obj,"facevalue",None)
     else:
         clickfile =     FindInDict(objscript,"quickscript.simpleclick.pythonfile",None)
         region =        FindInDict(objscript,"quickscript.simpleclick.region",None)
@@ -392,6 +495,7 @@ def QuickScript_SimpleClickable(obj):
         animtarget =    FindInDict(objscript,"quickscript.simpleclick.animtarget","/")
         autorun =       FindInDict(objscript,"quickscript.simpleclick.autorun","false")
         soundemitter =  FindInDict(objscript,"quickscript.simpleclick.soundemitter",None)
+        facevalue =     FindInDict(objscript,"quickscript.simpleclick.facevalue",None)
 
     if not animation is None and clickfile is None:
         # User wants animation but does not use python file: force autorun
@@ -422,9 +526,14 @@ def QuickScript_SimpleClickable(obj):
         modtxt += "        - type: picking\n"
         modtxt += "    - type: objectinbox\n"
         modtxt += "      satisfied: true\n"
-        modtxt += "    - type: facing\n"
-        modtxt += "      satisfied: true\n"
-        modtxt += "      directional: true\n"
+
+        if not facevalue is None:
+        # facing condition was broken because default tolerance in alc_LogicClasses is -1.0
+            modtxt += "    - type: facing\n"
+            modtxt += "      satisfied: true\n"
+            modtxt += "      directional: true\n"
+            modtxt += "      tolerance: " + str(facevalue) + "\n"
+
         modtxt += "  actions:\n"
 
         if not clickfile is None:
