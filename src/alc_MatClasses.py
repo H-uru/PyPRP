@@ -2589,6 +2589,9 @@ class plLayerAnimation(plLayerAnimationBase):
         self.fTimeConvert.fEnd = endFrame/30.0
         self.fTimeConvert.fLoopEnd = endFrame/30.0
         self.fTimeConvert.fLoopBegin = 0.0
+        
+        self.fSynchFlags |= plSynchedObject.Flags["kExcludePersistentState"]
+        self.fSDLExcludeList.append("Layer")
 
     def ToBlenderMTex(self,mtex,obj):
         print "     [Layer %s]"%(str(self.Key.name))
@@ -2846,8 +2849,10 @@ class plWaveSet7(plMultiModifier):
         # this should be based on an empty used as a vector. I'm not doin it now. :P
         self.fState.fWindDir = Vertex(0.0871562,0.996195,0)
         # expects list [noise, start, end]
-        specvec = FindInDict(objscript,'waveset.specvec',[0.5,250,1000])
-        self.fState.fSpecVec = Vertex(specvec[0],specvec[1],specvec[2])
+        specnoice = FindInDict(objscript,'waveset.specnoise',0.5)
+        specstart = FindInDict(objscript,'waveset.specstart',250)
+        specend = FindInDict(objscript, 'waveset.specend', 1000)
+        self.fState.fSpecVec = Vertex(specnoise,specstart,specend)
         self.fState.fWaterHeight = obj.loc[2]
         self.fState.fWaterOffset = Vertex(1, 1, 1)
         self.fState.fMaxAtten = Vertex(1, 1, 1)

@@ -678,6 +678,12 @@ class plLogicModifier(plLogicModBase):
                         refparser.SetDefaultType(0x007C)
                         refparser.SetAllowList([0x007C,])
                         plobj = refparser.MixedRef_FindCreate(ref)
+                    elif action_type == "sittingmod":
+                        # plSittingModifier
+                        print "Locating sitting mod reference '%s'"%(ref)
+                        refparser.SetDefaultType(0x00AE)
+                        refparser.SetAllowList([0x00AE,])
+                        plobj = refparser.MixedRef_FindCreate(ref)
                     elif action_type == "oneshot":
                         print "Creating Responder modifier to oneshot reference '%s'"%(ref)
                         # plOneShotMod
@@ -1383,7 +1389,7 @@ class plSittingModifier(plSingleModifier):
         plSingleModifier.read(self,stream)
 
         self.fMiscFlags = stream.ReadByte()
-        count = self.Read32()
+        count = stream.Read32()
         for i in range(count):
             key = UruObjectref()
             key.read(stream)
@@ -1392,10 +1398,13 @@ class plSittingModifier(plSingleModifier):
     def write(self,stream):
         plSingleModifier.write(self,stream)
 
-        self.WriteByte(self.fMiscFlags)
-        self.Write32(len(self.fNotifyKeys))
+        stream.WriteByte(self.fMiscFlags)
+        stream.Write32(len(self.fNotifyKeys))
         for key in self.fNotifyKeys:
             key.write(stream)
+    
+    def export_obj(self,obj):
+        self.fMiscFlags = 0x1
 
 
 class plOneShotMod(plMultiModifier):
