@@ -2825,21 +2825,22 @@ class plWaveSet7(plMultiModifier):
     def export_obj(self, obj):
         # now we get all the values. >.<
         objscript = AlcScript.objects.Find(obj.name)
+        refparser = ScriptRefParser(self.getRoot(),str(self.Key.name), 0x0001, [0x0001,])
         
         # add shore refs
         shoreNames = list(FindInDict(objscript, 'waveset.shores', []))
         for shoreName in shoreNames:
-            shoreObj = alc_ObjClasses.plSceneObject.FindCreate(self.getRoot(), shoreName)
+            shoreObj = refparser.MixedRef_FindCreate(shoreName)
             self.fShores.append(shoreObj.data.getRef())
         # add decal refs
         decalNames = list(FindInDict(objscript, 'waveset.decals', []))
         for decalName in decalNames:
-            decalObj = alc_ObjClasses.plSceneObject.FindCreate(self.getRoot(),decalName)
+            decalObj = refparser.MixedRef_FindCreate(decalName)
             self.fDecals.append(shoreObj.data.getRef())
         
         # make a dummy dyanmic envmap for the waveset
         # dunno why cyan uses 1x1x4 maps and it works. :P
-        envmap = plDynamicEnvMap.FindCreate(self.getRoot(),obj.getName() + "_Env")
+        envmap = plDynamicEnvMap.FindCreate(self.getRoot(),obj.getName())
         envmap.data.export_obj(obj)
         self.fEnvMap = envmap.data.getRef()
         # now we create a default waveset based on a nb01's LakeBasin waveset
