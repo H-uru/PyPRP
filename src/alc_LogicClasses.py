@@ -1406,6 +1406,13 @@ class plSittingModifier(plSingleModifier):
     def export_obj(self,obj):
         self.fMiscFlags = 0x1
 
+    def _Export(page,obj,scnobj,name):
+        mod= plSittingModifier.FindCreate(page,name)
+        mod.data.export_obj(obj)
+        scnobj.data.addModifier(mod)
+
+    Export = staticmethod(_Export)
+
 
 class plOneShotMod(plMultiModifier):
     def __init__(self,parent,name="unnamed",type=0x0077):

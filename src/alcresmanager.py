@@ -538,6 +538,23 @@ class alcUruPage:
 
                     # Logical Export
                     AlcLogicHelper.Export(self,obj,scnobj,name)
+                
+                elif alctype=="sittingmod": #A sittingModifier
+                    print ""
+                    print "[SittingModifier %s]" % name
+
+                    #find the sceneobject or create it
+                    scnobj = plSceneObject.FindCreate(self.prp,name)
+                    scnobj.data.scene=SceneNodeRef
+                    scnobj.data.export_object(obj, objscript)
+
+                    plSittingModifier.Export(self,obj,scnobj,name)
+
+                    # Coordinate Export
+                    plCoordinateInterface.Export(self,obj,scnobj,name,1,objlist)
+
+                    # Logical Export
+                    AlcLogicHelper.Export(self,obj,scnobj,name)
 
                 else: # Any other point
                     print ""
@@ -689,7 +706,8 @@ class alcUruPage:
                     AlcLogicHelper.Export(self,obj,scnobj,name)
 
                     # Visual Export (Also contains drawablespans export code)
-                    plDrawInterface.Export(self,obj,scnobj,name,SceneNodeRef,isdynamic,softVolumeParser, water)
+                    if FindInDict(objscript, "visual.render", True):
+                        plDrawInterface.Export(self,obj,scnobj,name,SceneNodeRef,isdynamic,softVolumeParser, water)
 
                     # Shadow Caster Export
                     plShadowCaster.Export(self,obj,scnobj,name,isdynamic)

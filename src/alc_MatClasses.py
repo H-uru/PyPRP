@@ -2836,7 +2836,7 @@ class plWaveSet7(plMultiModifier):
         decalNames = list(FindInDict(objscript, 'waveset.decals', []))
         for decalName in decalNames:
             decalObj = refparser.MixedRef_FindCreate(decalName)
-            self.fDecals.append(shoreObj.data.getRef())
+            self.fDecals.append(decalObj.data.getRef())
         
         # make a dummy dyanmic envmap for the waveset
         # dunno why cyan uses 1x1x4 maps and it works. :P

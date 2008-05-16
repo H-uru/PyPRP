@@ -54,6 +54,7 @@ class ScriptRefParser:
         "svunion"       : 0x008A, \
         "svintersect"   : 0x008B, \
         "svinvert"      : 0x008C, \
+        "sittingmod"    : 0x00AE, \
     }
 
     def __init__(self,page,basename="",defaulttype = None, allowlist = [],version=5):
