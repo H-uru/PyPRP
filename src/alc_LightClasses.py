@@ -666,12 +666,7 @@ class plShadowMaster(plObjInterface):    # Type: 0x00D3
         print " [ShadowMaster]"
         self.BitFlags[plShadowMaster.plDrawProperties["kSelfShadow"]] = 1
         
-
-        if not (lamp.mode & (Lamp.Modes["Sphere"])) and (lamp.type==Blender.Lamp.Types["Lamp"]) and (lamp.mode & (Lamp.Modes["Quad"])):
-            self.fAttenDist = lamp.dist * 10
-        else:
-            self.fAttenDist = lamp.dist
-        print "  Attensity distance %f" % self.fAttenDist
+        self.fAttenDist = 10
         
         self.fPower = lamp.energy
         print "  Power: %f" % self.fPower
@@ -732,7 +727,7 @@ class plShadowCaster(plMultiModifier):    #Type 0x00D4
             if obj.data.materials[0].mode & Blender.Material.Modes["SHADOWBUF"]:
                 shadowcaster = page.prp.find(0xD4,name,1)
                 shadowcaster.data.export_obj(obj)
-                scnobj.data.data1.append(shadowcaster.data.getRef())
+                scnobj.data.data2.append(shadowcaster.data.getRef())
 
     Export = staticmethod(_Export)
         

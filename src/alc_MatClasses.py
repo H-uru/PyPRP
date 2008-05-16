@@ -46,6 +46,7 @@ from alcConvexHull import *
 from alc_VolumeIsect import *
 from alc_AlcScript import *
 from alc_AnimClasses import *
+import alc_ObjClasses
 
 def stripIllegalChars(name):
     name=name.replace("*","_")
@@ -2754,6 +2755,7 @@ class plDynamicEnvMap(plCubicRenderTarget):
         self.fYon = FindInDict(objscript,'dynenv.yon',10000)
         self.fIncCharacters = FindInDict(objscript,'dynenv.inccharacters',0)
         self.fPos = Vertex(obj.loc[0], obj.loc[1], obj.loc[2])
+        self.fRefreshRate = FindInDict(objscript,'dynenv.refreshrate',0.5)
         # rendertarget props
         self.fWidth = FindInDict(objscript,'dynenv.width',256)
         self.fHeight = FindInDict(objscript,'dynenv.height',256)
@@ -2824,6 +2826,17 @@ class plWaveSet7(plMultiModifier):
         # now we get all the values. >.<
         objscript = AlcScript.objects.Find(obj.name)
         
+        # add shore refs
+        shoreNames = list(FindInDict(objscript, 'waveset.shores', []))
+        for shoreName in shoreNames:
+            shoreObj = alc_ObjClasses.plSceneObject.FindCreate(self.getRoot(), shoreName)
+            self.fShores.append(shoreObj.data.getRef())
+        # add decal refs
+        decalNames = list(FindInDict(objscript, 'waveset.decals', []))
+        for decalName in decalNames:
+            decalObj = alc_ObjClasses.plSceneObject.FindCreate(self.getRoot(),decalName)
+            self.fDecals.append(shoreObj.data.getRef())
+        
         # make a dummy dyanmic envmap for the waveset
         # dunno why cyan uses 1x1x4 maps and it works. :P
         envmap = plDynamicEnvMap.FindCreate(self.getRoot(),obj.getName() + "_Env")
@@ -2849,7 +2862,7 @@ class plWaveSet7(plMultiModifier):
         # this should be based on an empty used as a vector. I'm not doin it now. :P
         self.fState.fWindDir = Vertex(0.0871562,0.996195,0)
         # expects list [noise, start, end]
-        specnoice = FindInDict(objscript,'waveset.specnoise',0.5)
+        specnoise = FindInDict(objscript,'waveset.specnoise',0.5)
         specstart = FindInDict(objscript,'waveset.specstart',250)
         specend = FindInDict(objscript, 'waveset.specend', 1000)
         self.fState.fSpecVec = Vertex(specnoise,specstart,specend)
