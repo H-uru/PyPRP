@@ -2837,15 +2837,19 @@ class plWaveSet7(plMultiModifier):
         for decalName in decalNames:
             decalObj = refparser.MixedRef_FindCreate(decalName)
             self.fDecals.append(decalObj.data.getRef())
-        
-        # make a dummy dyanmic envmap for the waveset
-        # dunno why cyan uses 1x1x4 maps and it works. :P
-        envmap = plDynamicEnvMap.FindCreate(self.getRoot(),obj.getName())
-        envmap.data.export_obj(obj)
+        # allow ref to alternate envmap
+        altEnv = FindInDict(objscript, 'waveset.envmap', None)
+        if(altEnv != None):
+            # refparser time
+            resmgr = self.getRoot().resmanager
+            refparser = ScriptRefParser(resmgr.findPrp("Textures"), str(self.Key.name), 0x0005, [0x0005,])
+            envmap = refparser.MixedRef_FindCreate(altEnv)
+        else:
+            # make a dummy dyanmic envmap for the waveset
+            envmap = plDynamicEnvMap.FindCreate(self.getRoot(),obj.getName())
+            envmap.data.export_obj(obj)
         self.fEnvMap = envmap.data.getRef()
-        # now we create a default waveset based on a nb01's LakeBasin waveset
-        # this currently renders the surface invisible. 
-        # Anyone who feels like tweaking the values for a while is welcome to it
+        # now we create a default waveset
         self.fMaxLen = FindInDict(objscript,'waveset.maxlen',0.0)
         geostate = self.fState.fGeoState
         geostate.fMaxLength = FindInDict(objscript,'waveset.geostate.maxlen',0.0)
