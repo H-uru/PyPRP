@@ -204,7 +204,8 @@ class plLightInfo(plObjInterface):                          #Type 0x54 (Uru)
         layername = FindInDict(lampscript,"lamp.layer",None)
         if(layername != None):
             print " Attatching layer: " + layername
-            layer = plLayer.FindCreate(page, layername)
+            refparser = ScriptRefParser(page, name, 0x0006, [0x0006, 0x0043,])
+            layer = refparser.MixedRef_FindCreate(layername)
             lamp.data.fProjection = layer.data.getRef()
             # set the projection flags depending on the lamp type
             if obj.data.type==Blender.Lamp.Types["Spot"]:
