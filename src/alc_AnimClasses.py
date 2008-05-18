@@ -180,6 +180,45 @@ class plDynaFootMgr(plDynaDecalMgr):
         script = AlcScript.objects.FindOrCreate(obj.name)
         StoreInDict(script, "decal.type", "DynaFoot")
 
+    def _Export(page, obj, scnobj, name):
+        DynaFootMgr = plDynaFootMgr.FindCreate(page, name)
+        DynaFootMgr.data.export_obj(obj)
+        # attach to sceneobject
+        scnobj.data.addModifier(DynaFootMgr)
+    Export = staticmethod(_Export)
+
+    def export_obj(self, obj):
+        objscript = AlcScript.objects.Find(obj.name)
+        
+        refparser = ScriptRefParser(self.getRoot(),str(self.Key.name), 0x0007, [0x0007,])
+        matref = FindInDict(objscript,'footmgr.matpreshade', None)
+        MatPreShade = refparser.MixedRef_FindCreate(matref)
+        self.fMatPreShade = MatPreShade.data.getRef()
+        
+        matref = FindInDict(objscript,'footmgr.matrtshade', None)
+        MatRTShade = refparser.MixedRef_FindCreate(matref)
+        self.fMatRTShade = MatRTShade.data.getRef()
+        
+        scnrefs = list(FindInDict(objscript,'footmgr.targets', []))
+        refparser = ScriptRefParser(self.getRoot(),str(self.Key.name), 0x0001, [0x0001,])
+        for scnref in scnrefs:
+            target = refparser.MixedRef_FindCreate(scnref)
+            self.fTargets.append(target.data.getRef())
+
+        self.fPartyObjects = hsTArray()
+        self.fMaxNumVerts = 1000
+        self.fMaxNumIdx = 1000
+        self.fWaitOnEnable = 0
+        self.fIntensity = 1.0
+        self.fWetLength = 10.0
+        self.fRampEnd = 0.1
+        self.fDecayStart = 11.25
+        self.fLifeSpan = 15.0
+        self.fGridSizeU = 2.5
+        self.fGridSizeV = 2.5
+        self.fScale = Vertex(1.5,1,1)
+        self.fPartyTime = 1.0
+        self.fNotifies = hsTArray()
 
 class plDynaBulletMgr(plDynaDecalMgr):
     def __init__(self,parent,name="unnamed",type=0x00E8):

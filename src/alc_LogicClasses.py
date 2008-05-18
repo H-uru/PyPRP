@@ -402,7 +402,11 @@ class AlcLogicHelper:
                         plobj = plOneShotMod.FindCreate(page,handle)
                         pscript = FindInDict(actscript,"oneshot",{})
                         plobj.data.export_script(pscript,scnobj)
-                        plobj = None # assigning to this or another scene object was done in the expor
+                        plobj = None # assigning to this or another scene object was done in the export
+                    elif _type == "sittingmod":
+                        pscript = FindInDict(actscript,"sittingmod",{})
+                        plobj = plSittingModifier.FindCreate(page, handle)
+                        plobj.data.export_script(pscript,scnobj)
 
                     if not plobj is None:
                         if not hide:
@@ -1405,6 +1409,9 @@ class plSittingModifier(plSingleModifier):
     
     def export_obj(self,obj):
         self.fMiscFlags = 0x1
+        
+    def export_script(self, script, scnobj):
+        self.fMiscFlags = FindInDict(script, "miscflags", 1)
 
     def _Export(page,obj,scnobj,name):
         mod= plSittingModifier.FindCreate(page,name)
