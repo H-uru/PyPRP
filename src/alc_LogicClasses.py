@@ -48,6 +48,7 @@ from alc_Classes import *
 from alc_RefParser import *
 from alc_ObjClasses import *
 from alc_QuickScripts import *
+from alc_AnimClasses import *
 import alc_QuickScripts
 
 class AlcLogicHelper:
@@ -407,6 +408,9 @@ class AlcLogicHelper:
                         pscript = FindInDict(actscript,"sittingmod",{})
                         plobj = plSittingModifier.FindCreate(page, handle)
                         plobj.data.export_script(pscript,scnobj)
+                    elif _type == "footmgr":
+                        plobj = plDynaFootMgr.FindCreate(page, handle)
+                        plobj.data.export_script(actscript)
 
                     if not plobj is None:
                         if not hide:

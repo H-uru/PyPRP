@@ -186,10 +186,12 @@ class plDynaFootMgr(plDynaDecalMgr):
         # attach to sceneobject
         scnobj.data.addModifier(DynaFootMgr)
     Export = staticmethod(_Export)
-
+    
     def export_obj(self, obj):
         objscript = AlcScript.objects.Find(obj.name)
-        
+        self.export_script(objscript)
+    
+    def export_script(self, objscript):
         refparser = ScriptRefParser(self.getRoot(),str(self.Key.name), 0x0007, [0x0007,])
         matref = FindInDict(objscript,'footmgr.matpreshade', None)
         MatPreShade = refparser.MixedRef_FindCreate(matref)
