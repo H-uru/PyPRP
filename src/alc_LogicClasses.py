@@ -409,8 +409,9 @@ class AlcLogicHelper:
                         plobj = plSittingModifier.FindCreate(page, handle)
                         plobj.data.export_script(pscript,scnobj)
                     elif _type == "footmgr":
+                        pscript = FindInDict(actscript,"footmgr",{})
                         plobj = plDynaFootMgr.FindCreate(page, handle)
-                        plobj.data.export_script(actscript)
+                        plobj.data.export_script(pscript)
 
                     if not plobj is None:
                         if not hide:

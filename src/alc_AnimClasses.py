@@ -189,19 +189,25 @@ class plDynaFootMgr(plDynaDecalMgr):
     
     def export_obj(self, obj):
         objscript = AlcScript.objects.Find(obj.name)
-        self.export_script(objscript)
+        self.export_script(FindInDict(objscript,'footmgr', None))
     
-    def export_script(self, objscript):
+    def export_script(self, script):
         refparser = ScriptRefParser(self.getRoot(),str(self.Key.name), 0x0007, [0x0007,])
-        matref = FindInDict(objscript,'footmgr.matpreshade', None)
+        matref = FindInDict(script,'matpreshade', None)
         MatPreShade = refparser.MixedRef_FindCreate(matref)
+        # add the ZInc flag for all the layers in the material
+        for layer in MatPreShade.data.fLayers:
+            self.getRoot().findref(layer).data.fState.fZFlags |= hsGMatState.hsGMatZFlags["kZIncLayer"]
         self.fMatPreShade = MatPreShade.data.getRef()
         
-        matref = FindInDict(objscript,'footmgr.matrtshade', None)
+        matref = FindInDict(script,'matrtshade', None)
         MatRTShade = refparser.MixedRef_FindCreate(matref)
+        # add the ZInc flag for all the layers in the material
+        for layer in MatRTShade.data.fLayers:
+            self.getRoot().findref(layer).data.fState.fZFlags |= hsGMatState.hsGMatZFlags["kZIncLayer"]
         self.fMatRTShade = MatRTShade.data.getRef()
         
-        scnrefs = list(FindInDict(objscript,'footmgr.targets', []))
+        scnrefs = list(FindInDict(script,'targets', []))
         refparser = ScriptRefParser(self.getRoot(),str(self.Key.name), 0x0001, [0x0001,])
         for scnref in scnrefs:
             target = refparser.MixedRef_FindCreate(scnref)
