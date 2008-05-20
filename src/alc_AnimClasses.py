@@ -85,7 +85,7 @@ class plDynaDecalMgr(plSynchedObject):
         self.fPartyObjects.ReadVector(buf)
         self.fMaxNumVerts = buf.Read32()
         self.fMaxNumIdx = buf.Read32()
-        self.fWaitOnEnable = buf.ReadFloat()
+        self.fWaitOnEnable = buf.ReadInt()
         self.fIntensity = buf.ReadFloat()
         self.fWetLength = buf.ReadFloat()
         self.fRampEnd = buf.ReadFloat()
@@ -107,7 +107,7 @@ class plDynaDecalMgr(plSynchedObject):
         self.fPartyObjects.WriteVector(s)
         s.Write32(self.fMaxNumVerts)
         s.Write32(self.fMaxNumIdx)
-        s.WriteFloat(self.fWaitOnEnable)
+        s.WriteInt(self.fWaitOnEnable)
         s.WriteFloat(self.fIntensity)
         s.WriteFloat(self.fWetLength)
         s.WriteFloat(self.fRampEnd)
@@ -194,24 +194,103 @@ class plDynaFootMgr(plDynaDecalMgr):
     def export_script(self, script):
         refparser = ScriptRefParser(self.getRoot(),str(self.Key.name), 0x0007, [0x0007,])
         matref = FindInDict(script,'matpreshade', None)
-        MatPreShade = refparser.MixedRef_FindCreate(matref)
-        # add the ZInc flag for all the layers in the material
-        for layer in MatPreShade.data.fLayers:
-            self.getRoot().findref(layer).data.fState.fZFlags |= hsGMatState.hsGMatZFlags["kZIncLayer"]
-        self.fMatPreShade = MatPreShade.data.getRef()
+        if matref:
+            MatPreShade = refparser.MixedRef_FindCreate(matref)
+            # add the ZInc flag for all the layers in the material
+            for layer in MatPreShade.data.fLayers:
+                self.getRoot().findref(layer).data.fState.fZFlags |= hsGMatState.hsGMatZFlags["kZIncLayer"]
+            self.fMatPreShade = MatPreShade.data.getRef()
         
         matref = FindInDict(script,'matrtshade', None)
-        MatRTShade = refparser.MixedRef_FindCreate(matref)
-        # add the ZInc flag for all the layers in the material
-        for layer in MatRTShade.data.fLayers:
-            self.getRoot().findref(layer).data.fState.fZFlags |= hsGMatState.hsGMatZFlags["kZIncLayer"]
-        self.fMatRTShade = MatRTShade.data.getRef()
+        if matref:
+            MatRTShade = refparser.MixedRef_FindCreate(matref)
+            # add the ZInc flag for all the layers in the material
+            for layer in MatRTShade.data.fLayers:
+                self.getRoot().findref(layer).data.fState.fZFlags |= hsGMatState.hsGMatZFlags["kZIncLayer"]
+            self.fMatRTShade = MatRTShade.data.getRef()
         
         scnrefs = list(FindInDict(script,'targets', []))
         refparser = ScriptRefParser(self.getRoot(),str(self.Key.name), 0x0001, [0x0001,])
         for scnref in scnrefs:
             target = refparser.MixedRef_FindCreate(scnref)
             self.fTargets.append(target.data.getRef())
+        
+        self.fWaitOnEnable = int(FindInDict(script,'waitenable',0))
+
+        self.fPartyObjects = hsTArray()
+        self.fMaxNumVerts = 1000
+        self.fMaxNumIdx = 1000
+        self.fIntensity = 1.0
+        self.fWetLength = 10.0
+        self.fRampEnd = 0.1
+        self.fDecayStart = 11.25
+        self.fLifeSpan = 15.0
+        self.fGridSizeU = 2.5
+        self.fGridSizeV = 2.5
+        self.fScale = Vertex(1.5,1,1)
+        self.fPartyTime = 1.0
+        self.fNotifies = hsTArray()
+
+
+class plDynaPuddleMgr(plDynaDecalMgr):
+    def __init__(self,parent,name="unnamed",type=0x00ED):
+        plDynaDecalMgr.__init__(self,parent,name,type)
+        pass
+    
+    def _Find(page,name):
+        return page.find(0x00ED,name,0)
+    Find = staticmethod(_Find)
+
+    def _FindCreate(page,name):
+        return page.find(0x00ED,name,1)
+    FindCreate = staticmethod(_FindCreate)
+    
+    def import_obj(self, obj):
+        plDynaDecalMgr.import_obj(self, obj)
+        
+        script = AlcScript.objects.FindOrCreate(obj.name)
+        StoreInDict(script, "decal.type", "DynaPuddle")
+
+    def _Export(page, obj, scnobj, name):
+        DynaPuddleMgr = plDynaPuddleMgr.FindCreate(page, name)
+        DynaPuddleMgr.data.export_obj(obj)
+        # attach to sceneobject
+        scnobj.data.addModifier(DynaPuddleMgr)
+    Export = staticmethod(_Export)
+    
+    def export_obj(self, obj):
+        objscript = AlcScript.objects.Find(obj.name)
+        self.export_script(FindInDict(objscript,'puddlemgr', None))
+    
+    def export_script(self, script):
+        refparser = ScriptRefParser(self.getRoot(),str(self.Key.name), 0x0007, [0x0007,])
+        matref = FindInDict(script,'matpreshade', None)
+        if matref:
+            MatPreShade = refparser.MixedRef_FindCreate(matref)
+            # add the ZInc flag for all the layers in the material
+            for layer in MatPreShade.data.fLayers:
+                self.getRoot().findref(layer).data.fState.fZFlags |= hsGMatState.hsGMatZFlags["kZIncLayer"]
+            self.fMatPreShade = MatPreShade.data.getRef()
+        
+        matref = FindInDict(script,'matrtshade', None)
+        if matref:
+            MatRTShade = refparser.MixedRef_FindCreate(matref)
+            # add the ZInc flag for all the layers in the material
+            for layer in MatRTShade.data.fLayers:
+                self.getRoot().findref(layer).data.fState.fZFlags |= hsGMatState.hsGMatZFlags["kZIncLayer"]
+            self.fMatRTShade = MatRTShade.data.getRef()
+        
+        scnrefs = list(FindInDict(script,'targets', []))
+        refparser = ScriptRefParser(self.getRoot(),str(self.Key.name), 0x0001, [0x0001,])
+        for scnref in scnrefs:
+            target = refparser.MixedRef_FindCreate(scnref)
+            self.fTargets.append(target.data.getRef())
+        
+        footRefs = list(FindInDict(script,'notifies', []))
+        refparser = ScriptRefParser(self.getRoot(),str(self.Key.name), 0x00E8, [0x00E8,])
+        for footRef in footRefs:
+            notifier = refparser.MixedRef_FindCreate(footRef)
+            self.fNotifies.append(notifier.data.getRef())
 
         self.fPartyObjects = hsTArray()
         self.fMaxNumVerts = 1000
@@ -226,7 +305,7 @@ class plDynaFootMgr(plDynaDecalMgr):
         self.fGridSizeV = 2.5
         self.fScale = Vertex(1.5,1,1)
         self.fPartyTime = 1.0
-        self.fNotifies = hsTArray()
+
 
 class plDynaBulletMgr(plDynaDecalMgr):
     def __init__(self,parent,name="unnamed",type=0x00E8):

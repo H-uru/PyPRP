@@ -206,7 +206,9 @@ class PrpObject:
             elif self.type==0x00E8:
                 self.data=plDynaFootMgr(self)
             elif self.type==0x00EA:
-                self.data=plDynaBulletMgr(self) 
+                self.data=plDynaBulletMgr(self)
+            elif self.type==0x00ED:
+                self.data=plDynaPuddleMgr(self)
             elif self.type==0x00FB:
                 self.data=plWaveSet7(self)
             elif self.type==0x00FC:

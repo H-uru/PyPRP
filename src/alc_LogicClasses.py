@@ -412,6 +412,10 @@ class AlcLogicHelper:
                         pscript = FindInDict(actscript,"footmgr",{})
                         plobj = plDynaFootMgr.FindCreate(page, handle)
                         plobj.data.export_script(pscript)
+                    elif _type == "puddlemgr":
+                        pscript = FindInDict(actscript,"puddlemgr",{})
+                        plobj = plDynaPuddleMgr.FindCreate(page, handle)
+                        plobj.data.export_script(pscript)
 
                     if not plobj is None:
                         if not hide:
