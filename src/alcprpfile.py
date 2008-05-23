@@ -205,6 +205,8 @@ class PrpObject:
                 self.data=plObjectInVolumeAndFacingDetector(self)
             elif self.type==0x00E8:
                 self.data=plDynaFootMgr(self)
+            elif self.type==0x00E9:
+                self.data=plDynaRippleMgr(self)
             elif self.type==0x00EA:
                 self.data=plDynaBulletMgr(self)
             elif self.type==0x00ED:
@@ -215,6 +217,8 @@ class PrpObject:
                 self.data=plPanicLinkRegion(self)
             elif self.type==0x0106:
                 self.data=plDynamicEnvMap(self)
+            elif self.type==0x010A:
+                self.data=plDynaRippleVSMgr(self)
             elif self.type==0x0111:
                 self.data=plHardRegionPlanes(self)
             elif self.type==0x0112:

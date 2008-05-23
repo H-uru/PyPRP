@@ -555,37 +555,6 @@ class alcUruPage:
 
                     # Logical Export
                     AlcLogicHelper.Export(self,obj,scnobj,name)
-
-                elif alctype=="footmgr":
-                    print ""
-                    print "[plDynaFootMgr %s]" % name
-                    
-                    scnobj = plSceneObject.FindCreate(self.prp,name)
-                    scnobj.data.scene=SceneNodeRef
-                    scnobj.data.export_object(obj, objscript)
-                    
-                    plDynaFootMgr.Export(self,obj,scnobj,name)
-
-                    # Coordinate Export
-                    plCoordinateInterface.Export(self,obj,scnobj,name,1,objlist)
-
-                    # Logical Export
-                    AlcLogicHelper.Export(self,obj,scnobj,name)
-                elif alctype=="puddlemgr":
-                    print ""
-                    print "[plDynaPuddleMgr %s]" % name
-                    
-                    scnobj = plSceneObject.FindCreate(self.prp,name)
-                    scnobj.data.scene=SceneNodeRef
-                    scnobj.data.export_object(obj, objscript)
-                    
-                    plDynaPuddleMgr.Export(self,obj,scnobj,name)
-
-                    # Coordinate Export
-                    plCoordinateInterface.Export(self,obj,scnobj,name,1,objlist)
-
-                    # Logical Export
-                    AlcLogicHelper.Export(self,obj,scnobj,name)
                 else: # Any other point
                     print ""
                     print "[Point %s]" % name

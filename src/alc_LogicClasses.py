@@ -416,7 +416,14 @@ class AlcLogicHelper:
                         pscript = FindInDict(actscript,"puddlemgr",{})
                         plobj = plDynaPuddleMgr.FindCreate(page, handle)
                         plobj.data.export_script(pscript)
-
+                    elif _type == "ripplevsmgr":
+                        pscript = FindInDict(actscript,"ripplevsmgr",{})
+                        plobj = plDynaRippleVSMgr.FindCreate(page, handle)
+                        plobj.data.export_script(pscript)
+                    elif _type == "ripplemgr":
+                        pscript = FindInDict(actscript,"ripplemgr",{})
+                        plobj = plDynaRippleMgr.FindCreate(page, handle)
+                        plobj.data.export_script(pscript)
                     if not plobj is None:
                         if not hide:
                             scnobj.data.addModifier(plobj)
