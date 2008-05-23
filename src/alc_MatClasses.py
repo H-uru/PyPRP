@@ -234,9 +234,6 @@ class hsGMaterial(plSynchedObject):         # Type 0x07
         self.fCompFlags = 0 # UInt32 
         self.fLoadFlags = 0 # UInt32 
         #self.fLastUpdateTime# Single
-        self.fZOffset = 0
-        self.fCriteria = 0
-        self.fRenderLevel = plRenderLevel()
         self.blendermaterial = None
 
     def _Find(page,name):
@@ -483,7 +480,7 @@ class hsGMaterial(plSynchedObject):         # Type 0x07
             # Add a default layer if we didn't get and layers from the mtexes
             if(len(self.fLayers) == 0):
                 #find or create this new layer:
-                layer=root.find(0x06,name + "/" + "AutoLayer",1)
+                layer=root.find(0x06,name + "_AutoLayer_",1)
                 
                 # now see if we have a uvmapped texture on the object, and add this texture if needed
                 if(obj):
@@ -502,49 +499,28 @@ class hsGMaterial(plSynchedObject):         # Type 0x07
                     layer.data.FromBlenderMat(obj,mat)    
                 
                 self.fLayers.append(layer.data.getRef())
-    
-
-            self.fZOffset = int(mat.zOffset)
 
             # If we have two vertex color layers, the 2nd is used as alpha layer - if we have vertex alpha,
             # we need to have the renderlevel set to blending
-            if len(mesh.getColorLayerNames()) > 1:
-                if self.fZOffset < 1:
-                    self.fZOffset = 1
+            #if len(mesh.getColorLayerNames()) > 1:
+            #    if self.fZOffset < 1:
+            #        self.fZOffset = 1
 
 
                                     
     def layerCount(self):
         return len(self.fLayers)
 
-    def ZBias(self):
+    def Alpha(self):
         root = self.getRoot()
-        UsesAlpha = True
+        UsesAlpha = False
         for layerref in self.fLayers:
             layer = root.findref(layerref)
             if(layer.type == 0x0043):
                 UsesAlpha = False
             else:
-                UsesAlpha = (UsesAlpha and layer.data.UsesAlpha)
-        
-#            if layer.data.UsesAlpha:
-#                print "   DEBUG: Layer \"%s\" uses Alpha"%(layer.data.Key.name)
-#            else:
-#                print "   DEBUG: Layer \"%s\" is Opaque"%(layer.data.Key.name)
-
-#        if UsesAlpha:
-#            print "   DEBUG: Result - Material has Alpha"
-#        else:
-#            print "   DEBUG: Result - Material is Opaque"
-        
-        ZBias = int(self.fZOffset)
-        if UsesAlpha and ZBias == 0:
-            ZBias += 1
-        
-        return ZBias
-        
-    def Criteria(self):
-        return self.fCriteria
+                UsesAlpha = (UsesAlpha or layer.data.UsesAlpha)
+        return UsesAlpha
 
     def TexLayerCount(self):
         root=self.getRoot()
@@ -559,7 +535,6 @@ class hsGMaterial(plSynchedObject):         # Type 0x07
 
     def getBlenderTextures(self):
         return self.blendertextures
-    
     
     def export_mat(self,mat,obj):
         self.FromBlenderMat(mat,obj)
@@ -1181,6 +1156,9 @@ class plLayer(plLayerInterface):             # Type 0x06
             self.fState.fShadeFlags |= hsGMatState.hsGMatShadeFlags["kShadeSpecularColor"]
             self.fState.fShadeFlags |= hsGMatState.hsGMatShadeFlags["kShadeSpecularHighlight"]
             self.fSpecularPower = mat.getHardness()
+        
+        if mat.zOffset > 0.0:
+            self.fState.fZFlags |= hsGMatState.hsGMatZFlags["kZIncLayer"]
             
         # If we have two vertex color layers, the 2nd is used as alpha layer - if we have vertex alpha,
         # we need to have the alpha blending flag set, and we need to have

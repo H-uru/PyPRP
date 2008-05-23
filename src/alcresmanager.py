@@ -349,6 +349,8 @@ class alcUruPage:
                         softVolume.data.parentref = scnobj.data.getRef()
                         softVolume.data.scenenode = SceneNodeRef
                         softVolume.data.export_object(obj, vol)
+                        softVolume.data.fSoftDist = 0
+                        softVolume.data.fListenState = 0
 
                         relRgn.data.fRegion = softVolume.data.getRef()
                         scnobj.data.data1.append(relRgn.data.getRef())

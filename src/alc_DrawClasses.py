@@ -1561,88 +1561,85 @@ class plDrawInterface(plObjInterface):
     Export = staticmethod(_Export)
 
     def export_obj(self,obj,SceneNodeRef,isdynamic,softVolParser, water = False):
+        
         if obj.getType() != "Mesh":
             return
-
+        
         # Get Object Name
         name = obj.name
-        mesh = obj.getData(False,True) # gets a Mesh object instead of an NMesh
+        
+        #Get the Mesh data (not NMesh)
+        mesh = obj.getData(False,True)
+        
+        #Set up some stuff
         root = self.getRoot()
-
-        print " [Draw Interface %s]"%(str(self.Key.name))
+        blendSpan = water
+        weightCount = 0
+        materialGroups = []
+        spansList = {}
+        
+        #Begin exporting
+        print " [Draw Interface %s]" % name
+        
+        if obj.drawMode & Blender.Object.DrawModes["TRANSP"]:
+            blendSpan = True
+        
         # First see if we have any materials associated with the mesh:
         matcount = 0
         for mat in obj.data.materials:
             if not mat is None:
                 matcount = matcount + 1
 
-        # And if not, then create an automatic material...
+        # And if not, then fail miserably >:D
         if matcount == 0:
-            # create a new material if it's neccesary
-            print "No Mesh Materials set, appending automatic material (default blender material settings)"
-            mat = Blender.Material.New(str(obj.name) + '/AutoMaterial')
-            mat.setAmb(1.0)
-            # append the material to the mesh
-            mesh.materials = [mat,]
-
-
-    ######################################
-    ##
-    ## Loop through all the faces, to sort vertices and faces out per material
-    ##
-    ######################################
+            raise AttributeError("Object %s has no material. Export cannot continue!" % name)
 
 
         # Calculate the amount of UV Maps
-        Count_UvMaps = len(mesh.getUVLayerNames())
+        uvMapsCount = len(mesh.getUVLayerNames())
 
-        # Store active UV map
-        if Count_UvMaps > 0:
-            StoredActiveUVMap = mesh.activeUVLayer
-
-
-        # Weight Count is Global....
-        WeightCount = 0
         # build up a weight map if neccessary, and fill it with the default value to start with
         if len(mesh.getVertGroupNames()) > 0:
-            WeightCount = 1 # Blender supports only one weight :)
+            weightCount = 1 # Blender supports only one weight :)
 
         # Now, we need to make groups of faces for each assigned material :)
-
-        MaterialGroups = []
-
         # initialize the MaterialGroups list
         for mat in mesh.materials:
             if not mat is None:
-                Use_Sticky = 0
+                useSticky = 0
+                
                 # Loop through Layers
                 for mtex in mat.getTextures():
                     if not mtex is None:
                         if mtex.texco == Blender.Texture.TexCo["STICK"] and mesh.vertexUV:
-                            Use_Sticky = 1
-                # Add it all up.
-                UVCount = Count_UvMaps + Use_Sticky
+                            useSticky = 1
+                
+                UVCount = uvMapsCount + useSticky
 
-                MaterialGroups.append({ 'faces': [], 'vertices': [], 'mat': mat, 'vtxdict': {}, 'vtxalphacol': False, 'WeightCount': WeightCount, 'UVCount': UVCount, 'Use_Sticky': Use_Sticky })
+                materialGroups.append({ 'faces': [], \
+                                        'vertices': [], \
+                                        'mat': mat, \
+                                        'vtxdict': {}, \
+                                        'vtxalphacol': False, \
+                                        'WeightCount': weightCount, \
+                                        'UVCount': UVCount, \
+                                        'Sticky': useSticky \
+                                      })
             else:
                 # Failsafe mechanism....
-                MaterialGroups.append(None)
+                materialGroups.append(None)
 
         # process the faces and their vertices, and store them based on their material
-
         # some maps that will be heavily used
         ColorLayers = mesh.getColorLayerNames()
         UVLayers = mesh.getUVLayerNames()
 
         for mface in mesh.faces:
-            # superfluous safety sanity check
-            faceVertCount=len(mface.verts)
-            if faceVertCount<3 or faceVertCount>4:
-                # Yeah, like that ever happens :P
-                continue # ignore this face
+            if (len(mface.verts) < 3) or (len(mface.verts) > 4):
+                continue # ignore this face (too many verts)
 
-            MyVertIdcs = []
-            BaseVertexIdx = len(MaterialGroups[mface.mat]["vertices"])
+            vertIdxs = []
+            baseVertexIdx = len(materialGroups[mface.mat]["vertices"])
 
             index = 0
             for vector in mface.verts:
@@ -1661,34 +1658,33 @@ class plDrawInterface(plObjInterface):
 
                 # vertex colors
                 if mesh.vertexColors:
-
                     if len(ColorLayers) > 0:
                         try:
                             col_a=1.0
                             for vc in range(len(ColorLayers)):
-                                if(ColorLayers[vc].lower() == "col"):
-                                    # select first layer as color layer
+                                if(ColorLayers[vc].lower() == "col"): #Mesh vertex colours
                                     mesh.activeColorLayer = ColorLayers[vc]
                                     col_r=mface.col[index].r
                                     col_g=mface.col[index].g
                                     col_b=mface.col[index].b
-                                elif(ColorLayers[vc].lower() == "alpha"):
+                                    if col_a >= 1.0: #See if there is alpha on the colour map
+                                        col_a = mface.col[index].a
+                                elif(ColorLayers[vc].lower() == "alpha"): #Mesh vertex alpha
                                     mesh.activeColorLayer = ColorLayers[vc]
-                                    col_a=mface.col[index].g
-                                    MaterialGroups[mface.mat]["vtxalphacol"] = True
+                                    col_a = (mface.col[index].r + mface.col[index].g + mface.col[index].b) / 3.0
+                                    materialGroups[mface.mat]["vtxalphacol"] = True
+                                    blendSpan = True
 
                             v.color = RGBA(col_r,col_g,col_b,col_a)
                         except IndexError:
                             pass
 
-                # skin index
-
                 # Blend weights.
-                if WeightCount > 0:
+                if weightCount > 0:
                     bone,weight = mesh.getVertexInfluences(vector.index)
                     v.blends = [weight,]
 
-                # UV Maps Always Go in front...
+                # UV Maps
                 for uvlayer in UVLayers:
                     mesh.activeUVLayer = uvlayer
 
@@ -1697,20 +1693,20 @@ class plDrawInterface(plObjInterface):
                     v.tex.append([tex_u,tex_v,0])
 
                 # Sticky Coordinates Next
-                if MaterialGroups[mface.mat]["Use_Sticky"]:
-                    sticky = [vector.uv[0], 1 - vector.uv[1],0]
+                if materialGroups[mface.mat]["Sticky"]:
+                    sticky = [ vector.uv[0], 1 - vector.uv[1], 0 ]
                     v.tex.append(sticky)
 
-                # to avoid unneccesary copying of vertices do the following
-                v_idx = -1 # initialize index to invalid value
+                v_idx = -1 # to avoid unneccesary copying of vertices
 
-                # This adds a really long waiting time.....
+                # This adds a really long waiting time...
+                #Anyone know of a better way of doing this? >.>
                 if True:
                     # see if we already have saved this vertex
                     try:
-                        VertexDict = MaterialGroups[mface.mat]["vtxdict"]
+                        VertexDict = materialGroups[mface.mat]["vtxdict"]
                         for j in VertexDict[v.x][v.y][v.z]:
-                            vertex = MaterialGroups[mface.mat]["vertices"][j]
+                            vertex = materialGroups[mface.mat]["vertices"][j]
 
                             if vertex.isfullyequal(v):
                                 # if vertex is the same, set index to that one
@@ -1721,11 +1717,11 @@ class plDrawInterface(plObjInterface):
 
                 # if vertex is unique, add it
                 if v_idx == -1:
-                    MaterialGroups[mface.mat]["vertices"].append(v)
-                    v_idx = len(MaterialGroups[mface.mat]["vertices"]) -1
+                    materialGroups[mface.mat]["vertices"].append(v)
+                    v_idx = len(materialGroups[mface.mat]["vertices"]) -1
 
                     # Store this one in the dict
-                    VertexDict = MaterialGroups[mface.mat]["vtxdict"]
+                    VertexDict = materialGroups[mface.mat]["vtxdict"]
                     if not VertexDict.has_key(v.x):
                         VertexDict[v.x] = {}
                     if not VertexDict[v.x].has_key(v.y):
@@ -1735,34 +1731,16 @@ class plDrawInterface(plObjInterface):
                     VertexDict[v.x][v.y][v.z].append(v_idx)
 
                 # and store the vertex index in our face list
-                MyVertIdcs.append(v_idx)
+                vertIdxs.append(v_idx)
                 index += 1
 
-            if faceVertCount==3:
-                # a triangle can be copied just as that
-                MaterialGroups[mface.mat]["faces"].append(MyVertIdcs)
-            elif faceVertCount==4:
-                # a quad must be separated into two triangles
-                # first triangle
-                MaterialGroups[mface.mat]["faces"].append([MyVertIdcs[0],MyVertIdcs[1],MyVertIdcs[2]])
-                # second triangle
-                MaterialGroups[mface.mat]["faces"].append([MyVertIdcs[0],MyVertIdcs[2],MyVertIdcs[3]])
+            if len(mface.verts) == 3:
+                materialGroups[mface.mat]["faces"].append(vertIdxs)
+            elif len(mface.verts) == 4: # a quad must be separated into two triangles
+                materialGroups[mface.mat]["faces"].append([vertIdxs[0],vertIdxs[1],vertIdxs[2]]) # first triangle
+                materialGroups[mface.mat]["faces"].append([vertIdxs[0],vertIdxs[2],vertIdxs[3]]) # second triangle
 
-        # Restore active UV map
-        if Count_UvMaps > 0:
-            mesh.activeUVLayer = StoredActiveUVMap
-
-
-
-    ######################################
-    ##
-    ## End Loop
-    ##
-    ######################################
-
-
-        DrawableSpansList = {}
-        for MatGroup in MaterialGroups:
+        for MatGroup in materialGroups:
             if not MatGroup is None:
                 mat = MatGroup['mat']
                 pmat=root.find(0x07,mat.name,1)
@@ -1775,64 +1753,63 @@ class plDrawInterface(plObjInterface):
                 if(not pmat.isProcessed):
                     pmat.data.export_mat(mat,obj)
                     pmat.isProcessed = 1
+                
+                if pmat.data.Alpha():
+                    blendSpan = True
 
                 # Create the name of this spanset
-                # (RenderLevel Level at 0x00000000)
                 RenderLevel = plRenderLevel()
-                Criteria = pmat.data.Criteria()
-                ZBias = pmat.data.ZBias()
-                # Limit ZBias to 7, in order to avoid potential trouble...
-                if ZBias > 7:
-                    ZBias = 7
-                RenderLevel.setMajorLevel(ZBias << 1)
-
+                Criteria = 0
                 Props = 0
-                if ZBias > 0:
+                Suff = str(obj.passIndex)
+                
+                if Suff != '0':
                     # this seems to cause issues for my ages. Consider using sort faces (vs spans), or have an option for removing this?
                     Criteria |= plDrawable.Crit["kCritSortSpans"] | plDrawable.Crit["kCritSortFaces"]
                     Props = plDrawable.Props["kPropSortSpans"] | plDrawable.Props["kPropSortFaces"]
-
-
-                SpansLevel = plRenderLevel(plRenderLevel.MajorLevel["kOpaqueMajorLevel"],plRenderLevel.MinorLevel["kDefRendMinorLevel"])
-                if RenderLevel.fLevel == SpansLevel.fLevel:
-                    suffix="Spans"
                 else:
-                    suffix="BlendSpans"
+                    Suff = ''
                 
+                if blendSpan:
+                    RenderLevel = plRenderLevel(plRenderLevel.MajorLevel["kBlendRendMajorLevel"],plRenderLevel.MinorLevel["kOpaqueMinorLevel"])
+                    suffix = "BlendSpans" + Suff
+                else:
+                    suffix = "Spans" + Suff
+
                 if water:
-                    suffix="BlendSpans"
+                    suffix = "BlendSpans" + Suff
                     RenderLevel = plRenderLevel(plRenderLevel.MajorLevel["kBlendRendMajorLevel"],plRenderLevel.MinorLevel["kOpaqueMinorLevel"])
                     Criteria = plDrawable.Crit["kCritSortFaces"]
                     Props = plDrawable.Props["kPropSortFaces"]
 
-                Name_RenderLevel="%08x" % RenderLevel.fLevel
-                Name_Crit="%x" % Criteria
-                DSpansName=str(root.name) + "_District_" + str(root.page) + "_" + Name_RenderLevel + "_" + Name_Crit + suffix
+                Name_RenderLevel = "%08x" % RenderLevel.fLevel
+                Name_Crit = "%x" % Criteria
+                DSpansName = str(root.name) + "_District_" + str(root.page) + "_" + Name_RenderLevel + "_" + Name_Crit + suffix
 
                 # Create the entry if it doesn't exist yet...
-                if not DrawableSpansList.has_key(DSpansName):
-                    DrawableSpansList[DSpansName] = {'MatGroups': [],'RenderLevel': RenderLevel.fLevel,'Criteria': Criteria,'Props': Props}
+                if not spansList.has_key(DSpansName):
+                    spansList[DSpansName] = {'MatGroups': [], \
+                                             'RenderLevel': RenderLevel.fLevel, \
+                                             'Criteria': Criteria, \
+                                             'Props': Props \
+                                            }
 
                 # And append this material to it...
-                DrawableSpansList[DSpansName]['MatGroups'].append(MatGroup)
+                spansList[DSpansName]['MatGroups'].append(MatGroup)
 
-        # --- Drawable Spans
-
-        for DSpans_key in DrawableSpansList.keys():
-            DSpans = DrawableSpansList[DSpans_key]
-            drawspans=plDrawableSpans.FindCreate(root,DSpans_key)
-            drawspans.data.fSceneNode=SceneNodeRef
-            drawspans.data.fRenderLevel.fLevel=DSpans['RenderLevel']
+        for DSpans_key in spansList.keys():
+            DSpans = spansList[DSpans_key]
+            drawspans = plDrawableSpans.FindCreate(root,DSpans_key)
+            drawspans.data.fSceneNode = SceneNodeRef
+            drawspans.data.fRenderLevel.fLevel = DSpans['RenderLevel']
             drawspans.data.fCriteria = DSpans['Criteria']
             drawspans.data.fProps = DSpans['Props']
             #export the object
-            setnum=drawspans.data.export_obj(obj,isdynamic,DSpans['MatGroups'], water)
-            self.addSpanSet(setnum,drawspans.data.getRef())
+            setnum=drawspans.data.export_obj(obj, isdynamic, DSpans['MatGroups'], water)
+            self.addSpanSet(setnum, drawspans.data.getRef())
 
-        # --- Export the Vis Region
 
         objscript = AlcScript.objects.Find(obj.getName())
-
         propString = FindInDict(objscript,"visual.visregions", [])
         if type(propString) == list:
             for reg in propString:
