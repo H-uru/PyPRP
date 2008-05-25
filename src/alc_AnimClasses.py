@@ -213,16 +213,17 @@ class plDynaFootMgr(plDynaDecalMgr):
         for scnref in scnrefs:
             target = refparser.MixedRef_FindCreate(scnref)
             self.fTargets.append(target.data.getRef())
+        
+        self.fWaitOnEnable = int(FindInDict(script,'waitonenable',0))
+        self.fWetLength = float(FindInDict(script,'wetlength',10.0))
+        self.fDecayStart = float(FindInDict(script,'decaystart',0.75))
+        self.fLifeSpan = float(FindInDict(script,'lifespan',15.0))
 
         self.fPartyObjects = hsTArray()
         self.fMaxNumVerts = 1000
         self.fMaxNumIdx = 1000
-        self.fWaitOnEnable = int(FindInDict(script,'waitonenable',0))
         self.fIntensity = 1.0
-        self.fWetLength = float(FindInDict(script,'wetlength',0))
         self.fRampEnd = 0.1
-        self.fDecayStart = float(FindInDict(script,'decaystart',0))
-        self.fLifeSpan = float(FindInDict(script,'lifespan',0))
         self.fGridSizeU = 2.5
         self.fGridSizeV = 2.5
         self.fScale = Vertex(1.5,1,1)
@@ -294,6 +295,12 @@ class plDynaRippleMgr(plDynaDecalMgr):
         for scnref in scnrefs:
             target = refparser.MixedRef_FindCreate(scnref)
             self.fTargets.append(target.data.getRef())
+        
+        footRefs = list(FindInDict(script,'notifies', []))
+        refparser = ScriptRefParser(self.getRoot(),str(self.Key.name), 0x00E8, [0x00E8,])
+        for footRef in footRefs:
+            notifier = refparser.MixedRef_FindCreate(footRef)
+            self.fNotifies.append(notifier.data.getRef())
 
         self.fPartyObjects = hsTArray()
         self.fMaxNumVerts = 1000
@@ -308,11 +315,6 @@ class plDynaRippleMgr(plDynaDecalMgr):
         self.fGridSizeV = 2.5
         self.fScale = Vertex(1.5,1,1)
         self.fPartyTime = 1.0
-        footRefs = list(FindInDict(script,'notifies', []))
-        refparser = ScriptRefParser(self.getRoot(),str(self.Key.name), 0x00E8, [0x00E8,])
-        for footRef in footRefs:
-            notifier = refparser.MixedRef_FindCreate(footRef)
-            self.fNotifies.append(notifier.data.getRef())
 
             
 class plDynaRippleVSMgr(plDynaRippleMgr):
