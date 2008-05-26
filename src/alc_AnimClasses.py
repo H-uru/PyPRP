@@ -1122,7 +1122,7 @@ class plSimpleScaleController(plScaleController):
     
     def read(self,buf):
         if(buf.Read32() != 0):
-            self.fValue = plScaleValueControlle()
+            self.fValue = plScaleValueController()
             self.fValue.read(buf)
     
     def write(self,buf):
@@ -1746,34 +1746,127 @@ class plATCAnim(plAGAnim): #type 0xF1
         ipo = obj.ipo
         endFrame = 0
         
+        pi = 3.14159265358979
+        
         app = PrpController(0x0309) #plMatrixChannelApplicator
         app.data.fEnabled = 1
         app.data.fChannelName = obj.name
         
         ctlchn = PrpController(0x02D9) #plMatrixControllerChannel()
-        # CompoundRotController is best, since each curve can be done individually, for now, we'll do simple because it's.. well.. simpler.
+        ctlchn.data.fController = PrpController(0x023B) #plTMController()
         # first, we check for OB_LOCX, OB_LOCY, OB_LOCZ
-        if (Ipo.OB_LOCX in ipo) and (Ipo.OB_LOCY in ipo) and (Ipo.OB_LOCZ in ipo):
-            KeyList = []
-            xcurve = ipo[Ipo.OB_LOCX].bezierPoints
-            for frm in range(len(xcurve)):
-                frame = hsPoint3Key()
-                num = xcurve[frm].pt[0] - 1
-                
-                frame.fFrameNum = int(num)
-                frame.fFrameTime = num/30.0
-                frame.fValue = Vertex(ipo[Ipo.OB_LOCX].bezierPoints[frm].pt[1], ipo[Ipo.OB_LOCY].bezierPoints[frm].pt[1], ipo[Ipo.OB_LOCZ].bezierPoints[frm].pt[1])
-                
-                KeyList.append(frame)
-                
-            ctlchn.data.fController = PrpController(0x023B) #plTMController()
-            ctlchn.data.fController.data.fPosController = plSimplePosController()
-            ctlchn.data.fController.data.fPosController.fValue = plPoint3Controller()
-            ctlchn.data.fController.data.fPosController.fValue.fKeyList = hsPoint3KeyList()
-            ctlchn.data.fController.data.fPosController.fValue.fKeyList.fKeys = KeyList
-            endFrame = xcurve[-1].pt[0]
+        if (Ipo.OB_LOCX in ipo) or (Ipo.OB_LOCY in ipo) or (Ipo.OB_LOCZ in ipo):
+            ctlchn.data.fController.data.fPosController = plCompoundPosController()
+            if (Ipo.OB_LOCX in ipo):
+                KeyList = []
+                xcurve = ipo[Ipo.OB_LOCX].bezierPoints
+                for frm in xcurve:
+                    frame = hsScalarKey()
+                    num = frm.pt[0] - 1
+                    
+                    frame.fFrameNum = int(num)
+                    frame.fFrameTime = num/30.0
+                    frame.fValue = frm.pt[1]
+                    
+                    KeyList.append(frame)
+                ctlchn.data.fController.data.fPosController.fXController = plScalarController()
+                ctlchn.data.fController.data.fPosController.fXController.fKeyList = hsScalarKeyList()
+                ctlchn.data.fController.data.fPosController.fXController.fKeyList.fKeys = KeyList
+                if endFrame < xcurve[-1].pt[0]:
+                    endFrame = xcurve[-1].pt[0]
+                    
+            if (Ipo.OB_LOCY in ipo):
+                KeyList = []
+                ycurve = ipo[Ipo.OB_LOCY].bezierPoints
+                for frm in ycurve:
+                    frame = hsScalarKey()
+                    num = frm.pt[0] - 1
+                    
+                    frame.fFrameNum = int(num)
+                    frame.fFrameTime = num/30.0
+                    frame.fValue = frm.pt[1]
+                    
+                    KeyList.append(frame)
+                ctlchn.data.fController.data.fPosController.fYController = plScalarController()
+                ctlchn.data.fController.data.fPosController.fYController.fKeyList = hsScalarKeyList()
+                ctlchn.data.fController.data.fPosController.fYController.fKeyList.fKeys = KeyList
+                if endFrame < ycurve[-1].pt[0]:
+                    endFrame = ycurve[-1].pt[0]
+                    
+            if (Ipo.OB_LOCZ in ipo):
+                KeyList = []
+                zcurve = ipo[Ipo.OB_LOCZ].bezierPoints
+                for frm in zcurve:
+                    frame = hsScalarKey()
+                    num = frm.pt[0] - 1
+                    
+                    frame.fFrameNum = int(num)
+                    frame.fFrameTime = num/30.0
+                    frame.fValue = frm.pt[1]
+                    
+                    KeyList.append(frame)
+                ctlchn.data.fController.data.fPosController.fZController = plScalarController()
+                ctlchn.data.fController.data.fPosController.fZController.fKeyList = hsScalarKeyList()
+                ctlchn.data.fController.data.fPosController.fZController.fKeyList.fKeys = KeyList
+                if endFrame < zcurve[-1].pt[0]:
+                    endFrame = zcurve[-1].pt[0]
         
         # then we check for OB_ROTX, OB_ROTY, OB_ROTZ
+        if (Ipo.OB_ROTX in ipo) or (Ipo.OB_ROTY in ipo) or (Ipo.OB_ROTZ in ipo):
+            ctlchn.data.fController.data.fRotController = plCompoundRotController()
+            if(Ipo.OB_ROTX in ipo):
+                KeyList = []
+                xcurve = ipo[Ipo.OB_ROTX].bezierPoints
+                for frm in xcurve:
+                    frame = hsScalarKey()
+                    num = frm.pt[0] - 1
+                    
+                    frame.fFrameNum = int(num)
+                    frame.fFrameTime = num/30.0
+                    frame.fValue = (frm.pt[1] / 18.0) * pi
+                    
+                    KeyList.append(frame)
+                ctlchn.data.fController.data.fRotController.fXController = plScalarController()
+                ctlchn.data.fController.data.fRotController.fXController.fKeyList = hsScalarKeyList()
+                ctlchn.data.fController.data.fRotController.fXController.fKeyList.fKeys = KeyList
+                if endFrame < xcurve[-1].pt[0]:
+                    endFrame = xcurve[-1].pt[0]
+                
+            if(Ipo.OB_ROTY in ipo):
+                KeyList = []
+                ycurve = ipo[Ipo.OB_ROTY].bezierPoints
+                for frm in ycurve:
+                    frame = hsScalarKey()
+                    num = frm.pt[0] - 1
+                    
+                    frame.fFrameNum = int(num)
+                    frame.fFrameTime = num/30.0
+                    frame.fValue = (frm.pt[1] / 18.0) * pi
+                    
+                    KeyList.append(frame)
+                ctlchn.data.fController.data.fRotController.fYController = plScalarController()
+                ctlchn.data.fController.data.fRotController.fYController.fKeyList = hsScalarKeyList()
+                ctlchn.data.fController.data.fRotController.fYController.fKeyList.fKeys = KeyList
+                if endFrame < ycurve[-1].pt[0]:
+                    endFrame = ycurve[-1].pt[0]
+                
+            if(Ipo.OB_ROTZ in ipo):
+                KeyList = []
+                zcurve = ipo[Ipo.OB_ROTZ].bezierPoints
+                for frm in zcurve:
+                    frame = hsScalarKey()
+                    num = frm.pt[0] - 1
+                    
+                    frame.fFrameNum = int(num)
+                    frame.fFrameTime = num/30.0
+                    frame.fValue = (frm.pt[1] / 18.0) * pi
+                    
+                    KeyList.append(frame)
+                ctlchn.data.fController.data.fRotController.fZController = plScalarController()
+                ctlchn.data.fController.data.fRotController.fZController.fKeyList = hsScalarKeyList()
+                ctlchn.data.fController.data.fRotController.fZController.fKeyList.fKeys = KeyList
+                if endFrame < zcurve[-1].pt[0]:
+                    endFrame = zcurve[-1].pt[0]
         # and finally OB_SIZEX, OB_SIZEY, OB_SIZEZ
         
         self.fStart = 0
