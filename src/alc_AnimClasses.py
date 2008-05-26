@@ -792,17 +792,16 @@ class plSplineEaseCurve(plATCEaseCurve):
     
 ###Controllers###
 class PrpController:
-    def __init__(self,type=None,version=5):
-        if (type == None):
-            self.ctrlType = 0x8000
-        else:
-            self.ctrlType = type
+    def __init__(self,type=0x8000,version=5):
+        self.ctrlType = type
         if(version != 5):
             self.data = None
             raise "Can only read Controllers for Uru. Myst 5 NOT SUPPORTED!!!"
         
         self.Key = plKey(5)
+        self.setType(type)
         
+    def setType(self, type):
         if type == 0x022A:
             self.data = plController(self)
         elif type == 0x022B:
@@ -839,12 +838,18 @@ class PrpController:
             self.data = plCompoundPosController(self)
         elif type == 0x023B:
             self.data = plTMController(self)
+        elif type == 0x02D9:
+            self.data = plMatrixControllerChannel(self)
+        elif type == 0x0309:
+            self.data = plMatrixChannelApplicator(self)
         elif type == 0x8000: #NULL Creatable ;)
             self.data = None
         else:
             raise "Unexpected plCreatable Object Type [%04X] -- expected a plController -- Sombody's on crack..." %type
 
     def read(self,buf):
+        self.ctrlType = buf.Read16()
+        self.setType(self.ctrlType)
         if self.data != None:
             self.data.read(buf)
 
@@ -969,6 +974,8 @@ class plPoint3Controller(plLeafController):
         plLeafController.__init__(self,parent,type)
         self.fKeyList = None
     
+    def getType(self):
+        return plPosController.Type["kSimplePosController"]
     
     def read(self,buf):
         plLeafController.read(self,buf)
@@ -1532,6 +1539,16 @@ class plAGApplicator:
     def write(self,buf):
         buf.WriteBool(self.fEnabled)
         buf.WriteSafeString(self.fChannelName)
+        
+class plMatrixChannelApplicator(plAGApplicator):
+    def __init__(self, parent=None, name="unnamed", type=0x0309):
+        plAGApplicator.__init__(self)
+        
+    def read(self, stream):
+        plAGApplicator.read(self, stream)
+        
+    def write(self, stream):
+        plAGApplicator.write(self, stream)
 
 class plAGChannel:
     def __init__(self,parent=None,name="unnamed",type=0x02D5):
@@ -1543,7 +1560,7 @@ class plAGChannel:
     def write(self, stream):
         stream.WriteSafeString(self.fName)
         
-class plMatrixControllerChannel(plAGChannel):
+class plMatrixControllerChannel(plAGChannel): #plMatrixChannel has no read/write
     def __init__(self,parent=None,name="unnamed",type=0x02D9):
         plAGChannel.__init__(self,parent,name,type)
         self.fController = plTMController()
@@ -1671,7 +1688,7 @@ class plAGAnim(plSynchedObject):                #Type 0x6B
         self.fEnd = stream.ReadFloat()
         i = stream.Read32()
         for j in range(i):
-            self.fApps.append(self.pair(plAGApplicator(), plAGChannel()))
+            self.fApps.append(self.pair(PrpController(), PrpController()))
             self.fApps[j].first.read(stream)
             self.fApps[j].second.read(stream)
     
@@ -1681,9 +1698,9 @@ class plAGAnim(plSynchedObject):                #Type 0x6B
         stream.WriteFloat(self.fStart)
         stream.WriteFloat(self.fEnd)
         stream.Write32(len(self.fApps))
-        for i in range(len(self.fApps)):
-            self.fApps[i].first.write(stream)
-            self.fApps[i].second.write(stream)
+        for app in self.fApps:
+            app.first.write(stream)
+            app.second.write(stream)
     
     def export_obj(self, obj, objscript):
         plSynchedObject.export_obj(self, obj, objscript)
@@ -1729,10 +1746,10 @@ class plATCAnim(plAGAnim): #type 0xF1
         ipo = obj.ipo
         endFrame = 0
         
-        app = plAGApplicator() # same as plMatrixChannelApplicator (no read/write)
-        app.fEnabled = True
-        app.fChannelName = obj.name
-        ctlchn = plMatrixControllerChannel()
+        app = PrpController(0x0309) #plMatrixChannelApplicator
+        app.data.fEnabled = 1
+        app.data.fChannelName = obj.name
+        ctlchn = PrpController(0x02D9) #plMatrixControllerChannel()
         # CompoundRotController is best, since each curve can be done individually, for now, we'll do simple because it's.. well.. simpler.
         # first, we check for OB_LOCX, OB_LOCY, OB_LOCZ
         if (Ipo.OB_LOCX in ipo) and (Ipo.OB_LOCY in ipo) and (Ipo.OB_LOCZ in ipo):
@@ -1748,10 +1765,11 @@ class plATCAnim(plAGAnim): #type 0xF1
                 
                 KeyList.append(frame)
                 
-            ctlchn.fController.fPosController = plSimplePosController()
-            ctlchn.fController.fPosController.fValue = plPoint3Controller()
-            ctlchn.fController.fPosController.fValue.fKeyList = hsPoint3KeyList()
-            ctlchn.fController.fPosController.fValue.fKeyList.fKeys = KeyList
+            ctlchn.data.fController = PrpController(0x023B) #plTMController()
+            ctlchn.data.fController.data.fPosController = plSimplePosController()
+            ctlchn.data.fController.data.fPosController.fValue = plPoint3Controller()
+            ctlchn.data.fController.data.fPosController.fValue.fKeyList = hsPoint3KeyList()
+            ctlchn.data.fController.data.fPosController.fValue.fKeyList.fKeys = KeyList
             endFrame = xcurve[-1].pt[0]
         
         # then we check for OB_ROTX, OB_ROTY, OB_ROTZ
@@ -1760,7 +1778,7 @@ class plATCAnim(plAGAnim): #type 0xF1
         self.fStart = 0
         self.fEnd = endFrame/30.0
         # the affine parts "T" part seems to correspond with the un-animated position of the object
-        ctlchn.fAP.fT = Vertex(obj.loc[0], obj.loc[1], obj.loc[2])
+        ctlchn.data.fAP.fT = Vertex(obj.loc[0], obj.loc[1], obj.loc[2])
         
         self.fName = FindInDict(animscript, "name", "unnamed_anim")
         self.fAutoStart = FindInDict(animscript, "autostart", 1)

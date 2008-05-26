@@ -2549,7 +2549,7 @@ class plLayerAnimation(plLayerAnimationBase):
                 frame.fValue = matx
                 KeyList.append(frame)
             
-            self.fTransformCtl = alc_AnimClasses.PrpController(0x0234, self.getVersion())
+            self.fTransformCtl = alc_AnimClasses.PrpController(0x0234, self.getVersion()) #plMatrix44Controller
             self.fTransformCtl.data.fKeys = KeyList
             endFrame = curves[-1].pt[0]
         else:

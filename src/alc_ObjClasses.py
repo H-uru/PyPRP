@@ -226,7 +226,6 @@ class plSceneObject(plSynchedObject):                       #Type 0x01
         plSynchedObject.export_obj(self, obj, objscript)
         # check for animations
         if obj.ipo:
-            ipo = obj.ipo
             # this will specify animation names and markers
             animParams = FindInDict(objscript, "animations", [])
             if(len(animParams) == 0):
