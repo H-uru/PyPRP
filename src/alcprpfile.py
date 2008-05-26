@@ -211,6 +211,8 @@ class PrpObject:
                 self.data=plDynaBulletMgr(self)
             elif self.type==0x00ED:
                 self.data=plDynaPuddleMgr(self)
+            elif self.type==0x00F1:
+                self.data=plATCAnim(self)
             elif self.type==0x00FB:
                 self.data=plWaveSet7(self)
             elif self.type==0x00FC:

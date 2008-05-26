@@ -381,6 +381,26 @@ class plDynaRippleVSMgr(plDynaRippleMgr):
         for scnref in scnrefs:
             target = refparser.MixedRef_FindCreate(scnref)
             self.fTargets.append(target.data.getRef())
+        
+        footRefs = list(FindInDict(script,'notifies', []))
+        refparser = ScriptRefParser(self.getRoot(),str(self.Key.name), 0x00E8, [0x00E8,])
+        for footRef in footRefs:
+            notifier = refparser.MixedRef_FindCreate(footRef)
+            self.fNotifies.append(notifier.data.getRef())
+
+        initu = FindInDict(script,'initu', 1)
+        initv = FindInDict(script,'initv', 1)
+        finalu = FindInDict(script,'finalu', 1)
+        finalv = FindInDict(script,'finalv', 1)
+        self.fInitUVW = Vertex(initu,initv,1)
+        self.fFinalUVW = Vertex(finalu,finalv,1)
+
+        WaveSetBase = FindInDict(script,'waveset', None)
+        refparser = ScriptRefParser(self.getRoot(),str(self.Key.name), 0x00FB, [0x00FB,])
+        WaveSetBaseObj = refparser.MixedRef_FindCreate(WaveSetBase)
+        self.fWaveSetBase = WaveSetBaseObj.data.getRef()
+        print 'WavesetRef:', self.fWaveSetBase
+#        WaveSetBaseObj = alc_MatClasses.plWaveSet7.FindCreate(self.getRoot(),'Water')
 
         self.fPartyObjects = hsTArray()
         self.fMaxNumVerts = 1000
@@ -395,30 +415,10 @@ class plDynaRippleVSMgr(plDynaRippleMgr):
         self.fGridSizeV = 2.5
         self.fScale = Vertex(7.5,7.5,1)
         self.fPartyTime = 0.25
-        footRefs = list(FindInDict(script,'notifies', []))
-        refparser = ScriptRefParser(self.getRoot(),str(self.Key.name), 0x00E8, [0x00E8,])
-        for footRef in footRefs:
-            notifier = refparser.MixedRef_FindCreate(footRef)
-            self.fNotifies.append(notifier.data.getRef())
-
-        initu = FindInDict(script,'initu', None)
-        initv = FindInDict(script,'initv', None)
-        finalu = FindInDict(script,'finalu', None)
-        finalv = FindInDict(script,'finalv', None)
-        self.fInitUVW = Vertex(initu,initv,1)
-        self.fFinalUVW = Vertex(finalu,finalv,1)
-
-        WaveSetBase = FindInDict(script,'waveset', None)
-        refparser = ScriptRefParser(self.getRoot(),str(self.Key.name), 0x00FB, [0x00FB,])
-        WaveSetBaseObj = refparser.MixedRef_FindCreate(WaveSetBase)
-        self.fWaveSetBase = WaveSetBaseObj.data.getRef()
-        print 'WavesetRef:', self.fWaveSetBase
-#        WaveSetBaseObj = alc_MatClasses.plWaveSet7.FindCreate(self.getRoot(),'Water')
 
 class plDynaPuddleMgr(plDynaRippleMgr):
     def __init__(self,parent,name="unnamed",type=0x00ED):
         plDynaRippleMgr.__init__(self,parent,name,type)
-        pass
         
     def _Find(page,name):
         return page.find(0x00ED,name,0)
@@ -469,6 +469,20 @@ class plDynaPuddleMgr(plDynaRippleMgr):
         for scnref in scnrefs:
             target = refparser.MixedRef_FindCreate(scnref)
             self.fTargets.append(target.data.getRef())
+        
+        footRefs = list(FindInDict(script,'notifies', []))
+        refparser = ScriptRefParser(self.getRoot(),str(self.Key.name), 0x00E8, [0x00E8,])
+        for footRef in footRefs:
+            notifier = refparser.MixedRef_FindCreate(footRef)
+            self.fNotifies.append(notifier.data.getRef())
+
+
+        initu = FindInDict(script,'initu', 1)
+        initv = FindInDict(script,'initv', 1)
+        finalu = FindInDict(script,'finalu', 1)
+        finalv = FindInDict(script,'finalv', 1)
+        self.fInitUVW = Vertex(initu,initv,1)
+        self.fFinalUVW = Vertex(finalu,finalv,1)
 
         self.fPartyObjects = hsTArray()
         self.fMaxNumVerts = 1000
@@ -483,19 +497,6 @@ class plDynaPuddleMgr(plDynaRippleMgr):
         self.fGridSizeV = 2.5
         self.fScale = Vertex(7.5,7.5,1)
         self.fPartyTime = 0.25
-        footRefs = list(FindInDict(script,'notifies', []))
-        refparser = ScriptRefParser(self.getRoot(),str(self.Key.name), 0x00E8, [0x00E8,])
-        for footRef in footRefs:
-            notifier = refparser.MixedRef_FindCreate(footRef)
-            self.fNotifies.append(notifier.data.getRef())
-
-
-        initu = FindInDict(script,'initu', None)
-        initv = FindInDict(script,'initv', None)
-        finalu = FindInDict(script,'finalu', None)
-        finalv = FindInDict(script,'finalv', None)
-        self.fInitUVW = Vertex(initu,initv,1)
-        self.fFinalUVW = Vertex(finalu,finalv,1)
 
 class plDynaBulletMgr(plDynaDecalMgr):
     def __init__(self,parent,name="unnamed",type=0x00E8):
@@ -1110,7 +1111,7 @@ class plSimpleScaleController(plScaleController):
         
     
     def getType(self):
-        return plScaleController.Type.kSimpleScaleController
+        return plScaleController.Type["kSimpleScaleController"]
     
     def read(self,buf):
         if(buf.Read32() != 0):
@@ -1132,7 +1133,7 @@ class plSimpleRotController(plRotController):
         
     
     def getType(self):
-        return plRotController.Type.kSimpleRotController
+        return plRotController.Type["kSimpleRotController"]
     
     def read(self,buf):
         if (buf.Read32() != 0):
@@ -1157,7 +1158,7 @@ class plCompoundRotController(plRotController):
         
     
     def getType(self):
-        return plRotController.Type.kCompoundRotController
+        return plRotController.Type["kCompoundRotController"]
     
     def read(self,buf):
         if (buf.Read32() != 0):
@@ -1200,7 +1201,7 @@ class plSimplePosController(plPosController):
     
     
     def getType(self):
-        return plPosController.Type.kSimplePosController
+        return plPosController.Type["kSimplePosController"]
     
     def read(self,buf):
         if (buf.Read32() != 0):
@@ -1225,7 +1226,7 @@ class plCompoundPosController(plPosController):
     
     
     def getType(self):
-        return plPosController.Type.kCompoundPosController
+        return plPosController.Type["kCompoundPosController"]
     
     
     def read(self,buf):
@@ -1272,23 +1273,23 @@ class plTMController(plController):
     
     def read(self,buf):
         type = buf.Read32()
-        if type == plPosController.Type.kCompoundPosController:
+        if type == plPosController.Type["kCompoundPosController"]:
             self.fPosController = plCompoundPosController()
             self.fPosController.read(buf)
-        elif type == plPosController.Type.kSimplePosController:
+        elif type == plPosController.Type["kSimplePosController"]:
             self.fPosController = plSimplePosController()
             self.fPosController.read(buf)
         
         type = buf.Read32()
-        if type == plRotController.Type.kCompoundRotController:
+        if type == plRotController.Type["kCompoundRotController"]:
             self.fRotController = plCompoundRotController()
             self.fRotController.read(buf)
-        elif type == plRotController.Type.kSimpleRotController:
+        elif type == plRotController.Type["kSimpleRotController"]:
             self.fRotController = plSimpleRotController()
             self.fRotController.read(buf)
         
         type = buf.Read32()
-        if type == plScaleController.Type.kSimpleScaleController:
+        if type == plScaleController.Type["kSimpleScaleController"]:
             self.fScaleController = plSimpleScaleController()
             self.fScaleController.read(buf)
     
@@ -1298,19 +1299,19 @@ class plTMController(plController):
             buf.Write32(self.fPosController.getType())
             self.fPosController.write(buf)
         else:
-            buf.Write32(plPosController.Type.kNullPosController)
+            buf.Write32(plPosController.Type["kNullPosController"])
         
         if self.fRotController != None:
             buf.Write32(self.fRotController.getType())
             self.fRotController.write(buf)
         else:
-            buf.Write32(plRotController.Type.kNullRotController)
+            buf.Write32(plRotController.Type["kNullRotController"])
         
         if self.fScaleController != None:
             buf.Write32(self.fScaleController.getType())
             self.fScaleController.write(buf)
         else:
-            buf.Write32(plScaleController.Type.kNullScaleController)
+            buf.Write32(plScaleController.Type["kNullScaleController"])
 
 
 ###KeyFrame Classes###
@@ -1518,21 +1519,45 @@ class hsScaleValue:
         self.fQ.write(buf)
 
 
-###OLD--MOVED STUFF###
 class plAGApplicator:
     def __init__(self):
-        self.bool = 0
-        self.str = 0
+        self.fEnabled = 0
+        self.fChannelName = str()
     
     def read(self,buf):
-        self.bool = buf.ReadBool()
-        self.str = buf.ReadSafeString()
+        self.fEnabled = buf.ReadBool()
+        self.fChannelName = buf.ReadSafeString()
     
     
     def write(self,buf):
-        buf.WriteBool(self.bool)
-        buf.WriteSafeString(self.str)
+        buf.WriteBool(self.fEnabled)
+        buf.WriteSafeString(self.fChannelName)
 
+class plAGChannel:
+    def __init__(self,parent=None,name="unnamed",type=0x02D5):
+        self.fName = str()
+        
+    def read(self, stream):
+        self.fName = stream.ReadSafeString()
+        
+    def write(self, stream):
+        stream.WriteSafeString(self.fName)
+        
+class plMatrixControllerChannel(plAGChannel):
+    def __init__(self,parent=None,name="unnamed",type=0x02D9):
+        plAGChannel.__init__(self,parent,name,type)
+        self.fController = plTMController()
+        self.fAP = hsAffineParts() # this is actually part of plMatrixChannel, but plMatrixChannel has no read or write
+        
+    def read(self, stream):
+        plAGChannel.read(self, stream)
+        self.fController.read(stream)
+        self.fAP.read(stream)
+    
+    def write(self, stream):
+        plAGChannel.write(self, stream)
+        self.fController.write(stream)
+        self.fAP.write(stream)
 
 class plAnimTimeConvert:
     plAnimTimeFlags = \
@@ -1625,3 +1650,189 @@ class plAnimTimeConvert:
 
     def getVersion(self):
         return self.version
+        
+class plAGAnim(plSynchedObject):                #Type 0x6B
+    class pair:
+        def __init__(self, first, second):
+            self.first = first
+            self.second = second
+    
+    def __init__(self,parent,name="unnamed",type=None):
+        plSynchedObject.__init__(self,parent,name,type)
+        self.fName = 0
+        self.fStart = 0
+        self.fEnd = 0
+        self.fApps = []
+    
+    def read(self,stream):
+        plSynchedObject.read(self,stream)
+        self.fName = stream.ReadSafeString()
+        self.fStart = stream.ReadFloat()
+        self.fEnd = stream.ReadFloat()
+        i = stream.Read32()
+        for j in range(i):
+            self.fApps.append(self.pair(plAGApplicator(), plAGChannel()))
+            self.fApps[j].first.read(stream)
+            self.fApps[j].second.read(stream)
+    
+    def write(self,stream):
+        plSynchedObject.write(self,stream)
+        stream.WriteSafeString(self.fName)
+        stream.WriteFloat(self.fStart)
+        stream.WriteFloat(self.fEnd)
+        stream.Write32(len(self.fApps))
+        for i in range(len(self.fApps)):
+            self.fApps[i].first.write(stream)
+            self.fApps[i].second.write(stream)
+    
+    def export_obj(self, obj, objscript):
+        plSynchedObject.export_obj(self, obj, objscript)
+        
+        
+class plATCAnim(plAGAnim): #type 0xF1
+    class pair:
+        def __init__(self, first, second):
+            self.first = first
+            self.second = second
+            
+    def __init__(self,parent=None,name="unnamed",type=0x00F1):
+        plAGAnim.__init__(self, parent, name, type)
+        self.fInitial = -1.0
+        self.fAutoStart = 1
+        self.fLoopStart = 0.0 #time in seconds
+        self.fLoopEnd = 1.0 #time in seconds
+        self.fLoop = 1
+        self.fEaseInType = 0x00
+        self.fEaseInMin = 1.0
+        self.fEaseInMax = 1.0
+        self.fEaseInLength = 1.0
+        self.fEaseOutType = 0x00
+        self.fEaseOutMin = 1.0
+        self.fEaseOutMax = 1.0
+        self.fEaseOutLength = 1.0
+        self.fMarkers = dict()
+        self.fLoops = dict()
+        self.fStopPoints = []
+        
+    def _Find(page,name):
+        return page.find(0x00F1,name,0)
+    Find = staticmethod(_Find)
+
+    def _FindCreate(page,name):
+        return page.find(0x00F1,name,1)
+    FindCreate = staticmethod(_FindCreate)
+        
+    def export_obj(self, obj, animscript=dict()):
+        plAGAnim.export_obj(self, obj, AlcScript.objects.Find(obj.name))
+        print "   [ATCAnimation %s]"%(str(self.Key.name))
+        
+        ipo = obj.ipo
+        endFrame = 0
+        
+        app = plAGApplicator() # same as plMatrixChannelApplicator (no read/write)
+        app.fEnabled = True
+        app.fChannelName = obj.name
+        ctlchn = plMatrixControllerChannel()
+        # CompoundRotController is best, since each curve can be done individually, for now, we'll do simple because it's.. well.. simpler.
+        # first, we check for OB_LOCX, OB_LOCY, OB_LOCZ
+        if (Ipo.OB_LOCX in ipo) and (Ipo.OB_LOCY in ipo) and (Ipo.OB_LOCZ in ipo):
+            KeyList = []
+            xcurve = ipo[Ipo.OB_LOCX].bezierPoints
+            for frm in range(len(xcurve)):
+                frame = hsPoint3Key()
+                num = xcurve[frm].pt[0] - 1
+                
+                frame.fFrameNum = int(num)
+                frame.fFrameTime = num/30.0
+                frame.fValue = Vertex(ipo[Ipo.OB_LOCX].bezierPoints[frm].pt[1], ipo[Ipo.OB_LOCY].bezierPoints[frm].pt[1], ipo[Ipo.OB_LOCZ].bezierPoints[frm].pt[1])
+                
+                KeyList.append(frame)
+                
+            ctlchn.fController.fPosController = plSimplePosController()
+            ctlchn.fController.fPosController.fValue = plPoint3Controller()
+            ctlchn.fController.fPosController.fValue.fKeyList = hsPoint3KeyList()
+            ctlchn.fController.fPosController.fValue.fKeyList.fKeys = KeyList
+            endFrame = xcurve[-1].pt[0]
+        
+        # then we check for OB_ROTX, OB_ROTY, OB_ROTZ
+        # and finally OB_SIZEX, OB_SIZEY, OB_SIZEZ
+        
+        self.fStart = 0
+        self.fEnd = endFrame/30.0
+        # the affine parts "T" part seems to correspond with the un-animated position of the object
+        ctlchn.fAP.fT = Vertex(obj.loc[0], obj.loc[1], obj.loc[2])
+        
+        self.fName = FindInDict(animscript, "name", "unnamed_anim")
+        self.fAutoStart = FindInDict(animscript, "autostart", 1)
+        self.fLoop = FindInDict(animscript, "loop", 1)
+        self.fLoopStart = self.fStart = FindInDict(animscript, "loopstart", self.fStart)
+        self.fLoopEnd = self.fEnd = FindInDict(animscript, "loopend", self.fEnd)
+        
+        self.fApps.append(self.pair(app, ctlchn))
+    
+    def read(self, stream):
+        plAGAnim.read(self, stream)
+        self.fInitial = stream.ReadFloat()
+        self.fAutoStart = stream.ReadBool()
+        self.fLoopStart = stream.ReadFloat()
+        self.fLoopEnd = stream.ReadFloat()
+        self.fLoop = stream.ReadBool()
+        self.fEaseInType = stream.ReadByte()
+        self.fEaseInMin = stream.ReadFloat()
+        self.fEaseInMax = stream.ReadFloat()
+        self.fEaseInLength = stream.ReadFloat()
+        self.fEaseOutType = stream.ReadByte()
+        self.fEaseOutMin = stream.ReadFloat()
+        self.fEaseOutMax = stream.ReadFloat()
+        self.fEaseOutLength = stream.ReadFloat()
+        
+        count = stream.ReadInt()
+        for i in range(count):
+            string = stream.ReadSafeString()
+            self.fMarkers[string] = stream.ReadFloat()
+            
+        count = stream.ReadInt()
+        for i in range(count):
+            string = stream.ReadSafeString()
+            first = stream.ReadFloat()
+            second = stream.ReadFloat()
+            self.fLoops[string] = self.pair(first, second)
+            
+        count = stream.ReadInt()
+        for i in range(count):
+            self.fStopPoints.append(stream.ReadFloat())
+    
+    def write(self, stream):
+        plAGAnim.write(self, stream)
+        stream.WriteFloat(self.fInitial)
+        stream.WriteBool(self.fAutoStart)
+        stream.WriteFloat(self.fLoopStart)
+        stream.WriteFloat(self.fLoopEnd)
+        stream.WriteBool(self.fLoop)
+        stream.WriteByte(self.fEaseInType)
+        stream.WriteFloat(self.fEaseInMin)
+        stream.WriteFloat(self.fEaseInMax)
+        stream.WriteFloat(self.fEaseInLength)
+        stream.WriteByte(self.fEaseOutType)
+        stream.WriteFloat(self.fEaseOutMin)
+        stream.WriteFloat(self.fEaseOutMax)
+        stream.WriteFloat(self.fEaseOutLength)
+        
+        stream.WriteInt(len(self.fMarkers))
+        keys = self.fMarkers.keys()
+        for key in keys:
+            stream.WriteSafeString(key)
+            stream.WriteFloat(self.fMarkers[key])
+            
+        stream.WriteInt(len(self.fLoops))
+        keys = self.fLoops.keys()
+        for key in keys:
+            stream.WriteSafeString(key)
+            pair = self.fLoops[key]
+            stream.WriteFloat(pair.first)
+            stream.WriteFloat(pair.second)
+            
+        stream.WriteInt(len(self.fStopPoints))
+        for i in self.fStopPoints:
+            stream.WriteFloat(i)
+    

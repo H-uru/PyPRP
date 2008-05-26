@@ -549,6 +549,30 @@ class hsBounds3Ext(hsBounds3):
                 buf.WriteFloat(self.f64[i][0])
                 buf.WriteFloat(self.f64[i][1])
 
+class hsAffineParts:
+    def __init__(self):
+        self.Unknown = int()
+        self.fT = Vertex(0, 0, 0)
+        self.fQ = hsQuat()
+        self.fU = hsQuat()
+        self.fK = Vertex(1, 1, 1)
+        self.fF = 1.0
+        
+    def read(self, stream):
+       self.Unknown = stream.ReadInt()
+       self.fT.read(stream)
+       self.fQ.read(stream)
+       self.fU.read(stream)
+       self.fK.read(stream)
+       self.fF = stream.ReadFloat()
+       
+    def write(self, stream):
+       stream.WriteInt(self.Unknown)
+       self.fT.write(stream)
+       self.fQ.write(stream)
+       self.fU.write(stream)
+       self.fK.write(stream)
+       stream.WriteFloat(self.fF)
 
 class plGBufferTriangle:
     def __init__(self):

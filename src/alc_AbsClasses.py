@@ -196,37 +196,6 @@ class plMultiModifier(plModifier):                          #Type 0x27
     def export_obj(self, obj, objscript):
         plModifier.export_obj(self, obj, objscript)
 
-
-class plAGAnim(plSynchedObject):                #Type 0x6B
-    def __init(self,parent,name="unnamed",type=None):
-        plSynchedObject.__init__(self,parent,name,type)
-        self.AnimName = 0
-        self.StartTime = 0
-        self.EndTime = 0
-        self.AGApp = []
-    
-    def read(self,stream):
-        plSynchedObject.read(self,stream)
-        self.AnimName = stream.ReadSafeString()
-        self.StartTime = stream.ReadFloat()
-        self.StopTime = stream.ReadFloat()
-        i = stream.Read32()
-        for j in range(i):
-            self.AGApp[j] = plAGApplicator()
-            self.AGApp[j].read(stream)
-    
-    def write(self,stream):
-        plSynchedObject.write(self,stream)
-        stream.WriteSafeString(self.AnimName)
-        stream.WriteFloat(self.StartTime)
-        stream.WriteFloat(self.StopTime)
-        stream.Write32(len(self.AGApp))
-        for i in range(len(self.AGApp)):
-            self.AGApp[i].write(stream)
-    
-    def export_obj(self, obj, objscript):
-        plSynchedObject.export_obj(self, obj, objscript)
-
 class plRegionBase(plObjInterface):             #Type 0x0118
     def __init__(self,parent,name="unnamed",type=None):
         plObjInterface.__init__(self,parent,name,type)

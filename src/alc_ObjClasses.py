@@ -46,6 +46,7 @@ from alc_Functions import *
 from alcConvexHull import *
 from alc_VolumeIsect import *
 from alc_AlcScript import *
+import alc_AnimClasses
 
 import alcconfig, alchexdump
 def stripIllegalChars(name):
@@ -223,6 +224,19 @@ class plSceneObject(plSynchedObject):                       #Type 0x01
     
     def export_object(self, obj, objscript):
         plSynchedObject.export_obj(self, obj, objscript)
+        # check for animations
+        if obj.ipo:
+            ipo = obj.ipo
+            # this will specify animation names and markers
+            animParams = FindInDict(objscript, "animations", [])
+            if(len(animParams) == 0):
+                # if there is no script for the animation, make a single animation with all frames
+                anim = alc_AnimClasses.plATCAnim.FindCreate(self.getRoot(), obj.name)
+                anim.data.export_obj(obj)
+            for animation in animParams:
+                # if there are animations defined in alcscript, export each separately
+                anim = alc_AnimClasses.plATCAnim.FindCreate(page, FindInDict(animParams, "name", "unnamed"))
+                anim.data.export_obj(obj, FindInDict(animParams, "params", None))
 
     def import_all(self,scene):
         #assert(self.draw.checktype(0x0016)) #or self.draw.checktype(0x00D2))
