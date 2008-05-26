@@ -290,10 +290,7 @@ class plViewFaceModifier(plSingleModifier):
 class plAGModifier(plSingleModifier):    
     def __init__(self,parent,name="unnamed",type=0x006C):
         plSingleModifier.__init__(self,parent,name,type)
-        #format
-        #U32 0
-        #U32 0
-        self.string = ""
+        self.fChannelName = str()
 
     def _Find(page,name):
         return page.find(0x006C,name,0)
@@ -305,23 +302,19 @@ class plAGModifier(plSingleModifier):
 
     def read(self,stream):
         plSingleModifier.read(self,stream)
-        self.string = stream.ReadSafeString(self.getVersion())
+        self.fChannelName = stream.ReadSafeString(self.getVersion())
 
 
     def write(self,stream):
         plSingleModifier.write(self,stream)
-        stream.WriteSafeString(self.string,self.getVersion())
+        stream.WriteSafeString(self.fChannelName,self.getVersion())
 
 
 
-class plAGMasterMod(hsKeyedObject):    
+class plAGMasterMod(plModifier):    
     def __init__(self,parent,name="unnamed",type=0x006D):
-        hsKeyedObject.__init__(self,parent,name,type)
-        #format
-        #U32 0
-        self.str=str32(type=1)
-        self.anims=[] #armature anims
-
+        plModifier.__init__(self,parent,name,type)
+        self.fPrivateAnims = []
 
     def _Find(page,name):
         return page.find(0x006D,name,0)
@@ -332,42 +325,25 @@ class plAGMasterMod(hsKeyedObject):
     FindCreate = staticmethod(_FindCreate)
 
     def changePageRaw(self,sid,did,stype,dtype):
-        hsKeyedObject.changePageRaw(self,sid,did,stype,dtype)
+        plModifier.changePageRaw(self,sid,did,stype,dtype)
         for i in self.anims:
             i.changePageRaw(sid,did,stype,dtype)
 
-
     def read(self,stream):
-        hsKeyedObject.read(self,stream)
-        unk1, = struct.unpack("I",stream.read(4))
-        ##myst5 unk1: 0x04
-        if unk1 not in [0x00,]:
-            raise "unk1 %08X" %unk1
-        #On tpots always "", on old versions there is something here
-        self.str.read(stream)
-        if self.getVersion()==6:
-            count1, = struct.unpack("H",stream.read(2))
-        else:
-            count1, = struct.unpack("I",stream.read(4))
-        self.anims=[]
-        for i in range(count1):
-            ref = UruObjectRef(self.getVersion())
-            ref.read(stream)
-            #print ref, self.Key
-            assert(ref.verify(self.Key))
-            if ref.Key.object_type not in [0xF1,0xF2]:
-                raise "armature anim %08X" %ref.Key.object_type
-            self.anims.append(ref)
-
+        plModifier.read(self,stream)
+        something = stream.ReadInt()
+        count = stream.ReadInt()
+        for i in range(count):
+            key = UruObjectRef()
+            key.read(stream)
+            self.fPrivateAnims.append(key)
 
     def write(self,stream):
-        hsKeyedObject.write(self,stream)
-        stream.write(struct.pack("I",0))
-        self.str.write(stream)
-        stream.write(struct.pack("I",len(self.anims)))
-        for ref in self.anims:
-            ref.update(self.Key)
-            ref.write(stream)
+        plModifier.write(self,stream)
+        stream.WriteInt(0)
+        stream.WriteInt(len(self.fPrivateAnims))
+        for key in self.fPrivateAnims:
+            key.write(stream)
 
 
 class plExcludeRegionModifier(plSingleModifier):

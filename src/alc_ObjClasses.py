@@ -228,14 +228,21 @@ class plSceneObject(plSynchedObject):                       #Type 0x01
         if obj.ipo:
             # this will specify animation names and markers
             animParams = FindInDict(objscript, "animations", [])
+            agmm = plAGMasterMod.FindCreate(self.getRoot(), obj.name)
             if(len(animParams) == 0):
                 # if there is no script for the animation, make a single animation with all frames
                 anim = alc_AnimClasses.plATCAnim.FindCreate(self.getRoot(), obj.name)
                 anim.data.export_obj(obj)
+                agmm.data.fPrivateAnims.append(anim.data.getRef())
             for animation in animParams:
                 # if there are animations defined in alcscript, export each separately
                 anim = alc_AnimClasses.plATCAnim.FindCreate(page, FindInDict(animParams, "name", "unnamed"))
                 anim.data.export_obj(obj, FindInDict(animParams, "params", None))
+                agmm.data.fPrivateAnims.append(anim.data.getRef())
+            agmod = plAGModifier.FindCreate(self.getRoot(), obj.name)
+            agmod.data.fChannelName = obj.name
+            self.data2.append(agmod.data.getRef())
+            self.data2.append(agmm.data.getRef())
 
     def import_all(self,scene):
         #assert(self.draw.checktype(0x0016)) #or self.draw.checktype(0x00D2))

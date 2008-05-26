@@ -1749,6 +1749,7 @@ class plATCAnim(plAGAnim): #type 0xF1
         app = PrpController(0x0309) #plMatrixChannelApplicator
         app.data.fEnabled = 1
         app.data.fChannelName = obj.name
+        
         ctlchn = PrpController(0x02D9) #plMatrixControllerChannel()
         # CompoundRotController is best, since each curve can be done individually, for now, we'll do simple because it's.. well.. simpler.
         # first, we check for OB_LOCX, OB_LOCY, OB_LOCZ
