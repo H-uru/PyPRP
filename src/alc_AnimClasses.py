@@ -1421,16 +1421,16 @@ class hsQuatKey(hsKeyFrame):
 class hsScalarKey(hsKeyFrame):
     def __init__(self):
         hsKeyFrame.__init__(self)
-        self.fInTan = Vertex()
-        self.fOutTan = Vertex()
+        self.fInTan = 0.0
+        self.fOutTan = 0.0
         self.fValue = 0.0
     
     
     def read(self,buf):
         hsKeyFrame.read(self,buf)
         if(self.fFlags & hsKeyFrame.kBezController):
-            self.fInTan.read(buf)
-            self.fOutTan.read(buf)
+            self.fInTan = buf.ReadFloat()
+            self.fOutTan = buf.ReadFloat()
         
         self.fValue = buf.ReadFloat()
     
@@ -1438,8 +1438,8 @@ class hsScalarKey(hsKeyFrame):
     def write(self,buf):
         hsKeyFrame.write(self,buf)
         if(self.fFlags & hsKeyFrame.kBezController):
-            self.fInTan.write(buf)
-            self.fOutTan.write(buf)
+            buf.WriteFloat(self.fInTan)
+            buf.WriteFloat(self.fOutTan)
         
         buf.WriteFloat(self.fValue)
 
@@ -1759,114 +1759,138 @@ class plATCAnim(plAGAnim): #type 0xF1
             ctlchn.data.fController.data.fPosController = plCompoundPosController()
             if (Ipo.OB_LOCX in ipo):
                 KeyList = []
-                xcurve = ipo[Ipo.OB_LOCX].bezierPoints
-                for frm in xcurve:
+                xcurve = ipo[Ipo.OB_LOCX]
+                for frm in xcurve.bezierPoints:
                     frame = hsScalarKey()
                     num = frm.pt[0] - 1
                     
                     frame.fFrameNum = int(num)
                     frame.fFrameTime = num/30.0
                     frame.fValue = frm.pt[1]
+                    if xcurve.interpolation == Blender.IpoCurve.InterpTypes.BEZIER:
+                        frame.fFlags |= hsKeyFrame.kBezController
+                        frame.fInTan = frm.tilt
+                        frame.fOutTan = frm.tilt
                     
                     KeyList.append(frame)
                 ctlchn.data.fController.data.fPosController.fXController = plScalarController()
                 ctlchn.data.fController.data.fPosController.fXController.fKeyList = hsScalarKeyList()
                 ctlchn.data.fController.data.fPosController.fXController.fKeyList.fKeys = KeyList
-                if endFrame < xcurve[-1].pt[0]:
-                    endFrame = xcurve[-1].pt[0]
+                if endFrame < xcurve.bezierPoints[-1].pt[0]:
+                    endFrame = xcurve.bezierPoints[-1].pt[0]
                     
             if (Ipo.OB_LOCY in ipo):
                 KeyList = []
-                ycurve = ipo[Ipo.OB_LOCY].bezierPoints
-                for frm in ycurve:
+                ycurve = ipo[Ipo.OB_LOCY]
+                for frm in ycurve.bezierPoints:
                     frame = hsScalarKey()
                     num = frm.pt[0] - 1
                     
                     frame.fFrameNum = int(num)
                     frame.fFrameTime = num/30.0
                     frame.fValue = frm.pt[1]
+                    if ycurve.interpolation == Blender.IpoCurve.InterpTypes.BEZIER:
+                        frame.fFlags |= hsKeyFrame.kBezController
+                        frame.fInTan = frm.tilt
+                        frame.fOutTan = frm.tilt
                     
                     KeyList.append(frame)
                 ctlchn.data.fController.data.fPosController.fYController = plScalarController()
                 ctlchn.data.fController.data.fPosController.fYController.fKeyList = hsScalarKeyList()
                 ctlchn.data.fController.data.fPosController.fYController.fKeyList.fKeys = KeyList
-                if endFrame < ycurve[-1].pt[0]:
-                    endFrame = ycurve[-1].pt[0]
+                if endFrame < ycurve.bezierPoints[-1].pt[0]:
+                    endFrame = ycurve.bezierPoints[-1].pt[0]
                     
             if (Ipo.OB_LOCZ in ipo):
                 KeyList = []
-                zcurve = ipo[Ipo.OB_LOCZ].bezierPoints
-                for frm in zcurve:
+                zcurve = ipo[Ipo.OB_LOCZ]
+                for frm in zcurve.bezierPoints:
                     frame = hsScalarKey()
                     num = frm.pt[0] - 1
                     
                     frame.fFrameNum = int(num)
                     frame.fFrameTime = num/30.0
                     frame.fValue = frm.pt[1]
+                    if zcurve.interpolation == Blender.IpoCurve.InterpTypes.BEZIER:
+                        frame.fFlags |= hsKeyFrame.kBezController
+                        frame.fInTan = frm.tilt
+                        frame.fOutTan = frm.tilt
                     
                     KeyList.append(frame)
                 ctlchn.data.fController.data.fPosController.fZController = plScalarController()
                 ctlchn.data.fController.data.fPosController.fZController.fKeyList = hsScalarKeyList()
                 ctlchn.data.fController.data.fPosController.fZController.fKeyList.fKeys = KeyList
-                if endFrame < zcurve[-1].pt[0]:
-                    endFrame = zcurve[-1].pt[0]
+                if endFrame < zcurve.bezierPoints[-1].pt[0]:
+                    endFrame = zcurve.bezierPoints[-1].pt[0]
         
         # then we check for OB_ROTX, OB_ROTY, OB_ROTZ
         if (Ipo.OB_ROTX in ipo) or (Ipo.OB_ROTY in ipo) or (Ipo.OB_ROTZ in ipo):
             ctlchn.data.fController.data.fRotController = plCompoundRotController()
             if(Ipo.OB_ROTX in ipo):
                 KeyList = []
-                xcurve = ipo[Ipo.OB_ROTX].bezierPoints
-                for frm in xcurve:
+                xcurve = ipo[Ipo.OB_ROTX]
+                for frm in xcurve.bezierPoints:
                     frame = hsScalarKey()
                     num = frm.pt[0] - 1
                     
                     frame.fFrameNum = int(num)
                     frame.fFrameTime = num/30.0
                     frame.fValue = (frm.pt[1] / 18.0) * pi
+                    if xcurve.interpolation == Blender.IpoCurve.InterpTypes.BEZIER:
+                        frame.fFlags |= hsKeyFrame.kBezController
+                        frame.fInTan = frm.tilt / 18.0 * pi
+                        frame.fOutTan = frm.tilt / 18.0 * pi
                     
                     KeyList.append(frame)
                 ctlchn.data.fController.data.fRotController.fXController = plScalarController()
                 ctlchn.data.fController.data.fRotController.fXController.fKeyList = hsScalarKeyList()
                 ctlchn.data.fController.data.fRotController.fXController.fKeyList.fKeys = KeyList
-                if endFrame < xcurve[-1].pt[0]:
-                    endFrame = xcurve[-1].pt[0]
+                if endFrame < xcurve.bezierPoints[-1].pt[0]:
+                    endFrame = xcurve.bezierPoints[-1].pt[0]
                 
             if(Ipo.OB_ROTY in ipo):
                 KeyList = []
-                ycurve = ipo[Ipo.OB_ROTY].bezierPoints
-                for frm in ycurve:
+                ycurve = ipo[Ipo.OB_ROTY]
+                for frm in ycurve.bezierPoints:
                     frame = hsScalarKey()
                     num = frm.pt[0] - 1
                     
                     frame.fFrameNum = int(num)
                     frame.fFrameTime = num/30.0
                     frame.fValue = (frm.pt[1] / 18.0) * pi
+                    if ycurve.interpolation == Blender.IpoCurve.InterpTypes.BEZIER:
+                        frame.fFlags |= hsKeyFrame.kBezController
+                        frame.fInTan = frm.tilt / 18.0 * pi
+                        frame.fOutTan = frm.tilt / 18.0 * pi
                     
                     KeyList.append(frame)
                 ctlchn.data.fController.data.fRotController.fYController = plScalarController()
                 ctlchn.data.fController.data.fRotController.fYController.fKeyList = hsScalarKeyList()
                 ctlchn.data.fController.data.fRotController.fYController.fKeyList.fKeys = KeyList
-                if endFrame < ycurve[-1].pt[0]:
-                    endFrame = ycurve[-1].pt[0]
+                if endFrame < ycurve.bezierPoints[-1].pt[0]:
+                    endFrame = ycurve.bezierPoints[-1].pt[0]
                 
             if(Ipo.OB_ROTZ in ipo):
                 KeyList = []
-                zcurve = ipo[Ipo.OB_ROTZ].bezierPoints
-                for frm in zcurve:
+                zcurve = ipo[Ipo.OB_ROTZ]
+                for frm in zcurve.bezierPoints:
                     frame = hsScalarKey()
                     num = frm.pt[0] - 1
                     
                     frame.fFrameNum = int(num)
                     frame.fFrameTime = num/30.0
                     frame.fValue = (frm.pt[1] / 18.0) * pi
+                    if zcurve.interpolation == Blender.IpoCurve.InterpTypes.BEZIER:
+                        frame.fFlags |= hsKeyFrame.kBezController
+                        frame.fInTan = frm.tilt / 18.0 * pi
+                        frame.fOutTan = frm.tilt / 18.0 * pi
                     
                     KeyList.append(frame)
                 ctlchn.data.fController.data.fRotController.fZController = plScalarController()
                 ctlchn.data.fController.data.fRotController.fZController.fKeyList = hsScalarKeyList()
                 ctlchn.data.fController.data.fRotController.fZController.fKeyList.fKeys = KeyList
-                if endFrame < zcurve[-1].pt[0]:
-                    endFrame = zcurve[-1].pt[0]
+                if endFrame < zcurve.bezierPoints[-1].pt[0]:
+                    endFrame = zcurve.bezierPoints[-1].pt[0]
         # and finally OB_SIZEX, OB_SIZEY, OB_SIZEZ
         
         self.fStart = 0

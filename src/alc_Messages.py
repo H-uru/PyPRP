@@ -42,9 +42,9 @@ import alcconfig, alchexdump, alc_GeomClasses
 # Message Type: 0x020A - plCameraMsg
 # Message Type: 0x0302 - plOneShotMsg
 # Message Type: 0x0255 - plSoundMsg
+# Message Type: 0x0206 - plAnimCmdMsg
 
 ## Still Needed at the moment:
-# Message Type: 0x0206 - plAnimCmdMsg
 # Message Type: 0x024A - plTimerCallbackMsg
 # Message Type: 0x024F - plEnableMsg
 # Message Type: 0x02E1 - plLinkToAgeMsg
@@ -82,6 +82,8 @@ class PrpMessage:
                 self.data = plSoundMsg(self)
             elif self.msgtype == 0x024F:
                 self.data = plEnableMsg(self)
+            elif self.msgtype == 0x0206:
+                self.data = plAnimCmdMsg(self)
             else:
                 raise ValueError, "Unsupported message type %04X %s" % (self.msgtype,MsgKeyToMsgName(self.msgtype))
         elif self.version == 6:
@@ -759,6 +761,120 @@ class plMessageWithCallbacks(plMessage):
         for msg in self.fCallbacks:
             PrpMessage.ToStream(stream,msg)
 
+class plAnimCmdMsg(plMessageWithCallbacks):
+    ModAnimCmds = \
+    { \
+        "kContinue"          :  0, \
+        "kStop"              :  1, \
+        "kSetLooping"        :  2, \
+        "kUnSetLooping"      :  3, \
+        "kSetBegin"          :  4, \
+        "kSetEnd"            :  5, \
+        "kSetLoopEnd"        :  6, \
+        "kSetLoopBegin"      :  7, \
+        "kSetSpeed"          :  8, \
+        "kGoToTime"          :  9, \
+        "kSetBackwards"      : 10, \
+        "kSetForewards"      : 11, \
+        "kToggleState"       : 12, \
+        "kAddCallbacks"      : 13, \
+        "kRemoveCallbacks"   : 14, \
+        "kGoToBegin"         : 15, \
+        "kGoToEnd"           : 16, \
+        "kGoToLoopBegin"     : 17, \
+        "kGoToLoopEnd"       : 18, \
+        "kIncrementForward"  : 19, \
+        "kIncrementBackward" : 20, \
+        "kRunForward"        : 21, \
+        "kRunBackward"       : 22, \
+        "kPlayToTime"        : 23, \
+        "kPlayToPercentage"  : 24, \
+        "kFastForward"       : 25, \
+        "kGoToPercent"       : 26, \
+        "kNumCmds"           : 27  \
+    }
+    
+    ScriptModAnimCmds = \
+    { \
+        "continue"          :  0, \
+        "stop"              :  1, \
+        "setlooping"        :  2, \
+        "unsetlooping"      :  3, \
+        "setbegin"          :  4, \
+        "setend"            :  5, \
+        "setloopend"        :  6, \
+        "setloopbegin"      :  7, \
+        "setspeed"          :  8, \
+        "gototime"          :  9, \
+        "setbackwards"      : 10, \
+        "setforewards"      : 11, \
+        "togglestate"       : 12, \
+        "addcallbacks"      : 13, \
+        "removecallbacks"   : 14, \
+        "gotobegin"         : 15, \
+        "gotoend"           : 16, \
+        "gotoloopbegin"     : 17, \
+        "gotoloopend"       : 18, \
+        "incrementforward"  : 19, \
+        "incrementbackward" : 20, \
+        "runforward"        : 21, \
+        "runbackward"       : 22, \
+        "playtotime"        : 23, \
+        "playtopercentage"  : 24, \
+        "fastforward"       : 25, \
+        "gotopercent"       : 26, \
+        "numcmds"           : 27  \
+    }
+    
+    def __init__(self, parent=None, type=0x0206):
+        plMessageWithCallbacks.__init__(self, parent, type)
+        self.fCmd = hsBitVector()
+        self.fBegin = 0.0
+        self.fEnd = 0.0
+        self.fLoopBegin = 0.0
+        self.fLoopEnd = 0.0
+        self.fSpeed = 0.0
+        self.fSpeedChangeRate = 0.0
+        self.fTime = 0.0
+        self.fAnimName = str()
+        self.fLoopName = str()
+    
+    def read(self, stream):
+        plMessageWithCallbacks.read(self, stream)
+        self.fCmd.read(stream)
+        self.fBegin = stream.ReadFloat()
+        self.fEnd = stream.ReadFloat()
+        self.fLoopEnd = stream.ReadFloat()
+        self.fLoopBegin = stream.ReadFloat()
+        self.fSpeed = stream.ReadFloat()
+        self.fSpeedChangeRate = stream.ReadFloat()
+        self.fTime = stream.ReadFloat()
+        self.fAnimName = stream.ReadSafeString()
+        self.fLoopName = stream.ReadSafeString()
+    
+    def write(self, stream):
+        plMessageWithCallbacks.write(self, stream)
+        self.fCmd.write(stream)
+        stream.WriteFloat(self.fBegin)
+        stream.WriteFloat(self.fEnd)
+        stream.WriteFloat(self.fLoopEnd)
+        stream.WriteFloat(self.fLoopBegin)
+        stream.WriteFloat(self.fSpeed)
+        stream.WriteFloat(self.fSpeedChangeRate)
+        stream.WriteFloat(self.fTime)
+        stream.WriteSafeString(self.fAnimName)
+        stream.WriteSafeString(self.fLoopName)
+        
+    def export_script(self, script, refparser):
+        plMessage.export_script(self, script, refparser)
+        self.fAnimName = FindInDict(script, "animname", str())
+        self.fLoopName = FindInDict(script, "loopname", str())
+        cmdlist = list(FindInDict(script,"cmds",list()))
+        for cmd in cmdlist:
+            if cmd.lower() in plAnimCmdMsg.ScriptModAnimCmds:
+                cidx = plAnimCmdMsg.ScriptModAnimCmds[cmd.lower()]
+                self.fCmd.SetBit(cidx)
+    
 
 class plSoundMsg(plMessageWithCallbacks):
     ModSoundCmds = \

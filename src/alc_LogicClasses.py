@@ -2021,11 +2021,13 @@ class plResponderState:
 class plResponderCmd:
     ScriptMsgTypes = \
     { \
+        "notifymsg"         : 0x02E8, \
         "armatureeffectmsg" : 0x038E, \
         "oneshotmsg"        : 0x0302, \
         "cameramsg"         : 0x020A, \
         "enablemsg"         : 0x024F, \
         "soundmsg"          : 0x0255, \
+        "animcmdmsg"        : 0x0206, \
     }
 
     def __init__(self,parent):

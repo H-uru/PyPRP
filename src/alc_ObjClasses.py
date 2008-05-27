@@ -236,8 +236,8 @@ class plSceneObject(plSynchedObject):                       #Type 0x01
                 agmm.data.fPrivateAnims.append(anim.data.getRef())
             for animation in animParams:
                 # if there are animations defined in alcscript, export each separately
-                anim = alc_AnimClasses.plATCAnim.FindCreate(page, FindInDict(animParams, "name", "unnamed"))
-                anim.data.export_obj(obj, FindInDict(animParams, "params", None))
+                anim = alc_AnimClasses.plATCAnim.FindCreate(self.getRoot(), FindInDict(animation, "name", "unnamed"))
+                anim.data.export_obj(obj, animation)
                 agmm.data.fPrivateAnims.append(anim.data.getRef())
             agmod = plAGModifier.FindCreate(self.getRoot(), obj.name)
             agmod.data.fChannelName = obj.name
