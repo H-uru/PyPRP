@@ -1,4 +1,4 @@
-#!BPY
+##!BPY
 #
 #    Copyright (C) 2008  Guild of Writers PyPRP Project Team
 #    See the file AUTHORS for more info about the team
@@ -19,14 +19,14 @@
 #
 #    Please see the file LICENSE for the full license.
 
-"""
-Name: 'PyPRP'
-Blender: 237
-Group: 'Import'
-Submenu: 'Full age (.age)' i_age
-Submenu: 'Single prp (.prp)' i_prp
-Tooltip: 'GoW PyPRP Importer'
-"""
+#"""
+#Name: 'PyPRP'
+#Blender: 237
+#Group: 'Import'
+#Submenu: 'Full age (.age)' i_age
+#Submenu: 'Single prp (.prp)' i_prp
+#Tooltip: 'GoW PyPRP Importer'
+#"""
 
 #temporany removed options
 #Submenu: 'Raw span (.raw)' i_raw_span

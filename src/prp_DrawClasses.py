@@ -1662,8 +1662,8 @@ class plDrawInterface(plObjInterface):
                                     col_r=mface.col[index].r
                                     col_g=mface.col[index].g
                                     col_b=mface.col[index].b
-                                    if col_a >= 1.0: #See if there is alpha on the colour map
-                                        col_a = mface.col[index].a
+                                    #if col_a >= 1.0: #See if there is alpha on the colour map
+                                    #    col_a = mface.col[index].a
                                 elif(ColorLayers[vc].lower() == "alpha"): #Mesh vertex alpha
                                     mesh.activeColorLayer = ColorLayers[vc]
                                     col_a = (mface.col[index].r + mface.col[index].g + mface.col[index].b) / 3.0
@@ -1766,7 +1766,7 @@ class plDrawInterface(plObjInterface):
                     Suff = ''
 
                 if blendSpan:
-                    RenderLevel = plRenderLevel(plRenderLevel.MajorLevel["kBlendRendMajorLevel"],plRenderLevel.MinorLevel["kOpaqueMinorLevel"])
+                    RenderLevel = plRenderLevel(plRenderLevel.MajorLevel["kDefRendMajorLevel"],plRenderLevel.MinorLevel["kOpaqueMinorLevel"])
                     suffix = "BlendSpans" + Suff
                 else:
                     suffix = "Spans" + Suff
