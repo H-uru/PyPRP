@@ -2534,40 +2534,61 @@ class plLayerAnimation(plLayerAnimationBase):
             # We need to get the list of BezCurves
             # Then get the value for each and create a matrix
             # Then store that in a frame and store than in the list
-            curves = ipo[Ipo.MA_OFSX].bezierPoints
-            for frm in range(len(curves)):
+            xcurve = ipo[Ipo.MA_OFSX].bezierPoints
+            for frm in range(len(xcurve)):
                 frame = alc_AnimClasses.hsMatrix44Key()
-                num = curves[frm].pt[0]
-                if num == 1:
-                    num = 0
+                num = xcurve[frm].pt[0] - 1
                 frame.fFrameNum = int(num)
                 frame.fFrameTime = num/30.0
                 
                 matx = hsMatrix44()
-                matx.translate((curves[frm].pt[1], ipo[Ipo.MA_OFSY].bezierPoints[frm].pt[1], ipo[Ipo.MA_OFSZ].bezierPoints[frm].pt[1]))
+                matx.translate((xcurve[frm].pt[1], ipo[Ipo.MA_OFSY].bezierPoints[frm].pt[1], ipo[Ipo.MA_OFSZ].bezierPoints[frm].pt[1]))
                 
                 frame.fValue = matx
                 KeyList.append(frame)
             
             self.fTransformCtl = alc_AnimClasses.PrpController(0x0234, self.getVersion()) #plMatrix44Controller
             self.fTransformCtl.data.fKeys = KeyList
-            endFrame = curves[-1].pt[0]
+            if xcurve[-1].pt[0] > endFrame:
+                endFrame = xcurve[-1].pt[0]
         else:
             self.fTransformCtl = alc_AnimClasses.PrpController(0x8000, self.getVersion())
+        
+        if (Ipo.MA_COL in ipo):
+            KeyList = []
+            xcurve = ipo[Ipo.MA_COL]
+            for frm in xcurve.bezierPoints:
+                frame = alc_AnimClasses.hsScalarKey()
+                num = frm.pt[0] - 1
+                frame.fFrameNum = int(num)
+                frame.fFrameTime = num / 30.0
+                frame.fValue = frm.pt[1]
+                if xcurve.interpolation == Blender.IpoCurve.InterpTypes.BEZIER:
+                    frame.fFlags |= alc_AnimClasses.hsKeyFrame.kBezController
+                    frame.fInTan = frm.tilt
+                    frame.fOutTan = frm.tilt
+                    
+                KeyList.append(frame)
+            self.fOpacityCtl = alc_AnimClasses.PrpController(0x022F, self.getVersion()) #plScalarController
+            self.fOpacityCtl.data.fKeyList = alc_AnimClasses.hsScalarKeyList()
+            self.fOpacityCtl.data.fKeyList.fKeys = KeyList
+            if xcurve.bezierPoints[-1].pt[0] > endFrame:
+                endFrame = xcurve[-1].pt[0]
+        else:
+            self.fOpacityCtl = alc_AnimClasses.PrpController(0x8000, self.getVersion())
         
         ##MAJOR HACK HERE
         self.fPreshadeColorCtl = alc_AnimClasses.PrpController(0x8000, self.getVersion())
         self.fRuntimeColorCtl = alc_AnimClasses.PrpController(0x8000, self.getVersion())
         self.fAmbientColorCtl = alc_AnimClasses.PrpController(0x8000, self.getVersion())
         self.fSpecularColorCtl = alc_AnimClasses.PrpController(0x8000, self.getVersion())
-        self.fOpacityCtl = alc_AnimClasses.PrpController(0x8000, self.getVersion())
         
         self.fTimeConvert = alc_AnimClasses.plAnimTimeConvert()
         self.fTimeConvert.fFlags |= 0x22
         self.fTimeConvert.fBegin = 0.0
+        self.fTimeConvert.fLoopBegin = 0.0
         self.fTimeConvert.fEnd = endFrame/30.0
         self.fTimeConvert.fLoopEnd = endFrame/30.0
-        self.fTimeConvert.fLoopBegin = 0.0
         
         self.fSynchFlags |= plSynchedObject.Flags["kExcludePersistentState"]
         self.fSDLExcludeList.append("Layer")

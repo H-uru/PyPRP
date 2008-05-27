@@ -810,7 +810,7 @@ class PrpController:
             self.data = plScaleController(self)
         elif type == 0x022D:
             self.data = plRotController(self)
-        elif type == 0x22F:
+        elif type == 0x022E:
             self.data = plPosController(self)
         elif type == 0x022F:
             self.data = plScalarController(self)
@@ -1892,6 +1892,8 @@ class plATCAnim(plAGAnim): #type 0xF1
                 if endFrame < zcurve.bezierPoints[-1].pt[0]:
                     endFrame = zcurve.bezierPoints[-1].pt[0]
         # and finally OB_SIZEX, OB_SIZEY, OB_SIZEZ
+        
+        # lamp colors LA_R, LA_G, LA_B
         
         self.fStart = 0
         self.fEnd = endFrame/30.0
