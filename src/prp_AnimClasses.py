@@ -837,8 +837,12 @@ class PrpController:
             self.data = plTMController(self)
         elif type == 0x02D9:
             self.data = plMatrixControllerChannel(self)
+        elif type == 0x0306:
+            self.data = plPointControllerChannel(self)
         elif type == 0x0309:
             self.data = plMatrixChannelApplicator(self)
+        elif type == 0x030B:
+            self.data = plLightDiffuseApplicator(self)
         elif type == 0x8000: #NULL Creatable ;)
             self.data = None
         else:
@@ -964,6 +968,35 @@ class plScalarController(plLeafController):
         else:
             buf.Write32(1)
             self.fKeyList.write(buf)
+            
+    def export_curve(self, curve, endFrame, convrot=0):
+        pi = 3.14159265358979
+        KeyList = []
+        for frm in curve.bezierPoints:
+            frame = hsScalarKey()
+            num = frm.pt[0] - 1
+
+            frame.fFrameNum = int(num)
+            frame.fFrameTime = num/30.0
+            if convrot:
+                frame.fValue = (frm.pt[1] / 18.0) * pi
+                if curve.interpolation == Blender.IpoCurve.InterpTypes.BEZIER:
+                    frame.fFlags |= hsKeyFrame.kBezController
+                    frame.fInTan = frm.tilt / 18.0 * pi
+                    frame.fOutTan = frm.tilt / 18.0 * pi
+            else:
+                frame.fValue = frm.pt[1]
+                if curve.interpolation == Blender.IpoCurve.InterpTypes.BEZIER:
+                    frame.fFlags |= hsKeyFrame.kBezController
+                    frame.fInTan = frm.tilt
+                    frame.fOutTan = frm.tilt
+
+            KeyList.append(frame)
+        self.fKeyList = hsScalarKeyList()
+        self.fKeyList.fKeys = KeyList
+        if endFrame < curve.bezierPoints[-1].pt[0]:
+            endFrame = curve.bezierPoints[-1].pt[0]
+        return endFrame
 
 
 class plPoint3Controller(plLeafController):
@@ -1522,7 +1555,7 @@ class hsScaleValue:
         self.fS.write(buf)
         self.fQ.write(buf)
 
-
+# Applicators (for different types of animations)
 class plAGApplicator:
     def __init__(self):
         self.fEnabled = 0
@@ -1547,6 +1580,17 @@ class plMatrixChannelApplicator(plAGApplicator):
     def write(self, stream):
         plAGApplicator.write(self, stream)
 
+class plLightDiffuseApplicator(plAGApplicator):
+    def __init__(self, parent=None, name="unnamed", type=0x030B):
+        plAGApplicator.__init__(self)
+
+    def read(self, stream):
+        plAGApplicator.read(self, stream)
+
+    def write(self, stream):
+        plAGApplicator.write(self, stream)
+
+# Channels (for storing the controllers associated with an appliator)
 class plAGChannel:
     def __init__(self,parent=None,name="unnamed",type=0x02D5):
         self.fName = str()
@@ -1560,7 +1604,7 @@ class plAGChannel:
 class plMatrixControllerChannel(plAGChannel): #plMatrixChannel has no read/write
     def __init__(self,parent=None,name="unnamed",type=0x02D9):
         plAGChannel.__init__(self,parent,name,type)
-        self.fController = plTMController()
+        self.fController = PrpController(0x023B) #plTMController()
         self.fAP = hsAffineParts() # this is actually part of plMatrixChannel, but plMatrixChannel has no read or write
 
     def read(self, stream):
@@ -1572,6 +1616,19 @@ class plMatrixControllerChannel(plAGChannel): #plMatrixChannel has no read/write
         plAGChannel.write(self, stream)
         self.fController.write(stream)
         self.fAP.write(stream)
+
+class plPointControllerChannel(plAGChannel):
+    def __init__(self, parent=None, name="unnamed", type=0x0306):
+        plAGChannel.__init__(self,parent,name,type)
+        self.fController = PrpController(0x8000)
+        
+    def read(self, stream):
+        plAGChannel.read(self, stream)
+        self.fController.read(stream)
+        
+    def write(self, stream):
+        plAGChannel.write(self, stream)
+        self.fController.write(stream)
 
 class plAnimTimeConvert:
     plAnimTimeFlags = \
@@ -1739,171 +1796,106 @@ class plATCAnim(plAGAnim): #type 0xF1
     def export_obj(self, obj, animscript=dict()):
         plAGAnim.export_obj(self, obj, AlcScript.objects.Find(obj.name))
         print "   [ATCAnimation %s]"%(str(self.Key.name))
-
-        ipo = obj.ipo
         endFrame = 0
+        
+        # if we have any object transform curves, we add a matrix controller channel and applicator
+        if(obj.ipo):
+            ipo = obj.ipo
+            if (Ipo.OB_LOCX in ipo) or (Ipo.OB_LOCY in ipo) or (Ipo.OB_LOCZ in ipo) or (Ipo.OB_ROTX in ipo) or (Ipo.OB_ROTY in ipo) or (Ipo.OB_ROTZ in ipo):
+                app = PrpController(0x0309) #plMatrixChannelApplicator
+                app.data.fEnabled = 1
+                app.data.fChannelName = obj.name
+        
+                ctlchn = PrpController(0x02D9) #plMatrixControllerChannel()
+                ctlchn.data.fController = PrpController(0x023B) #plTMController()
+                # first, we check for OB_LOCX, OB_LOCY, OB_LOCZ
+                if (Ipo.OB_LOCX in ipo) or (Ipo.OB_LOCY in ipo) or (Ipo.OB_LOCZ in ipo):
+                    compoundController = plCompoundPosController()
+                    if (Ipo.OB_LOCX in ipo):
+                        curve = ipo[Ipo.OB_LOCX]
+                        controller = plScalarController()
+                        endFrame = controller.export_curve(curve, endFrame)
+                        compoundController.fXController = controller
+        
+                    if (Ipo.OB_LOCY in ipo):
+                        curve = ipo[Ipo.OB_LOCY]
+                        controller = plScalarController()
+                        endFrame = controller.export_curve(curve, endFrame)
+                        compoundController.fYController = controller
+        
+                    if (Ipo.OB_LOCZ in ipo):
+                        curve = ipo[Ipo.OB_LOCZ]
+                        controller = plScalarController()
+                        endFrame = controller.export_curve(curve, endFrame)
+                        compoundController.fZController = controller
+                    ctlchn.data.fController.data.fPosController = compoundController
+        
+                # then we check for OB_ROTX, OB_ROTY, OB_ROTZ
+                if (Ipo.OB_ROTX in ipo) or (Ipo.OB_ROTY in ipo) or (Ipo.OB_ROTZ in ipo):
+                    compoundController = plCompoundRotController()
+                    if(Ipo.OB_ROTX in ipo):
+                        curve = ipo[Ipo.OB_ROTX]
+                        controller = plScalarController()
+                        endFrame = controller.export_curve(curve, endFrame, 1)
+                        compoundController.fXController = controller
+        
+                    if(Ipo.OB_ROTY in ipo):
+                        curve = ipo[Ipo.OB_ROTY]
+                        controller = plScalarController()
+                        endFrame = controller.export_curve(curve, endFrame, 1)
+                        compoundController.fYController = controller
+        
+                    if(Ipo.OB_ROTZ in ipo):
+                        curve = ipo[Ipo.OB_ROTZ]
+                        controller = plScalarController()
+                        endFrame = controller.export_curve(curve, endFrame, 1)
+                        compoundController.fZController = controller
+                    ctlchn.data.fController.data.fRotController = compoundController
+                # OB_SIZEX, OB_SIZEY, OB_SIZEZ
+                
+                # the affine parts "T" part seems to correspond with the un-animated position of the object
+                ctlchn.data.fAP.fT = Vertex(obj.loc[0], obj.loc[1], obj.loc[2])
+                self.fApps.append(self.pair(app, ctlchn))
 
-        pi = 3.14159265358979
-
-        app = PrpController(0x0309) #plMatrixChannelApplicator
-        app.data.fEnabled = 1
-        app.data.fChannelName = obj.name
-
-        ctlchn = PrpController(0x02D9) #plMatrixControllerChannel()
-        ctlchn.data.fController = PrpController(0x023B) #plTMController()
-        # first, we check for OB_LOCX, OB_LOCY, OB_LOCZ
-        if (Ipo.OB_LOCX in ipo) or (Ipo.OB_LOCY in ipo) or (Ipo.OB_LOCZ in ipo):
-            ctlchn.data.fController.data.fPosController = plCompoundPosController()
-            if (Ipo.OB_LOCX in ipo):
-                KeyList = []
-                xcurve = ipo[Ipo.OB_LOCX]
-                for frm in xcurve.bezierPoints:
-                    frame = hsScalarKey()
-                    num = frm.pt[0] - 1
-
-                    frame.fFrameNum = int(num)
-                    frame.fFrameTime = num/30.0
-                    frame.fValue = frm.pt[1]
-                    if xcurve.interpolation == Blender.IpoCurve.InterpTypes.BEZIER:
-                        frame.fFlags |= hsKeyFrame.kBezController
-                        frame.fInTan = frm.tilt
-                        frame.fOutTan = frm.tilt
-
-                    KeyList.append(frame)
-                ctlchn.data.fController.data.fPosController.fXController = plScalarController()
-                ctlchn.data.fController.data.fPosController.fXController.fKeyList = hsScalarKeyList()
-                ctlchn.data.fController.data.fPosController.fXController.fKeyList.fKeys = KeyList
-                if endFrame < xcurve.bezierPoints[-1].pt[0]:
-                    endFrame = xcurve.bezierPoints[-1].pt[0]
-
-            if (Ipo.OB_LOCY in ipo):
-                KeyList = []
-                ycurve = ipo[Ipo.OB_LOCY]
-                for frm in ycurve.bezierPoints:
-                    frame = hsScalarKey()
-                    num = frm.pt[0] - 1
-
-                    frame.fFrameNum = int(num)
-                    frame.fFrameTime = num/30.0
-                    frame.fValue = frm.pt[1]
-                    if ycurve.interpolation == Blender.IpoCurve.InterpTypes.BEZIER:
-                        frame.fFlags |= hsKeyFrame.kBezController
-                        frame.fInTan = frm.tilt
-                        frame.fOutTan = frm.tilt
-
-                    KeyList.append(frame)
-                ctlchn.data.fController.data.fPosController.fYController = plScalarController()
-                ctlchn.data.fController.data.fPosController.fYController.fKeyList = hsScalarKeyList()
-                ctlchn.data.fController.data.fPosController.fYController.fKeyList.fKeys = KeyList
-                if endFrame < ycurve.bezierPoints[-1].pt[0]:
-                    endFrame = ycurve.bezierPoints[-1].pt[0]
-
-            if (Ipo.OB_LOCZ in ipo):
-                KeyList = []
-                zcurve = ipo[Ipo.OB_LOCZ]
-                for frm in zcurve.bezierPoints:
-                    frame = hsScalarKey()
-                    num = frm.pt[0] - 1
-
-                    frame.fFrameNum = int(num)
-                    frame.fFrameTime = num/30.0
-                    frame.fValue = frm.pt[1]
-                    if zcurve.interpolation == Blender.IpoCurve.InterpTypes.BEZIER:
-                        frame.fFlags |= hsKeyFrame.kBezController
-                        frame.fInTan = frm.tilt
-                        frame.fOutTan = frm.tilt
-
-                    KeyList.append(frame)
-                ctlchn.data.fController.data.fPosController.fZController = plScalarController()
-                ctlchn.data.fController.data.fPosController.fZController.fKeyList = hsScalarKeyList()
-                ctlchn.data.fController.data.fPosController.fZController.fKeyList.fKeys = KeyList
-                if endFrame < zcurve.bezierPoints[-1].pt[0]:
-                    endFrame = zcurve.bezierPoints[-1].pt[0]
-
-        # then we check for OB_ROTX, OB_ROTY, OB_ROTZ
-        if (Ipo.OB_ROTX in ipo) or (Ipo.OB_ROTY in ipo) or (Ipo.OB_ROTZ in ipo):
-            ctlchn.data.fController.data.fRotController = plCompoundRotController()
-            if(Ipo.OB_ROTX in ipo):
-                KeyList = []
-                xcurve = ipo[Ipo.OB_ROTX]
-                for frm in xcurve.bezierPoints:
-                    frame = hsScalarKey()
-                    num = frm.pt[0] - 1
-
-                    frame.fFrameNum = int(num)
-                    frame.fFrameTime = num/30.0
-                    frame.fValue = (frm.pt[1] / 18.0) * pi
-                    if xcurve.interpolation == Blender.IpoCurve.InterpTypes.BEZIER:
-                        frame.fFlags |= hsKeyFrame.kBezController
-                        frame.fInTan = frm.tilt / 18.0 * pi
-                        frame.fOutTan = frm.tilt / 18.0 * pi
-
-                    KeyList.append(frame)
-                ctlchn.data.fController.data.fRotController.fXController = plScalarController()
-                ctlchn.data.fController.data.fRotController.fXController.fKeyList = hsScalarKeyList()
-                ctlchn.data.fController.data.fRotController.fXController.fKeyList.fKeys = KeyList
-                if endFrame < xcurve.bezierPoints[-1].pt[0]:
-                    endFrame = xcurve.bezierPoints[-1].pt[0]
-
-            if(Ipo.OB_ROTY in ipo):
-                KeyList = []
-                ycurve = ipo[Ipo.OB_ROTY]
-                for frm in ycurve.bezierPoints:
-                    frame = hsScalarKey()
-                    num = frm.pt[0] - 1
-
-                    frame.fFrameNum = int(num)
-                    frame.fFrameTime = num/30.0
-                    frame.fValue = (frm.pt[1] / 18.0) * pi
-                    if ycurve.interpolation == Blender.IpoCurve.InterpTypes.BEZIER:
-                        frame.fFlags |= hsKeyFrame.kBezController
-                        frame.fInTan = frm.tilt / 18.0 * pi
-                        frame.fOutTan = frm.tilt / 18.0 * pi
-
-                    KeyList.append(frame)
-                ctlchn.data.fController.data.fRotController.fYController = plScalarController()
-                ctlchn.data.fController.data.fRotController.fYController.fKeyList = hsScalarKeyList()
-                ctlchn.data.fController.data.fRotController.fYController.fKeyList.fKeys = KeyList
-                if endFrame < ycurve.bezierPoints[-1].pt[0]:
-                    endFrame = ycurve.bezierPoints[-1].pt[0]
-
-            if(Ipo.OB_ROTZ in ipo):
-                KeyList = []
-                zcurve = ipo[Ipo.OB_ROTZ]
-                for frm in zcurve.bezierPoints:
-                    frame = hsScalarKey()
-                    num = frm.pt[0] - 1
-
-                    frame.fFrameNum = int(num)
-                    frame.fFrameTime = num/30.0
-                    frame.fValue = (frm.pt[1] / 18.0) * pi
-                    if zcurve.interpolation == Blender.IpoCurve.InterpTypes.BEZIER:
-                        frame.fFlags |= hsKeyFrame.kBezController
-                        frame.fInTan = frm.tilt / 18.0 * pi
-                        frame.fOutTan = frm.tilt / 18.0 * pi
-
-                    KeyList.append(frame)
-                ctlchn.data.fController.data.fRotController.fZController = plScalarController()
-                ctlchn.data.fController.data.fRotController.fZController.fKeyList = hsScalarKeyList()
-                ctlchn.data.fController.data.fRotController.fZController.fKeyList.fKeys = KeyList
-                if endFrame < zcurve.bezierPoints[-1].pt[0]:
-                    endFrame = zcurve.bezierPoints[-1].pt[0]
-        # and finally OB_SIZEX, OB_SIZEY, OB_SIZEZ
-
-        # lamp colors LA_R, LA_G, LA_B
+        # if we have any lamp color curves, (LA_R, LA_G, LA_B) we add a lightdiffuse applicator and point controller channel
+        if(obj.type == "Lamp"):
+            ipo = obj.data.ipo # first, we get the lamp ipo
+            if (Ipo.LA_R in ipo) or (Ipo.LA_G in ipo) or (Ipo.LA_B in ipo):
+                app = PrpController(0x030B) #plLightDiffuseApplicator
+                app.data.fEnabled = 1
+                app.data.fChannelName = obj.name
+    
+                ctlchn = PrpController(0x0306) #plPointControllerChannel
+                ctlchn.data.fController = PrpController(0x023A) #plCompoundPosController
+                compoundController = ctlchn.data.fController.data
+                if (Ipo.LA_R in ipo):
+                    curve = ipo[Ipo.LA_R]
+                    controller = plScalarController()
+                    endFrame = controller.export_curve(curve, endFrame)
+                    compoundController.fXController = controller
+    
+                if (Ipo.LA_G in ipo):
+                    curve = ipo[Ipo.LA_G]
+                    controller = plScalarController()
+                    endFrame = controller.export_curve(curve, endFrame)
+                    compoundController.fYController = controller
+    
+                if (Ipo.LA_B in ipo):
+                    curve = ipo[Ipo.LA_B]
+                    controller = plScalarController()
+                    endFrame = controller.export_curve(curve, endFrame)
+                    compoundController.fZController = controller
+                    
+                self.fApps.append(self.pair(app, ctlchn))
 
         self.fStart = 0
         self.fEnd = endFrame/30.0
-        # the affine parts "T" part seems to correspond with the un-animated position of the object
-        ctlchn.data.fAP.fT = Vertex(obj.loc[0], obj.loc[1], obj.loc[2])
 
         self.fName = FindInDict(animscript, "name", "unnamed_anim")
         self.fAutoStart = FindInDict(animscript, "autostart", 1)
         self.fLoop = FindInDict(animscript, "loop", 1)
         self.fLoopStart = self.fStart = FindInDict(animscript, "loopstart", self.fStart)
         self.fLoopEnd = self.fEnd = FindInDict(animscript, "loopend", self.fEnd)
-
-        self.fApps.append(self.pair(app, ctlchn))
 
     def read(self, stream):
         plAGAnim.read(self, stream)

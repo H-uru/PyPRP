@@ -220,7 +220,10 @@ class plSceneObject(plSynchedObject):                       #Type 0x01
     def export_object(self, obj, objscript):
         plSynchedObject.export_obj(self, obj, objscript)
         # check for animations
-        if obj.ipo:
+        laipo = None
+        if obj.type == "Lamp":
+            laipo = obj.data.ipo
+        if obj.ipo or laipo:
             # this will specify animation names and markers
             animParams = FindInDict(objscript, "animations", [])
             agmm = plAGMasterMod.FindCreate(self.getRoot(), obj.name)

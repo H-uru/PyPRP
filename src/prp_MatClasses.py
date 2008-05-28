@@ -2551,25 +2551,9 @@ class plLayerAnimation(plLayerAnimationBase):
             self.fTransformCtl = prp_AnimClasses.PrpController(0x8000, self.getVersion())
 
         if (Ipo.MA_COL in ipo):
-            KeyList = []
-            xcurve = ipo[Ipo.MA_COL]
-            for frm in xcurve.bezierPoints:
-                frame = prp_AnimClasses.hsScalarKey()
-                num = frm.pt[0] - 1
-                frame.fFrameNum = int(num)
-                frame.fFrameTime = num / 30.0
-                frame.fValue = frm.pt[1]
-                if xcurve.interpolation == Blender.IpoCurve.InterpTypes.BEZIER:
-                    frame.fFlags |= prp_AnimClasses.hsKeyFrame.kBezController
-                    frame.fInTan = frm.tilt
-                    frame.fOutTan = frm.tilt
-
-                KeyList.append(frame)
+            curve = ipo[Ipo.MA_COL]
             self.fOpacityCtl = prp_AnimClasses.PrpController(0x022F, self.getVersion()) #plScalarController
-            self.fOpacityCtl.data.fKeyList = prp_AnimClasses.hsScalarKeyList()
-            self.fOpacityCtl.data.fKeyList.fKeys = KeyList
-            if xcurve.bezierPoints[-1].pt[0] > endFrame:
-                endFrame = xcurve[-1].pt[0]
+            endFrame = self.fOpacityCtl.data.export_curve(curve, endFrame)
         else:
             self.fOpacityCtl = prp_AnimClasses.PrpController(0x8000, self.getVersion())
 
