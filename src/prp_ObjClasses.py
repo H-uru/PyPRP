@@ -234,7 +234,10 @@ class plSceneObject(plSynchedObject):                       #Type 0x01
                 agmm.data.fPrivateAnims.append(anim.data.getRef())
             for animation in animParams:
                 # if there are animations defined in alcscript, export each separately
-                anim = prp_AnimClasses.plATCAnim.FindCreate(self.getRoot(), FindInDict(animation, "name", "unnamed"))
+                if(FindInDict(animation, "type", None) == "ageglobalanim"):
+                    anim = prp_AnimClasses.plAgeGlobalAnim.FindCreate(self.getRoot(), FindInDict(animation, "name", "unnamed"))
+                else:
+                    anim = prp_AnimClasses.plATCAnim.FindCreate(self.getRoot(), FindInDict(animation, "name", "unnamed"))
                 anim.data.export_obj(obj, animation)
                 agmm.data.fPrivateAnims.append(anim.data.getRef())
             agmod = plAGModifier.FindCreate(self.getRoot(), obj.name)

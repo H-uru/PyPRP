@@ -997,6 +997,10 @@ class plScalarController(plLeafController):
         if endFrame < curve.bezierPoints[-1].pt[0]:
             endFrame = curve.bezierPoints[-1].pt[0]
         return endFrame
+        
+    def shift(self, d):
+        for i in range(len(self.fKeyList.fKeys)):
+            self.fKeyList.fKeys[i].fValue += d
 
 
 class plPoint3Controller(plLeafController):
@@ -1756,51 +1760,19 @@ class plAGAnim(plSynchedObject):                #Type 0x6B
             app.first.write(stream)
             app.second.write(stream)
 
-    def export_obj(self, obj, objscript):
-        plSynchedObject.export_obj(self, obj, objscript)
-
-
-class plATCAnim(plAGAnim): #type 0xF1
-    class pair:
-        def __init__(self, first, second):
-            self.first = first
-            self.second = second
-
-    def __init__(self,parent=None,name="unnamed",type=0x00F1):
-        plAGAnim.__init__(self, parent, name, type)
-        self.fInitial = -1.0
-        self.fAutoStart = 1
-        self.fLoopStart = 0.0 #time in seconds
-        self.fLoopEnd = 1.0 #time in seconds
-        self.fLoop = 1
-        self.fEaseInType = 0x00
-        self.fEaseInMin = 1.0
-        self.fEaseInMax = 1.0
-        self.fEaseInLength = 1.0
-        self.fEaseOutType = 0x00
-        self.fEaseOutMin = 1.0
-        self.fEaseOutMax = 1.0
-        self.fEaseOutLength = 1.0
-        self.fMarkers = dict()
-        self.fLoops = dict()
-        self.fStopPoints = []
-
-    def _Find(page,name):
-        return page.find(0x00F1,name,0)
-    Find = staticmethod(_Find)
-
-    def _FindCreate(page,name):
-        return page.find(0x00F1,name,1)
-    FindCreate = staticmethod(_FindCreate)
-
     def export_obj(self, obj, animscript=dict()):
-        plAGAnim.export_obj(self, obj, AlcScript.objects.Find(obj.name))
-        print "   [ATCAnimation %s]"%(str(self.Key.name))
+        plSynchedObject.export_obj(self, obj, AlcScript.objects.Find(obj.name))
+        self.fName = FindInDict(animscript, "name", "unnamed_anim")
         endFrame = 0
         
         # if we have any object transform curves, we add a matrix controller channel and applicator
         if(obj.ipo):
             ipo = obj.ipo
+            if obj.parent:
+                # deal with blender's weird method of keeping the location ipo in global space
+                ploc = obj.parent.loc
+            else:
+                ploc = [0, 0, 0]
             if (Ipo.OB_LOCX in ipo) or (Ipo.OB_LOCY in ipo) or (Ipo.OB_LOCZ in ipo) or (Ipo.OB_ROTX in ipo) or (Ipo.OB_ROTY in ipo) or (Ipo.OB_ROTZ in ipo):
                 app = PrpController(0x0309) #plMatrixChannelApplicator
                 app.data.fEnabled = 1
@@ -1815,18 +1787,21 @@ class plATCAnim(plAGAnim): #type 0xF1
                         curve = ipo[Ipo.OB_LOCX]
                         controller = plScalarController()
                         endFrame = controller.export_curve(curve, endFrame)
+                        controller.shift(-ploc[0])
                         compoundController.fXController = controller
         
                     if (Ipo.OB_LOCY in ipo):
                         curve = ipo[Ipo.OB_LOCY]
                         controller = plScalarController()
                         endFrame = controller.export_curve(curve, endFrame)
+                        controller.shift(-ploc[1])
                         compoundController.fYController = controller
         
                     if (Ipo.OB_LOCZ in ipo):
                         curve = ipo[Ipo.OB_LOCZ]
                         controller = plScalarController()
                         endFrame = controller.export_curve(curve, endFrame)
+                        controller.shift(-ploc[2])
                         compoundController.fZController = controller
                     ctlchn.data.fController.data.fPosController = compoundController
         
@@ -1854,7 +1829,11 @@ class plATCAnim(plAGAnim): #type 0xF1
                 # OB_SIZEX, OB_SIZEY, OB_SIZEZ
                 
                 # the affine parts "T" part seems to correspond with the un-animated position of the object
-                ctlchn.data.fAP.fT = Vertex(obj.loc[0], obj.loc[1], obj.loc[2])
+                # affineparts appears to be the "default" transform that is used if there is no controller available
+                # need to add sections for the rotation and scaling
+                # for the moment, animations mess with scaled objects and rotated objects without rotation controllers
+                objloc = obj.getMatrix("localspace")[3]
+                ctlchn.data.fAP.fT = Vertex(objloc[0], objloc[1], objloc[2])
                 self.fApps.append(self.pair(app, ctlchn))
 
         # if we have any lamp color curves, (LA_R, LA_G, LA_B) we add a lightdiffuse applicator and point controller channel
@@ -1891,7 +1870,70 @@ class plATCAnim(plAGAnim): #type 0xF1
         self.fStart = 0
         self.fEnd = endFrame/30.0
 
-        self.fName = FindInDict(animscript, "name", "unnamed_anim")
+class plAgeGlobalAnim(plAGAnim):
+    def __init__(self,parent=None,name="unnamed",type=0x00F2):
+        plAGAnim.__init__(self, parent, name, type)
+        self.fGlobalVarName = str()
+        
+    def _Find(page,name):
+        return page.find(0x00F2,name,0)
+    Find = staticmethod(_Find)
+
+    def _FindCreate(page,name):
+        return page.find(0x00F2,name,1)
+    FindCreate = staticmethod(_FindCreate)
+        
+    def read(self, stream):
+        plAGAnim.read(self, stream)
+        self.fGlobalVarName = stream.ReadSafeString()
+        
+    def write(self, stream):
+        plAGAnim.write(self, stream)
+        stream.WriteSafeString(self.fGlobalVarName)
+        
+    def export_obj(self, obj, animscript=dict()):
+        plAGAnim.export_obj(self, obj, animscript)
+        self.fGlobalVarName = FindInDict(animscript, "globalvar", None)
+        if self.fGlobalVarName == None:
+            raise "Cannot export an ageGlobalAnim without a SDL variable name!"
+
+class plATCAnim(plAGAnim): #type 0xF1
+    class pair:
+        def __init__(self, first, second):
+            self.first = first
+            self.second = second
+
+    def __init__(self,parent=None,name="unnamed",type=0x00F1):
+        plAGAnim.__init__(self, parent, name, type)
+        self.fInitial = -1.0
+        self.fAutoStart = 1
+        self.fLoopStart = 0.0 #time in seconds
+        self.fLoopEnd = 1.0 #time in seconds
+        self.fLoop = 1
+        self.fEaseInType = 0x00
+        self.fEaseInMin = 1.0
+        self.fEaseInMax = 1.0
+        self.fEaseInLength = 1.0
+        self.fEaseOutType = 0x00
+        self.fEaseOutMin = 1.0
+        self.fEaseOutMax = 1.0
+        self.fEaseOutLength = 1.0
+        self.fMarkers = dict()
+        self.fLoops = dict()
+        self.fStopPoints = []
+
+    def _Find(page,name):
+        return page.find(0x00F1,name,0)
+    Find = staticmethod(_Find)
+
+    def _FindCreate(page,name):
+        return page.find(0x00F1,name,1)
+    FindCreate = staticmethod(_FindCreate)
+
+    def export_obj(self, obj, animscript=dict()):
+        plAGAnim.export_obj(self, obj, animscript)
+        print "   [ATCAnimation %s]"%(str(self.Key.name))
+        
         self.fAutoStart = FindInDict(animscript, "autostart", 1)
         self.fLoop = FindInDict(animscript, "loop", 1)
         self.fLoopStart = self.fStart = FindInDict(animscript, "loopstart", self.fStart)
