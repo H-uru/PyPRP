@@ -1834,6 +1834,7 @@ class plAGAnim(plSynchedObject):                #Type 0x6B
                 # for the moment, animations mess with scaled objects and rotated objects without rotation controllers
                 objloc = obj.getMatrix("localspace")[3]
                 ctlchn.data.fAP.fT = Vertex(objloc[0], objloc[1], objloc[2])
+                ctlchn.data.fAP.fQ.setQuat(obj.getMatrix("localspace").toQuat())
                 self.fApps.append(self.pair(app, ctlchn))
 
         # if we have any lamp color curves, (LA_R, LA_G, LA_B) we add a lightdiffuse applicator and point controller channel

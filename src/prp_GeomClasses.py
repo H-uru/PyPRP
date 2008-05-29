@@ -426,16 +426,16 @@ class hsQuat:
 
 
     def read(self,stream):
-        self.w = stream.ReadFloat()
         self.x = stream.ReadFloat()
         self.y = stream.ReadFloat()
         self.z = stream.ReadFloat()
+        self.w = stream.ReadFloat()
 
     def write(self,stream):
-        stream.WriteFloat(self.w)
         stream.WriteFloat(self.x)
         stream.WriteFloat(self.y)
         stream.WriteFloat(self.z)
+        stream.WriteFloat(self.w)
 
     def W(self):
         return self.w
@@ -450,10 +450,10 @@ class hsQuat:
         return self.z
 
     def setQuat(self,quat):
-        self.w = quat.w
         self.x = quat.x
         self.y = quat.y
         self.z = quat.z
+        self.w = quat.w
 
     def getQuat(self):
         return Blender.Mathutils.Quaternion(self.w,self.x,self.y,self.z)
