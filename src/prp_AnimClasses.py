@@ -1762,7 +1762,7 @@ class plAGAnim(plSynchedObject):                #Type 0x6B
 
     def export_obj(self, obj, animscript=dict()):
         plSynchedObject.export_obj(self, obj, AlcScript.objects.Find(obj.name))
-        self.fName = FindInDict(animscript, "name", "unnamed_anim")
+        self.fName = FindInDict(animscript, "name", obj.name)
         endFrame = 0
         
         # if we have any object transform curves, we add a matrix controller channel and applicator
@@ -1827,14 +1827,15 @@ class plAGAnim(plSynchedObject):                #Type 0x6B
                         compoundController.fZController = controller
                     ctlchn.data.fController.data.fRotController = compoundController
                 # OB_SIZEX, OB_SIZEY, OB_SIZEZ
+                # scale controllers are only available in the simple variety, which is not suited to conversion from blender
+                # so this will not be implemented until somone is in dire need of it
                 
                 # the affine parts "T" part seems to correspond with the un-animated position of the object
                 # affineparts appears to be the "default" transform that is used if there is no controller available
-                # need to add sections for the rotation and scaling
-                # for the moment, animations mess with scaled objects and rotated objects without rotation controllers
                 objloc = obj.getMatrix("localspace")[3]
                 ctlchn.data.fAP.fT = Vertex(objloc[0], objloc[1], objloc[2])
                 ctlchn.data.fAP.fQ.setQuat(obj.getMatrix("localspace").toQuat())
+                ctlchn.data.fAP.fK = Vertex(obj.size[0], obj.size[1], obj.size[2])
                 self.fApps.append(self.pair(app, ctlchn))
 
         # if we have any lamp color curves, (LA_R, LA_G, LA_B) we add a lightdiffuse applicator and point controller channel
