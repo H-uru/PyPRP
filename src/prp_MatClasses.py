@@ -423,7 +423,7 @@ class hsGMaterial(plSynchedObject):         # Type 0x07
                         self.fLayers.append(layer.data.getRef())
                     else:
                         chan = layer_info["channel"]
-                        animlayer = root.find(0x0043,layer.data.getName() + "_LayerAnim_",1)
+                        animlayer = root.find(0x0043,layer.data.getName(),1)
                         animlayer.data.FromBlender(obj,mat,mtex,chan)
                         animlayer.data.fUnderlay = layer.data.getRef()
                         self.fLayers.append(animlayer.data.getRef())
@@ -443,7 +443,7 @@ class hsGMaterial(plSynchedObject):         # Type 0x07
                             self.fLayers.append(layer.data.getRef())
                         else:
                             chan = layer_info["channel"]
-                            animlayer = root.find(0x0043,layer.data.getName() + "_LayerAnim_",1)
+                            animlayer = root.find(0x0043,layer.data.getName(),1)
                             animlayer.data.FromBlender(obj,mat,mtex,chan)
                             animlayer.data.fUnderlay = layer.data.getRef()
                             self.fLayers.append(animlayer.data.getRef())
@@ -460,7 +460,7 @@ class hsGMaterial(plSynchedObject):         # Type 0x07
                             self.fLayers.append(mix.data.getRef())
                         else:
                             chan = mix_info["channel"]
-                            animlayer = root.find(0x0043,mix.data.getName() + "_LayerAnim_",1)
+                            animlayer = root.find(0x0043,mix.data.getName(),1)
                             animlayer.data.FromBlender(obj,mat,mtex,chan)
                             animlayer.data.fUnderlay = layer.data.getRef()
                             self.fLayers.append(animlayer.data.getRef())
@@ -2557,18 +2557,42 @@ class plLayerAnimation(plLayerAnimationBase):
         else:
             self.fOpacityCtl = prp_AnimClasses.PrpController(0x8000, self.getVersion())
 
+        if (Ipo.MA_R in ipo) or (Ipo.MA_G in ipo) or (Ipo.MA_B in ipo):
+            # if the material color is animated, then we change the colors that control sets (preshade and runtime)
+            compoundController = prp_AnimClasses.PrpController(0x023A, self.getVersion()) #plCompoundPosController
+            if (Ipo.MA_R in ipo):
+                curve = ipo[Ipo.MA_R]
+                controller = prp_AnimClasses.plScalarController()
+                endFrame = controller.export_curve(curve, endFrame)
+                compoundController.data.fXController = controller
+            if (Ipo.MA_G in ipo):
+                curve = ipo[Ipo.MA_G]
+                controller = prp_AnimClasses.plScalarController()
+                endFrame = controller.export_curve(curve, endFrame)
+                compoundController.data.fYController = controller
+            if (Ipo.MA_B in ipo):
+                curve = ipo[Ipo.MA_B]
+                controller = prp_AnimClasses.plScalarController()
+                endFrame = controller.export_curve(curve, endFrame)
+                compoundController.data.fZController = controller
+            self.fRuntimeColorCtl = compoundController
+            ambfactor = mat.getAmb()
+            # this should have it's curves multiplied by ambfactor. I'm lazy right now
+            self.fPreshadeColorCtl = compoundController
+        else:
+            self.fPreshadeColorCtl = prp_AnimClasses.PrpController(0x8000, self.getVersion())
+            self.fRuntimeColorCtl = prp_AnimClasses.PrpController(0x8000, self.getVersion())
+
         ##MAJOR HACK HERE
-        self.fPreshadeColorCtl = prp_AnimClasses.PrpController(0x8000, self.getVersion())
-        self.fRuntimeColorCtl = prp_AnimClasses.PrpController(0x8000, self.getVersion())
         self.fAmbientColorCtl = prp_AnimClasses.PrpController(0x8000, self.getVersion())
         self.fSpecularColorCtl = prp_AnimClasses.PrpController(0x8000, self.getVersion())
 
         self.fTimeConvert = prp_AnimClasses.plAnimTimeConvert()
-        self.fTimeConvert.fFlags |= 0x22
         self.fTimeConvert.fBegin = 0.0
         self.fTimeConvert.fLoopBegin = 0.0
-        self.fTimeConvert.fEnd = endFrame/30.0
-        self.fTimeConvert.fLoopEnd = endFrame/30.0
+        self.fTimeConvert.fEnd = (endFrame - 1)/30.0
+        self.fTimeConvert.fLoopEnd = (endFrame - 1)/30.0
+        self.fTimeConvert.export_obj(obj,mat,mtex,chan)
 
         self.fSynchFlags |= plSynchedObject.Flags["kExcludePersistentState"]
         self.fSDLExcludeList.append("Layer")

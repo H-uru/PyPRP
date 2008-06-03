@@ -115,6 +115,22 @@ class plViewFaceModifier(plSingleModifier):
         "kOffsetLocal"  : 10, \
         "kMaxBounds"    : 11  \
     }
+    
+    ScriptModVFFlags = \
+    { \
+        "pivotface"    :  0, \
+        "pivotfavory"  :  1, \
+        "pivoty"       :  2, \
+        "pivottumble"  :  3, \
+        "scale"        :  4, \
+        "facecam"      :  5, \
+        "facelist"     :  6, \
+        "faceplay"     :  7, \
+        "faceobj"      :  8, \
+        "offset"       :  9, \
+        "offsetlocal"  : 10, \
+        "maxbounds"    : 11  \
+    }
 
 
     def __init__(self, parent, name="unnamed", type=0x0040):
@@ -164,14 +180,23 @@ class plViewFaceModifier(plSingleModifier):
             obj.addProperty("sprite_flags",str(alcHex2Ascii(0x00,4)))
 
     def export_obj(self,obj):
+        objscript = AlcScript.objects.Find(obj.name)
+        cmdlist = FindInDict(objscript,"visual.sprite.flags",None)
         try:
-            p=obj.getProperty("sprite_flags")
-            BVData=alcAscii2Hex(str(p.getData()),4)
-        except (AttributeError, RuntimeError):
-            BVData = plViewFaceModifer.plVFFlags['kFaceCam']    | \
-                     plViewFaceModifer.plVFFlags['kPivotY']     | \
-                     plViewFaceModifer.plVFFlags['kPivotFavorY']
-            pass
+            p = obj.getProperty("sprite_flags")
+            BVData = alcAscii2Hex(str(p.getData()),4)
+        except:
+            if type(cmdlist) == list:
+                BVData = 0
+                for cmd in cmdlist:
+                    if cmd.lower() in plViewFaceModifier.ScriptModVFFlags:
+                        cidx = plViewFaceModifier.ScriptModVFFlags[cmd.lower()]
+                        BVData |= 1 << cidx
+            else:
+                BVData = plViewFaceModifer.plVFFlags['kFaceCam']    | \
+                         plViewFaceModifer.plVFFlags['kPivotY']     | \
+                         plViewFaceModifer.plVFFlags['kPivotFavorY']
+                
         self.bitVector.append(BVData)
 
         # get the matrices

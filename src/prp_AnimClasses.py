@@ -982,6 +982,7 @@ class plScalarController(plLeafController):
                 frame.fValue = (frm.pt[1] / 18.0) * pi
                 if curve.interpolation == Blender.IpoCurve.InterpTypes.BEZIER:
                     frame.fFlags |= hsKeyFrame.kBezController
+                    tan = (frm.vec[2][1] - frm.vec[0][1]) / (frm.vec[2][0] - frm.vec[0][0]) / 30
                     frame.fInTan = frm.tilt / 18.0 * pi
                     frame.fOutTan = frm.tilt / 18.0 * pi
             else:
@@ -1648,6 +1649,20 @@ class plAnimTimeConvert:
         "kNoCallbacks" : 0x80, \
         "kFlagsMask"   : 0xFF  \
     }
+    
+    ScriptModAnimTimeFlags = \
+    { \
+        "none"        : 0x0,  \
+        "stopped"     : 0x1,  \
+        "loop"        : 0x2,  \
+        "backwards"   : 0x4,  \
+        "wrap"        : 0x8,  \
+        "needsreset"  : 0x10, \
+        "easingin"    : 0x20, \
+        "forcedmove"  : 0x40, \
+        "nocallbacks" : 0x80, \
+        "flagsmask"   : 0xff  \
+    }
 
     def __init__(self,parent=None,type=0x0254,version = 5):
         self.fFlags = 0
@@ -1661,6 +1676,18 @@ class plAnimTimeConvert:
         self.fCommandList = [] # plMessages
         self.fStopPoints = []
         self.version = version
+
+    def export_obj(self, obj, mat, mtex, chan):
+        self.fFlags |= 0x22
+        objscript = AlcScript.objects.Find(obj.name)
+        matscript = list(FindInDict(objscript, "visual.matanims", []))
+        for mscript in matscript:
+            if mat.name == FindInDict(mscript, "mat", ""):
+                self.fFlags = 0
+                flags = list(FindInDict(mscript, "flags", []))
+                for flag in flags:
+                    if flag.lower() in plAnimTimeConvert.ScriptModAnimTimeFlags:
+                        self.fFlags |= plAnimTimeConvert.ScriptModAnimTimeFlags[flag.lower()]
 
     def read(self, stream):
         self.fFlags = stream.Read32()
@@ -1826,7 +1853,7 @@ class plAGAnim(plSynchedObject):                #Type 0x6B
                         endFrame = controller.export_curve(curve, endFrame, 1)
                         compoundController.fZController = controller
                     ctlchn.data.fController.data.fRotController = compoundController
-                # OB_SIZEX, OB_SIZEY, OB_SIZEZ
+                # OB_SCALEX, OB_SCALEY, OB_SCALEZ
                 # scale controllers are only available in the simple variety, which is not suited to conversion from blender
                 # so this will not be implemented until somone is in dire need of it
                 
@@ -1870,7 +1897,7 @@ class plAGAnim(plSynchedObject):                #Type 0x6B
                 self.fApps.append(self.pair(app, ctlchn))
 
         self.fStart = 0
-        self.fEnd = endFrame/30.0
+        self.fEnd = (endFrame - 1)/30.0
 
 class plAgeGlobalAnim(plAGAnim):
     def __init__(self,parent=None,name="unnamed",type=0x00F2):

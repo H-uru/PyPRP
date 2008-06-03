@@ -256,6 +256,9 @@ class plCameraModifier1(plSingleModifier):    # actually descends from plSingleM
         # --- Find the camera's script object ----
         objscript = AlcScript.objects.Find(obj.name)
 
+        # check if it's animated
+        self.fAnimated = FindInDict(objscript,"camera.animated",False)
+
         # --------- FOV --------------
         if(obj.data.getType() == 0): # check for perspective camera
             lens = obj.data.getLens()
@@ -279,7 +282,7 @@ class plCameraModifier1(plSingleModifier):    # actually descends from plSingleM
 
         scriptbrain = FindInDict(objscript,"camera.brain.type","fixed")
         scriptbrain = str(scriptbrain).lower()
-        if scriptbrain in ["fixed","circle","avatar","firstperson"]:
+        if scriptbrain in ["fixed","circle","avatar","firstperson","simple"]:
             cambraintype = scriptbrain
 
         print " Camera Brain: %s" % cambraintype
@@ -413,7 +416,8 @@ class plCameraBrain1(hsKeyedObject):
         self.fFlags=hsBitVector()
 
         # -------- Initialize default settings
-        self.fFlags.SetBit(plCameraBrain1.Flags["kFollowLocalAvatar"])
+        # only set in export_obj if there is no flag block in script
+        #self.fFlags.SetBit(plCameraBrain1.Flags["kFollowLocalAvatar"])
 
         self.fPOAOffset = Vertex(0.0,0.0,6.0)
 
@@ -562,6 +566,9 @@ class plCameraBrain1(hsKeyedObject):
                 if flag.lower() in plCameraBrain1.ScriptFlags:
                     idx =  plCameraBrain1.ScriptFlags[flag.lower()]
                     self.fFlags.SetBit(idx)
+        else:
+            print "  No camera flags list, setting default"
+            self.fFlags.SetBit(plCameraBrain1.Flags["kFollowLocalAvatar"])
 
 
 
