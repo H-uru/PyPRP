@@ -553,6 +553,24 @@ class alcUruPage:
 
                     # Logical Export
                     AlcLogicHelper.Export(self,obj,scnobj,name)
+
+                elif alctype=="subworld": #plHKSubWorld
+                    print ""
+                    print "[plHKSubWorld %s]" % name
+
+                    #find the sceneobject or create it
+                    scnobj = plSceneObject.FindCreate(self.prp,name)
+                    scnobj.data.scene=SceneNodeRef
+                    scnobj.data.export_object(obj, objscript)
+
+                    # Export the subworld
+                    plHKSubWorld.Export(self,obj,scnobj,name)
+
+                    # Coordinate Export
+                    plCoordinateInterface.Export(self,obj,scnobj,name,1,objlist)
+                    # Logic Export
+                    AlcLogicHelper.Export(self,obj,scnobj,name)
+
                 else: # Any other point
                     print ""
                     print "[Point %s]" % name
@@ -655,6 +673,28 @@ class alcUruPage:
                 elif alctype=="collider": #Physical export
                     # we export colliders on the fourth pass
                     objlist2.append(obj)
+
+                elif alctype=="subworld": #plHKSubWorld
+                    print ""
+                    print "[plHKSubWorld %s]" % name
+
+                    #find the sceneobject or create it
+                    scnobj = plSceneObject.FindCreate(self.prp,name)
+                    scnobj.data.scene=SceneNodeRef
+                    scnobj.data.export_object(obj, objscript)
+
+                    # Export the subworld
+                    plHKSubWorld.Export(self,obj,scnobj,name)
+
+                    # Coordinate Export
+                    plCoordinateInterface.Export(self,obj,scnobj,name,1,objlist)
+                    # Physical Export
+                    plSimulationInterface.Export(self,obj,scnobj,name,SceneNodeRef,isdynamic)
+                    # Logic Export
+                    AlcLogicHelper.Export(self,obj,scnobj,name)
+                    # Visual Export (Also contains drawablespans export code)
+                    if FindInDict(objscript, "visual.render", True):
+                        plDrawInterface.Export(self,obj,scnobj,name,SceneNodeRef,isdynamic,softVolumeParser, water)
 
                 else: #if alctype=="object" or alctype=="sprite" or anything else...
                     #find the sceneobject or create it

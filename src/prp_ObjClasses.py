@@ -1347,6 +1347,15 @@ class plHKPhysical(plPhysical):
         # retrieve alcscript for this object
         objscript = AlcScript.objects.Find(obj.name)
 
+        #subworld-refs are processed
+        Subref = FindInDict(objscript,'physical.subworld',None)
+        if Subref:
+            refparser = ScriptRefParser(self.getRoot(),str(self.Key.name), 0x00E2, [0x00E2,]) #plHKSubworld
+            SubWorldObj = refparser.MixedRef_FindCreate(Subref)
+            subworld = SubWorldObj.data.getRef()
+            self.fSubWorld = subworld
+            print "Adding Subworld Ref [%s] to Physical" % Subref
+
         ## First determine if we should encode this as a region
         ## This should happen here, rather than in the resource manager, to avoid
         ## code congestion
@@ -1391,6 +1400,25 @@ class plHKPhysical(plPhysical):
                 self.gFlagsRespond = plHKPhysical.FlagsRespond["cRespNone"]
 
                 self.fLOSDB=plHKPhysical.plLOSDB["kLOSDBSwimRegion"]
+
+            elif regiontype == "subworld":
+                # set the Collision Type to Detector
+                self.gColType = plHKPhysical.Collision["cDetector"]
+
+                # set mass to 1.0, as is default for regions
+                self.fMass = 1.0
+                self.fRC = 0.0
+                self.fEL = 0.0
+
+                self.gFlagsDetect  = plHKPhysical.FlagsDetect["cDetectBoundaries"]
+                self.gFlagsRespond = plHKPhysical.FlagsRespond["cRespNone"]
+
+                self.fGroup[plHKPhysical.Group["kGroupDynamicBlocker"]] = 1
+                
+                # Export the detector
+                print ""
+                print "[plSubWorldRegionDetector %s]" % obj.name
+                plSubWorldRegionDetector.Export(self.getRoot(),obj,scnobj,obj.name)
 
             else:
                 # set the Collision Type to Detector
@@ -1574,3 +1602,46 @@ class plHKPhysical(plPhysical):
 
             # transform the object, size only.
             self.fBounds.SizeTransform_mtx(L2Wmatrix)
+
+            
+class plHKSubWorld(plSynchedObject):
+    def __init__(self,parent=None,name="unnamed",type=0x00E2):
+        plSynchedObject.__init__(self,parent,name,type)
+        self.fSceneRef = UruObjectRef()
+        self.fSubworldOffset = Vertex()
+        self.fSomeOddData = 0xC200B23A ##Flags?
+        
+    def _Find(page,name):
+        return page.find(0x00E2,name,0)
+    Find = staticmethod(_Find)
+
+    def _FindCreate(page,name):
+        return page.find(0x00E2,name,1)
+    FindCreate = staticmethod(_FindCreate)
+
+    def export_obj(self, obj, scnobj):
+        plSynchedObject.export_obj(self, obj, AlcScript.objects.Find(obj.name))
+        # sceneObj = prp_ObjClasses.plSceneObject.FindCreate(self.getRoot(),obj.name)
+        self.fSceneRef = scnobj.data.getRef()
+        
+    def _Export(page, obj, scnobj, name):
+        HKSubWorld = plHKSubWorld.FindCreate(page, name)
+        HKSubWorld.data.export_obj(obj, scnobj)
+        # attach to sceneobject
+        print "Appending subworld [%s] to sceneobject [%s]" % (HKSubWorld.data.Key.name, scnobj.data.Key.name)
+        scnobj.data.data1.append(HKSubWorld.data.getRef())
+    Export = staticmethod(_Export)
+        
+    def read(self, s):
+        plSynchedObject.read(self, s)
+        self.fSceneRef.read(s)
+        self.fSubworldOffset.read(s)
+        self.fSomeOddData = s.Read32()
+        
+    def write(self, s):
+        plSynchedObject.write(self,s)
+        self.fSceneRef.write(s)
+        self.fSubworldOffset.write(s)
+        s.Write32(self.fSomeOddData)
+        
+from prp_LogicClasses import *

@@ -196,6 +196,8 @@ class PrpObject:
                self.data=plPointShadowMaster(self)
             elif self.type==0x00D6:
                self.data=plDirectShadowMaster(self)
+            elif self.type==0x00E2:
+               self.data=plHKSubWorld(self)
             elif self.type==0x00E7:
                 self.data=plObjectInVolumeAndFacingDetector(self)
             elif self.type==0x00E8:
@@ -210,6 +212,8 @@ class PrpObject:
                 self.data=plATCAnim(self)
             elif self.type==0x00F2:
                 self.data=plAgeGlobalAnim(self)
+            elif self.type==0x00F3:
+                self.data=plSubWorldRegionDetector(self)
             elif self.type==0x00FB:
                 self.data=plWaveSet7(self)
             elif self.type==0x00FC:

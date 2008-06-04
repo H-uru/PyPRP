@@ -1095,6 +1095,43 @@ class plCameraRegionDetector(plDetectorModifier):
 
     Export = staticmethod(_Export)
 
+class plSubWorldRegionDetector(plDetectorModifier):
+    def __init__(self,parent=None,name="unnamed",type=0x00F3):
+        plDetectorModifier.__init__(self,parent,name,type)
+        self.fSub = UruObjectRef()
+        self.fOnExit = 0
+    def _Find(page,name):
+        return page.find(0x00F3,name,0)
+    Find = staticmethod(_Find)
+
+    def _FindCreate(page,name):
+        return page.find(0x00F3,name,1)
+    FindCreate = staticmethod(_FindCreate)
+    
+    def export_obj(self,obj):
+        objscript = AlcScript.objects.Find(obj.name)
+        self.fOnExit = FindInDict(objscript, "region.onexit", self.fOnExit)
+        ref = FindInDict(objscript,'region.subworld',None)
+        if ref:
+            sceneObj = prp_ObjClasses.plSceneObject.FindCreate(self.getRoot(),ref)
+            self.fSub = sceneObj.data.getRef()
+
+    def _Export(page, obj, scnobj, name):
+        SubWorldRegionDetector = plSubWorldRegionDetector.FindCreate(page, name)
+        SubWorldRegionDetector.data.export_obj(obj)
+        # attach to sceneobject
+        scnobj.data.addModifier(SubWorldRegionDetector)
+    Export = staticmethod(_Export)
+
+    def read(self, s):
+        plDetectorModifier.read(self, s)
+        self.fSub.read(s)
+        self.fOnExit = s.ReadBool()
+
+    def write(self, s):
+        plDetectorModifier.write(self, s)
+        self.fSub.write(s)
+        s.WriteBool(self.fOnExit)
 
 ###########################
 ##                       ##
