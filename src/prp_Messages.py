@@ -38,10 +38,10 @@ import prp_Config, prp_HexDump, prp_GeomClasses
 # Message Type: 0x0302 - plOneShotMsg
 # Message Type: 0x0255 - plSoundMsg
 # Message Type: 0x0206 - plAnimCmdMsg
+# Message Type: 0x024F - plEnableMsg
+# Message Type: 0x024A - plTimerCallbackMsg
 
 ## Still Needed at the moment:
-# Message Type: 0x024A - plTimerCallbackMsg
-# Message Type: 0x024F - plEnableMsg
 # Message Type: 0x02E1 - plLinkToAgeMsg
 # Message Type: 0x02FD - plResponderEnableMsg
 # Message Type: 0x03BA - plSubWorldMsg
@@ -79,6 +79,8 @@ class PrpMessage:
                 self.data = plEnableMsg(self)
             elif self.msgtype == 0x0206:
                 self.data = plAnimCmdMsg(self)
+            elif self.msgtype == 0x024A:
+                self.data = plTimerCallbackMsg(self)
             else:
                 raise ValueError, "Unsupported message type %04X %s" % (self.msgtype,MsgKeyToMsgName(self.msgtype))
         elif self.version == 6:
@@ -1025,6 +1027,30 @@ class plSoundMsg(plMessageWithCallbacks):
                     self.fCmd.SetBit(cidx)
                     print "    plSoundMsg: Set command: %s" % cmd.lower()
 
+class plTimerCallbackMsg(plMessage):
+    def __init__(self,parent=None,type=0x024A):
+        plMessage.__init__(self,parent,type)
+        self.fBCastFlags |= plMessage.plBCastFlags["kLocalPropagate"]
+        self.fID = int()
+        self.fTime = float()
+        
+    def read(self, stream):
+        self.IMsgRead(stream)
+
+        self.fID = stream.ReadInt()
+        self.fTime = stream.ReadFloat()
+        
+    def write(self,stream):
+        self.IMsgWrite(stream);
+
+        stream.WriteInt(self.fID)
+        stream.WriteFloat(self.fTime)
+
+    def export_script(self,script,refparser):
+        plMessage.export_script(self,script,refparser)
+        
+        self.fID = FindInDict(script, "id", 0)
+        self.fTime = FindInDict(script, "time", 0)
 
 class plEnableMsg(plMessage):
     ModCmds = \
@@ -1037,6 +1063,18 @@ class plEnableMsg(plMessage):
         "kAll"       : 5, \
         "kByType"    : 6, \
     }
+    
+    ScriptModEnableCmds = \
+    { \
+        "disable"   : 0, \
+        "enable"    : 1, \
+        "drawable"  : 2, \
+        "physical"  : 3, \
+        "audible"   : 4, \
+        "all"       : 5, \
+        "bytype"    : 6, \
+    }
+    
     def __init__(self,parent=None,type=0x0255):
         plMessage.__init__(self,parent,type)
         self.fBCastFlags |= plMessage.plBCastFlags["kLocalPropagate"]
@@ -1044,7 +1082,7 @@ class plEnableMsg(plMessage):
         self.fTypes = hsBitVector()
 
     def read(self,stream):
-        self.IMsgRead(stream);
+        self.IMsgRead(stream)
 
         self.fCmd.read(stream)
         self.fTypes.read(stream)
@@ -1058,11 +1096,21 @@ class plEnableMsg(plMessage):
     def export_script(self,script,refparser):
         plMessage.export_script(self,script,refparser)
 
-        enable = bool(FindInDict(script,"enable","true"))
-        if(enable):
-            self.fCmd.SetBit(plEnableMsg.ModCmds["kEnable"])
-        else:
-            self.fCmd.SetBit(plEnableMsg.ModCmds["kDisable"])
+        cmdlist = FindInDict(script, "cmds", None)
+        if type(cmdlist) == list:
+            self.fCmd = hsBitVector()
+            for cmd in cmdlist:
+                if cmd.lower() in plEnableMsg.ScriptModEnableCmds:
+                    cidx = plEnableMsg.ScriptModEnableCmds[cmd.lower()]
+                    self.fCmd.SetBit(cidx)
+
+        typelist = FindInDict(script, "types", None)
+        if type(typelist) == list:
+            self.fTypes = hsBitVector()
+            for cmd in typelist:
+                if cmd.lower() in plEnableMsg.ScriptModEnableCmds:
+                    cidx = plEnableMsg.ScriptModEnableCmds[cmd.lower()]
+                    self.fTypes.SetBit(cidx)
 
 
 def MsgKeyToMsgName(type):

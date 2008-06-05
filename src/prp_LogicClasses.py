@@ -2059,6 +2059,7 @@ class plResponderCmd:
         "enablemsg"         : 0x024F, \
         "soundmsg"          : 0x0255, \
         "animcmdmsg"        : 0x0206, \
+        "timercallbackmsg"  : 0x024A, \
     }
 
     def __init__(self,parent):
