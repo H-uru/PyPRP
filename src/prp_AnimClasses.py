@@ -978,19 +978,19 @@ class plScalarController(plLeafController):
 
             frame.fFrameNum = int(num)
             frame.fFrameTime = num/30.0
+            frame.fValue = frm.pt[1]
+            # if this is a bezier curve, set the flag and add the bez values
+            if curve.interpolation == Blender.IpoCurve.InterpTypes.BEZIER:
+                frame.fFlags |= hsKeyFrame.kBezController
+                # the current tan values are a wild guess. Have fun.
+                frame.fInTan = -(frm.vec[1][1] - frm.vec[0][1]) / (frm.vec[1][0] - frm.vec[0][0]) / 30 / (2*pi)
+                frame.fOutTan = (frm.vec[1][1] - frm.vec[2][1]) / (frm.vec[1][0] - frm.vec[2][0]) / 30 / (2*pi)
+            # if this is a rotation curve, we must convert from deg/10 to radians
             if convrot:
-                frame.fValue = (frm.pt[1] / 18.0) * pi
+                frame.fValue = frame.fValue / 18.0 * pi
                 if curve.interpolation == Blender.IpoCurve.InterpTypes.BEZIER:
-                    frame.fFlags |= hsKeyFrame.kBezController
-                    tan = (frm.vec[2][1] - frm.vec[0][1]) / (frm.vec[2][0] - frm.vec[0][0]) / 30
-                    frame.fInTan = frm.tilt / 18.0 * pi
-                    frame.fOutTan = frm.tilt / 18.0 * pi
-            else:
-                frame.fValue = frm.pt[1]
-                if curve.interpolation == Blender.IpoCurve.InterpTypes.BEZIER:
-                    frame.fFlags |= hsKeyFrame.kBezController
-                    frame.fInTan = frm.tilt
-                    frame.fOutTan = frm.tilt
+                    frame.fInTan = frame.fInTan / 18.0 * pi
+                    frame.fOutTan = frame.fOutTan / 18.0 * pi
 
             KeyList.append(frame)
         self.fKeyList = hsScalarKeyList()
@@ -1866,7 +1866,7 @@ class plAGAnim(plSynchedObject):                #Type 0x6B
                 self.fApps.append(self.pair(app, ctlchn))
 
         # if we have any lamp color curves, (LA_R, LA_G, LA_B) we add a lightdiffuse applicator and point controller channel
-        if(obj.type == "Lamp"):
+        if(obj.type == "Lamp")and(obj.data.ipo):
             ipo = obj.data.ipo # first, we get the lamp ipo
             if (Ipo.LA_R in ipo) or (Ipo.LA_G in ipo) or (Ipo.LA_B in ipo):
                 app = PrpController(0x030B) #plLightDiffuseApplicator

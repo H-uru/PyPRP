@@ -660,6 +660,11 @@ class alcUruPage:
                     scnobj.data.export_object(obj, objscript)
 
                     # handle any special col_type settings here:
+                    if(regiontype == "subworld"):
+                        # Export the detector
+                        print ""
+                        print "[plSubWorldRegionDetector %s]" % name
+                        plSubWorldRegionDetector.Export(self,obj,scnobj,name)
 
                     isdynamic = AlcLogicHelper.IsRegionDynamic(obj)
                     AlcLogicHelper.ExportRegions(self,obj,scnobj,name)

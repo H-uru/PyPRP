@@ -1414,11 +1414,6 @@ class plHKPhysical(plPhysical):
                 self.gFlagsRespond = plHKPhysical.FlagsRespond["cRespNone"]
 
                 self.fGroup[plHKPhysical.Group["kGroupDynamicBlocker"]] = 1
-                
-                # Export the detector
-                print ""
-                print "[plSubWorldRegionDetector %s]" % obj.name
-                plSubWorldRegionDetector.Export(self.getRoot(),obj,scnobj,obj.name)
 
             else:
                 # set the Collision Type to Detector
@@ -1644,4 +1639,3 @@ class plHKSubWorld(plSynchedObject):
         self.fSubworldOffset.write(s)
         s.Write32(self.fSomeOddData)
         
-from prp_LogicClasses import *
