@@ -1074,6 +1074,11 @@ class plLayer(plLayerInterface):             # Type 0x06
                 if(mtex.neg): # set the negate colors flag if it is so required
                     self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendInvertColor"]
 
+                if(mtex.mtHard):
+                    self.fState.fMiscFlags  |= hsGMatState.hsGMatMiscFlags["kMiscBindNext"] | hsGMatState.hsGMatMiscFlags["kMiscRestartPassHere"]
+
+                if(mtex.mtAmb):
+                    self.fState.fMiscFlags  |= hsGMatState.hsGMatMiscFlags["kMiscLightMap"]
 
         if stencil:
             # now set the various layer properties specific to alphablendmaps

@@ -1757,6 +1757,7 @@ class plDrawInterface(plObjInterface):
                 Criteria = 0
                 Props = 0
                 Suff = str(obj.passIndex)
+                IntSuff = int(Suff)
 
                 if Suff != '0':
                     # this seems to cause issues for my ages. Consider using sort faces (vs spans), or have an option for removing this?
@@ -1766,7 +1767,13 @@ class plDrawInterface(plObjInterface):
                     Suff = ''
 
                 if blendSpan:
-                    RenderLevel = plRenderLevel(plRenderLevel.MajorLevel["kDefRendMajorLevel"],plRenderLevel.MinorLevel["kOpaqueMinorLevel"])
+                    if IntSuff > 1:
+                        RenderLevel = plRenderLevel(plRenderLevel.MajorLevel["kDefRendMajorLevel"],plRenderLevel.MajorLevel["kLateRendMajorLevel"])
+                        if IntSuff > 2:
+                            Criteria &= ~(plDrawable.Crit["kCritSortSpans"] | plDrawable.Crit["kCritSortFaces"])
+                            Props &= ~(plDrawable.Props["kPropSortSpans"] | plDrawable.Props["kPropSortFaces"])
+                    else:
+                        RenderLevel = plRenderLevel(plRenderLevel.MajorLevel["kDefRendMajorLevel"],plRenderLevel.MinorLevel["kOpaqueMinorLevel"])
                     suffix = "BlendSpans" + Suff
                 else:
                     suffix = "Spans" + Suff
