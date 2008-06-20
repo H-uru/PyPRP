@@ -27,7 +27,7 @@ class ScriptRefParser:
         "scnobj"        : 0x0001, \
         "audioiface"    : 0x0011, \
         "logicmod"      : 0x002D, \
-        "pyfileMod"     : 0x00A2, \
+        "pyfilemod"     : 0x00A2, \
         "sitmod"        : 0x00AE, \
         "animeventmod"  : 0x00C4, \
         "npcspawnmod"   : 0x00F5, \

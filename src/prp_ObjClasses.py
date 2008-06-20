@@ -224,6 +224,7 @@ class plSceneObject(plSynchedObject):                       #Type 0x01
         if obj.type == "Lamp":
             laipo = obj.data.ipo
         if obj.ipo or laipo:
+            print '--> We have an IPO Curve! <--'
             # this will specify animation names and markers
             animParams = FindInDict(objscript, "animations", [])
             agmm = plAGMasterMod.FindCreate(self.getRoot(), obj.name)

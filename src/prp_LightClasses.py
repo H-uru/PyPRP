@@ -514,7 +514,7 @@ class plOmniLightInfo(plDirectionalLightInfo): #Incorrect, but I guess it can sl
         Dist = lamp.dist/16
 
         print " [OmniLight]\n";
-        if lamp.mode & (Lamp.Modes["Quad"]):
+        if lamp.falloffType == Lamp.Falloffs["LINQUAD"]:
             print "  Quadratic Attenuation"
             self.fAttenQuadratic = lamp.quad2/Dist
             self.fAttenLinear = lamp.quad1/Dist

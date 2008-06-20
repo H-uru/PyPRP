@@ -138,6 +138,8 @@ class PrpObject:
                 self.data=plCameraRegionDetector(self)
             elif self.type==0x0077:
                 self.data=plOneShotMod(self)
+            elif self.type==0x007A:
+                self.data=plPostEffectMod(self)
             elif self.type==0x007B:
                 self.data=plObjectInVolumeDetector(self)
             elif self.type==0x007C:

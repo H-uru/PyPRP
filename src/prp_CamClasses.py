@@ -871,3 +871,67 @@ class plCameraBrain1_FirstPerson(plCameraBrain1_Avatar):
 
     def export_obj(self,obj):
         plCameraBrain1_Avatar.export_obj(self,obj)
+
+class plPostEffectMod(plSingleModifier):
+    def __init__(self,parent,name="unnamed",type=0x007A):
+        plSingleModifier.__init__(self,parent,name,type)
+        
+        self.fState = hsBitVector()
+        self.fHither = 1.0
+        self.fYon = 100.0
+        self.fFOVX = 45.00
+        self.fFOVY = 33.75
+        self.fNodeKey = UruObjectRef(self.getVersion())
+        self.fC2W = hsMatrix44()
+        self.fW2C = hsMatrix44()
+    
+    def _Find(page,name):
+        return page.find(0x007A,name,0)
+    Find = staticmethod(_Find)
+    
+    def _FindCreate(page,name):
+        return page.find(0x007A,name,1)
+    FindCreate = staticmethod(_FindCreate)
+    
+    def read(self,stream):
+        plSingleModifier.read(self,stream)
+        
+        self.fState.read(stream)
+        self.fHither = stream.ReadFloat()
+        self.fYon - stream.ReadFloat()
+        self.fFOVX = stream.ReadFloat()
+        self.fFOVY = stream.ReadFloat()
+        
+        self.fNodeKey.read(stream)
+        
+        self.fW2C.read(stream)
+        self.fC2W.read(stream)
+    
+    def write(self,stream):
+        plSingleModifier.write(self,stream)
+        
+        self.fState.write(stream)
+        
+        stream.WriteFloat(self.fHither)
+        stream.WriteFloat(self.fYon)
+        stream.WriteFloat(self.fFOVX)
+        stream.WriteFloat(self.fFOVY)
+        
+        self.fNodeKey.write(stream)
+        
+        self.fW2C.write(stream)
+        self.fC2W.write(stream)
+    
+    def export_obj(self, obj, sceneNode):
+        script = AlcScript.objects.Find(obj.name)
+        
+        m = obj.getMatrix()
+        m.transpose()
+        self.fC2W.set(m)
+        m.invert()
+        self.fW2C.set(m)
+        
+        self.fNodeKey = sceneNode
+        
+        self.fHither = float(FindInDict(script, "camera.hither", 1.0))
+        self.fYon = float(FindInDict(script, "camera.yon", 100.0))

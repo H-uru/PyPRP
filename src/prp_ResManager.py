@@ -764,6 +764,17 @@ class alcUruPage:
                     plAudioInterface.Export(self,obj,scnobj,name,SceneNodeRef,softVolumeParser)
 
             elif obj_type=="Camera":
+                if (alctype == 'guicamera'):
+                    #Please note the follow pieces of insanity:
+                    # 1 - Cameras must face away from the GUI
+                    # 2 - Cameras should be positioned so that the GUI is upside down
+                    # 3 - Cameras have the matrices stored inverted first, then standard
+                    print ""
+                    print "[PostEffectMod %s]" % name
+                    #Export the darn thing
+                    pem = plPostEffectMod.FindCreate(self.prp,name)
+                    pem.data.export_obj(obj, SceneNodeRef)
+
                 if (alctype == 'camera') or (alctype == 'object'):
                     print ""
                     print "[Camera %s]" % name

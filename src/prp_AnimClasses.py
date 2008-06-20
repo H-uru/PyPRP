@@ -1790,6 +1790,7 @@ class plAGAnim(plSynchedObject):                #Type 0x6B
     def export_obj(self, obj, animscript=dict()):
         plSynchedObject.export_obj(self, obj, AlcScript.objects.Find(obj.name))
         self.fName = FindInDict(animscript, "name", obj.name)
+        print 'Exporting IPO %s' % self.fName
         endFrame = 0
         
         # if we have any object transform curves, we add a matrix controller channel and applicator
