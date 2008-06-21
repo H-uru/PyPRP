@@ -925,7 +925,7 @@ class plPostEffectMod(plSingleModifier):
     def export_obj(self, obj, sceneNode):
         script = AlcScript.objects.Find(obj.name)
         
-        m = obj.getMatrix()
+        m = getMatrix(obj)
         m.transpose()
         self.fC2W.set(m)
         m.invert()

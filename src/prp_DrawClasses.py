@@ -1259,6 +1259,7 @@ class plDrawableSpans(plDrawable):
         obj_l2w.transpose()
         LocalToWorld=hsMatrix44()
         LocalToWorld.set(obj_l2w)
+        script = AlcScript.objects.Find(obj.getName())
 
         # Prepare a span index object, in which we can add our span indices
         spanIndex = plDISpanIndex()
@@ -1355,13 +1356,16 @@ class plDrawableSpans(plDrawable):
             icicle.fMaterialIdx=matidx
 
             # Determine Properties!
-            icicle.fProps=0
+            icicle.fProps = 0
             if MatGroup["vtxalphacol"] == True:
                 icicle.fProps |= plSpan.Props["kLiteVtxNonPreshaded"]
 
             if water:
                 icicle.fProps |= (plSpan.Props["kWaterHeight"] | plSpan.Props["kLiteVtxNonPreshaded"] | plSpan.Props["kPropRunTimeLight"] | plSpan.Props["kPropReverseSort"] | plSpan.Props["kPropNoShadow"])
                 icicle.fWaterHeight = obj.loc[2]
+            
+            if not FindInDict(script, "visual.icicle", 0) == 0:
+                icicle.fProps = int(FindInDict(script, "visual.icicle", 0))
 
 
             # Store info about the Vertex Storage
@@ -1572,6 +1576,7 @@ class plDrawInterface(plObjInterface):
         weightCount = 0
         materialGroups = []
         spansList = {}
+        objscript = AlcScript.objects.Find(obj.getName())
 
         #Begin exporting
         print " [Draw Interface %s]" % name
@@ -1783,6 +1788,17 @@ class plDrawInterface(plObjInterface):
                     RenderLevel = plRenderLevel(plRenderLevel.MajorLevel["kBlendRendMajorLevel"],plRenderLevel.MinorLevel["kOpaqueMinorLevel"])
                     Criteria = plDrawable.Crit["kCritSortFaces"]
                     Props = plDrawable.Props["kPropSortFaces"]
+                
+                #DO NOT TOUCH!!!
+                #unless you know what *every* flag does and what needs to be set for each object!
+                if (FindInDict(objscript, "visual.drawable", 0) != 0):
+                    RenderLevel.fLevel = int(FindInDict(objscript, "visual.drawable", 0))
+                
+                if (FindInDict(objscript, "visual.criteria", 0) != 0):
+                    Criteria = int(FindInDict(objscript, "visual.criteria", 0))
+                
+                if (FindInDict(objscript, "visual.drawflags", 0) != 0):
+                    Props = int(FindInDict(objscript, "visual.drawflags", 0))
 
                 Name_RenderLevel = "%08x" % RenderLevel.fLevel
                 Name_Crit = "%x" % Criteria
@@ -1810,8 +1826,6 @@ class plDrawInterface(plObjInterface):
             setnum=drawspans.data.export_obj(obj, isdynamic, DSpans['MatGroups'], water)
             self.addSpanSet(setnum, drawspans.data.getRef())
 
-
-        objscript = AlcScript.objects.Find(obj.getName())
         propString = FindInDict(objscript,"visual.visregions", [])
         if type(propString) == list:
             for reg in propString:

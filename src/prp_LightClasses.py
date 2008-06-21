@@ -719,8 +719,9 @@ class plShadowCaster(plMultiModifier):    #Type 0x00D4
         pass
 
     def _Export(page,obj,scnobj,name,SceneNodeRef,isdynamic=0):
+        objscript = AlcScript.objects.Find(obj.getName())
         if len(obj.data.materials) > 0 :
-            if obj.data.materials[0].mode & Blender.Material.Modes["SHADOWBUF"]:
+            if (obj.data.materials[0].mode & Blender.Material.Modes["SHADOWBUF"]) or (FindInDict(objscript, "visual.shadow", 0) != 0):
                 shadowcaster = page.prp.find(0xD4,name,1)
                 shadowcaster.data.export_obj(obj)
                 scnobj.data.data2.append(shadowcaster.data.getRef())
