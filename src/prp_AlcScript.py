@@ -69,7 +69,7 @@ class AlcScript:
     def Write(self):
         return self.WritePart(self.content)
 
-    def WritePart(self,data,level=0,AlreadyIndented = False):
+    def WritePart(self,data,level=0,AlreadyIndented = False,SortList = True):
         s = ""
         NoIndent = AlreadyIndented
         if type(data) == dict:
@@ -86,14 +86,22 @@ class AlcScript:
                     else:
                         NoIndent = False
 
+                    # D'Lanor: No sorting of pythonfilemods because it screws up the index numbering
+                    # A bit of a hack since "parameters" could be used elsewhere
+                    if str(key) == "parameters":
+                        sorting = False
+                    else:
+                        sorting = True
+
                     s += str(key) + ": "
-                    s += self.WritePart(data[key],level + 2) # recurse into next level
+                    s += self.WritePart(data[key],level + 2,SortList=sorting) # recurse into next level
                     if(level == 0):
                         s += "\n"
 
         elif type(data) == list:
             #print "\nList:",data,"\n"
-            data.sort()
+            if SortList:
+                data.sort()
             for item in data:
                 # Ignore empty dictionaries
                 if not (type(item) == dict and len(item.keys()) == 0):
@@ -110,10 +118,12 @@ class AlcScript:
                         s += "\n"
 
         else: # it's a value
-            if type(data) == str:
-                s += "\"" + str(data) + "\""
-            else:
-                s += str(data)
+        # D'Lanor: No need for the double quotes
+        #    if type(data) == str:
+        #        s += "\"" + str(data) + "\""
+        #    else:
+        #        s += str(data)
+            s += str(data)
         return s
 
     ## Management functions - use these to append or find root dictionary objects for blender objects

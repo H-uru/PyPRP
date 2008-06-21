@@ -224,7 +224,6 @@ class plSceneObject(plSynchedObject):                       #Type 0x01
         if obj.type == "Lamp":
             laipo = obj.data.ipo
         if obj.ipo or laipo:
-            print '--> We have an IPO Curve! <--'
             # this will specify animation names and markers
             animParams = FindInDict(objscript, "animations", [])
             agmm = plAGMasterMod.FindCreate(self.getRoot(), obj.name)
@@ -517,21 +516,21 @@ class plCoordinateInterface(plObjInterface):
 class plSimulationInterface(plObjInterface):
     plSimulationProperties = \
     { \
-        "kDisable"                  :  0, \
-        "kWeightless_DEAD"          :  1, \
-        "kPinned"                   :  2, \
-        "kWarp_DEAD"                :  3, \
-        "kUpright_DEAD"             :  4, \
-        "kPassive"                  :  5, \
-        "kRotationForces_DEAD"      :  6, \
-        "kCameraAvoidObject_DEAD"   :  7, \
-        "kPhysAnim"                 :  8, \
-        "kStartInactive"            :  9, \
-        "kNoSynchronize"            : 10, \
-        "kSuppressed_DEAD"          : 11, \
-        "kNoOwnershipChange"        : 12, \
-        "kAvAnimPushable"           : 13, \
-        "kNumProps"                 : 14 \
+        "kDisable"              :  0, \
+        "kWeightless"           :  1, \
+        "kPinned"               :  2, \
+        "kWarp"                 :  3, \
+        "kUpright"              :  4, \
+        "kPassive"              :  5, \
+        "kRotationForces"       :  6, \
+        "kCameraAvoidObject"    :  7, \
+        "kPhysAnim"             :  8, \
+        "kStartInactive"        :  9, \
+        "kNoSynchronize"        : 10, \
+        "kSuppressed"           : 11, \
+        "kNoOwnershipChange"    : 12, \
+        "kAvAnimPushable"       : 13, \
+        "kNumProps"             : 14 \
     }
 
     def __init__(self,parent,name="unnamed",type=0x001C):
@@ -647,13 +646,6 @@ class plPhysical(plSynchedObject):
         "kGroupDetector"        : 0x5, \
         "kGroupLOSOnly"         : 0x6, \
         "kGroupMax"             : 0x7, \
-#
-#        -->Next part is conjecture
-#
-        "kGroupPhysAnim"        : 0x8, \
-        "kGroupStartInactive"   : 0x9, \
-        "kGroupNoSynchronize"   : 0xA, \
-        "kGroupSuppressed"      : 0xB  \
     }
 
     Bounds = \
@@ -1071,7 +1063,7 @@ class plHKPhysical(plPhysical):
 
         ## Uru structure
         self.fSceneObject=UruObjectRef()
-        self.fGroup = hsBitVector()
+        self.fProps = hsBitVector()
         self.fScene=UruObjectRef()
         self.fLOSDB=plHKPhysical.plLOSDB["kLOSDBNone"]
         self.fSubWorld=UruObjectRef()
@@ -1120,7 +1112,7 @@ class plHKPhysical(plPhysical):
 
 
         self.fSceneObject.read(stream)
-        self.fGroup.read(stream) # bitvector
+        self.fProps.read(stream) # bitvector
         self.fScene.read(stream)
         self.fLOSDB = stream.Read32()
         self.fSubWorld.read(stream)
@@ -1150,7 +1142,7 @@ class plHKPhysical(plPhysical):
         self.fBounds.write(stream) # HKBounds Subclass
 
         self.fSceneObject.write(stream)
-        self.fGroup.write(stream)
+        self.fProps.write(stream)
         self.fScene.write(stream)
         stream.Write32(self.fLOSDB)
         self.fSubWorld.write(stream)
@@ -1300,7 +1292,7 @@ class plHKPhysical(plPhysical):
                 if self.fEL > 0.0:
                     StoreInDict(objscript,"physical.elasticity",self.fEL)
 
-                if self.fGroup[plPhysical.Group["kGroupDynamicBlocker"]]:
+                if self.fProps[plSimulationInterface.plSimulationProperties["kPinned"]]:
                     StoreInDict(objscript,"physical.pinned","true")
 
                 if not (self.fLOSDB & plPhysical.plLOSDB["kLOSDBCameraBlockers"]):
@@ -1414,7 +1406,7 @@ class plHKPhysical(plPhysical):
                 self.gFlagsDetect  = plHKPhysical.FlagsDetect["cDetectBoundaries"]
                 self.gFlagsRespond = plHKPhysical.FlagsRespond["cRespNone"]
 
-                self.fGroup[plHKPhysical.Group["kGroupDynamicBlocker"]] = 1
+                self.fProps[plSimulationInterface.plSimulationProperties["kPinned"]] = 1
 
             else:
                 # set the Collision Type to Detector
@@ -1428,7 +1420,7 @@ class plHKPhysical(plPhysical):
                 self.gFlagsDetect  = plHKPhysical.FlagsDetect["cDetectBoundaries"]
                 self.gFlagsRespond = plHKPhysical.FlagsRespond["cRespNone"]
 
-                self.fGroup[plHKPhysical.Group["kGroupDynamicBlocker"]] = 1
+                self.fProps[plSimulationInterface.plSimulationProperties["kPinned"]] = 1
 
 
         else:
@@ -1488,7 +1480,7 @@ class plHKPhysical(plPhysical):
 
                     self.gFlagsRespond = plHKPhysical.FlagsRespond["cRespClickable"]
                     self.gColType = plHKPhysical.Collision["cDetector"]
-                    self.fGroup[plHKPhysical.Group["kGroupAvatar"]] = 1
+                    self.fProps[plSimulationInterface.plSimulationProperties["kWarp"]] = 1
                     self.fLOSDB = plHKPhysical.plLOSDB["kLOSDBUIItems"]
 
                 else:
@@ -1507,7 +1499,7 @@ class plHKPhysical(plPhysical):
 
                     self.gFlagsRespond = plHKPhysical.FlagsRespond["cRespClickable"]
                     self.gColType = plHKPhysical.Collision["cDetector"]
-                    self.fGroup[plHKPhysical.Group["kGroupAvatar"]] = 1
+                    self.fProps[plSimulationInterface.plSimulationProperties["kWarp"]] = 1
                     self.fLOSDB = plHKPhysical.plLOSDB["kLOSDBUIItems"]
 
                 else: # if coltype == "none":
@@ -1516,7 +1508,7 @@ class plHKPhysical(plPhysical):
 
             if (str(FindInDict(objscript,"physical.pinned","false")).lower() == "true" or (obj.rbFlags & Blender.Object.RBFlags["DYNAMIC"] == 0 and obj.rbFlags & Blender.Object.RBFlags["ACTOR"])):
                 print "  Pinning object"
-                self.fGroup[plPhysical.Group["kGroupDynamicBlocker"]] = 1
+                self.fProps[plSimulationInterface.plSimulationProperties["kPinned"]] = 1
 
             # and make objects Camera Blockers By default - or let them through if physical.camerapassthrough is set to true
             if str(FindInDict(objscript,"physical.campassthrough","false")).lower() != "true":
@@ -1578,7 +1570,7 @@ class plHKPhysical(plPhysical):
 
         self.gColType = plHKPhysical.Collision["cDetector"]
 
-        self.fGroup[plPhysical.Group["kGroupDynamicBlocker"]] = 1
+        self.fProps[plSimulationInterface.plSimulationProperties["kPinned"]] = 1
         self.fLOSDB = 0
 
         #set position and other attribs

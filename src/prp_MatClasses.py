@@ -414,10 +414,12 @@ class hsGMaterial(plSynchedObject):         # Type 0x07
 
                 if not layer_info["stencil"]:
                     mtex = layer_info["mtex"]
-                    layer = root.find(0x06,mat.name + "-" + mtex.tex.name,1)
+                    layer = root.find(0x06,mtex.tex.name,1)
                     if(not layer.isProcessed):
                         layer.data.FromBlenderMTex(mtex,obj,mat)
                         layer.data.FromBlenderMat(obj,mat)
+                        if layer.data.fState.fMiscFlags & hsGMatState.hsGMatMiscFlags["kMiscLightMap"]:
+                            self.fCompFlags |= hsGMaterial.hsGCompFlags["kCompIsLightMapped"]
                         layer.isProcessed = 1
                     if not layer_info["anim"]:
                         self.fLayers.append(layer.data.getRef())
@@ -434,10 +436,12 @@ class hsGMaterial(plSynchedObject):         # Type 0x07
                         # Append the next layer first, and say that it has a stencil
                         layer_info = layerlist[i+1]
                         mtex = layer_info["mtex"]
-                        layer = root.find(0x06,mat.name + "-" + mtex.tex.name,1)
+                        layer = root.find(0x06,mtex.tex.name,1)
                         if(not layer.isProcessed):
                             layer.data.FromBlenderMat(obj,mat)
                             layer.data.FromBlenderMTex(mtex,obj,mat,False,True)
+                            if layer.data.fState.fMiscFlags & hsGMatState.hsGMatMiscFlags["kMiscLightMap"]:
+                                self.fCompFlags |= hsGMaterial.hsGCompFlags["kCompIsLightMapped"]
                             layer.isProcessed = 1
                         if not layer_info["anim"]:
                             self.fLayers.append(layer.data.getRef())
@@ -464,8 +468,6 @@ class hsGMaterial(plSynchedObject):         # Type 0x07
                             animlayer.data.FromBlender(obj,mat,mtex,chan)
                             animlayer.data.fUnderlay = layer.data.getRef()
                             self.fLayers.append(animlayer.data.getRef())
-
-                        self.fCompFlags |= hsGMaterial.hsGCompFlags["kCompNeedsBlendChannel"]
 
                         # And ofcourse increase by 2 instead of one...
                         i += 2
@@ -2836,17 +2838,17 @@ class plWaveSet7(plMultiModifier):
         refparser = ScriptRefParser(self.getRoot(),str(self.Key.name), 0x0001, [0x0001,])
 
         # add shore refs
-        shoreNames = list(FindInDict(objscript, 'waveset.shores', []))
+        shoreNames = list(FindInDict(objscript, 'visual.waveset.shores', []))
         for shoreName in shoreNames:
             shoreObj = refparser.MixedRef_FindCreate(shoreName)
             self.fShores.append(shoreObj.data.getRef())
         # add decal refs
-        decalNames = list(FindInDict(objscript, 'waveset.decals', []))
+        decalNames = list(FindInDict(objscript, 'visual.waveset.decals', []))
         for decalName in decalNames:
             decalObj = refparser.MixedRef_FindCreate(decalName)
             self.fDecals.append(decalObj.data.getRef())
         # allow ref to alternate envmap
-        altEnv = FindInDict(objscript, 'waveset.envmap', None)
+        altEnv = FindInDict(objscript, 'visual.waveset.envmap', None)
         if(altEnv != None):
             # refparser time
             resmgr = self.getRoot().resmanager
@@ -2858,52 +2860,52 @@ class plWaveSet7(plMultiModifier):
             envmap.data.export_obj(obj)
         self.fEnvMap = envmap.data.getRef()
         # now we create a default waveset
-        self.fMaxLen = FindInDict(objscript,'waveset.maxlen',0.0)
+        self.fMaxLen = FindInDict(objscript,'visual.waveset.maxlen',0.0)
         geostate = self.fState.fGeoState
-        geostate.fMaxLength = FindInDict(objscript,'waveset.geostate.maxlen',0.0)
-        geostate.fMinLength = FindInDict(objscript,'waveset.geostate.minlen',0.0)
-        geostate.fAmpOverLen = FindInDict(objscript,'waveset.geostate.ampoverlen',0.0)
-        geostate.fChop = FindInDict(objscript,'waveset.geostate.chop',0.0)
-        geostate.fAngleDev = FindInDict(objscript,'waveset.geostate.angledev',0.0)
+        geostate.fMaxLength = FindInDict(objscript,'visual.waveset.geostate.maxlen',0.0)
+        geostate.fMinLength = FindInDict(objscript,'visual.waveset.geostate.minlen',0.0)
+        geostate.fAmpOverLen = FindInDict(objscript,'visual.waveset.geostate.ampoverlen',0.0)
+        geostate.fChop = FindInDict(objscript,'visual.waveset.geostate.chop',0.0)
+        geostate.fAngleDev = FindInDict(objscript,'visual.waveset.geostate.angledev',0.0)
         texstate = self.fState.fTexState
-        texstate.fMaxLength = FindInDict(objscript,'waveset.texstate.maxlen',6.25)
-        texstate.fMinLength = FindInDict(objscript,'waveset.texstate.minlen',0.78125)
-        texstate.fAmpOverLen = FindInDict(objscript,'waveset.texstate.ampoverlen',0.013)
-        texstate.fChop = FindInDict(objscript,'waveset.texstate.chop',0.5)
-        texstate.fAngleDev = FindInDict(objscript,'waveset.texstate.angledev',1.00356)
-        self.fState.fRippleScale = FindInDict(objscript,'waveset.ripplescale',100)
+        texstate.fMaxLength = FindInDict(objscript,'visual.waveset.texstate.maxlen',6.25)
+        texstate.fMinLength = FindInDict(objscript,'visual.waveset.texstate.minlen',0.78125)
+        texstate.fAmpOverLen = FindInDict(objscript,'visual.waveset.texstate.ampoverlen',0.013)
+        texstate.fChop = FindInDict(objscript,'visual.waveset.texstate.chop',0.5)
+        texstate.fAngleDev = FindInDict(objscript,'visual.waveset.texstate.angledev',1.00356)
+        self.fState.fRippleScale = FindInDict(objscript,'visual.waveset.ripplescale',100)
         # this should be based on an empty used as a vector. I'm not doin it now. :P
         self.fState.fWindDir = Vertex(0.0871562,0.996195,0)
         # expects list [noise, start, end]
-        specnoise = FindInDict(objscript,'waveset.specnoise',0.5)
-        specstart = FindInDict(objscript,'waveset.specstart',250)
-        specend = FindInDict(objscript, 'waveset.specend', 1000)
+        specnoise = FindInDict(objscript,'visual.waveset.specnoise',0.5)
+        specstart = FindInDict(objscript,'visual.waveset.specstart',250)
+        specend = FindInDict(objscript, 'visual.waveset.specend', 1000)
         self.fState.fSpecVec = Vertex(specnoise,specstart,specend)
         self.fState.fWaterHeight = obj.loc[2]
-        opac = FindInDict(objscript,'waveset.depthrange.opac.start',0)
-        refl = FindInDict(objscript,'waveset.depthrange.refl.start',0)
-        wave = FindInDict(objscript,'waveset.depthrange.wave.start',0)
+        opac = FindInDict(objscript,'visual.waveset.depthrange.opac.start',0)
+        refl = FindInDict(objscript,'visual.waveset.depthrange.refl.start',0)
+        wave = FindInDict(objscript,'visual.waveset.depthrange.wave.start',0)
         self.fState.fWaterOffset = Vertex(opac, refl, wave)
         self.fState.fMaxAtten = Vertex(1, 1, 1)
         self.fState.fMinAtten = Vertex(0, 0, 0)
-        opac = FindInDict(objscript,'waveset.depthrange.opac.end',12)
-        refl = FindInDict(objscript,'waveset.depthrange.refl.end',1)
-        wave = FindInDict(objscript,'waveset.depthrange.wave.end',1)
+        opac = FindInDict(objscript,'visual.waveset.depthrange.opac.end',12)
+        refl = FindInDict(objscript,'visual.waveset.depthrange.refl.end',1)
+        wave = FindInDict(objscript,'visual.waveset.depthrange.wave.end',1)
         self.fState.fDepthFalloff = Vertex(opac, refl, wave)
-        self.fState.fWispiness = FindInDict(objscript,'waveset.wispiness',0.5)
+        self.fState.fWispiness = FindInDict(objscript,'visual.waveset.wispiness',0.5)
         self.fState.fShoreTint = RGBA(1, 1, 1, 1, type=1)
         self.fState.fMaxColor = RGBA(1, 1, 1, 1, type=1)
         self.fState.fMinColor = RGBA(0.184314, 0.172549, 0.113725, 1, type=1)
-        self.fState.fEdgeOpac = FindInDict(objscript,'waveset.edgeopac',1)
-        self.fState.fEdgeRadius = FindInDict(objscript,'waveset.edgeradius',1)
-        self.fState.fPeriod = FindInDict(objscript,'waveset.period',1)
-        self.fState.fFingerLength = FindInDict(objscript,'waveset.fingerlength',1)
+        self.fState.fEdgeOpac = FindInDict(objscript,'visual.waveset.edgeopac',1)
+        self.fState.fEdgeRadius = FindInDict(objscript,'visual.waveset.edgeradius',1)
+        self.fState.fPeriod = FindInDict(objscript,'visual.waveset.period',1)
+        self.fState.fFingerLength = FindInDict(objscript,'visual.waveset.fingerlength',1)
         # should be able to set these colors, the mat color will do for now.
         self.fState.fWaterTint = RGBA(1, 1, 1, 1, type=1)
         self.fState.fSpecularTint = RGBA(1, 1, 1, 0.983333, type=1)
         self.fState.fEnvCenter = Vertex(obj.loc[0], obj.loc[1], obj.loc[2])
-        self.fState.fEnvRefresh = FindInDict(objscript,'waveset.envrefresh',3)
-        self.fState.fEnvRadius = FindInDict(objscript,'waveset.envradius',1000)
+        self.fState.fEnvRefresh = FindInDict(objscript,'visual.waveset.envrefresh',3)
+        self.fState.fEnvRadius = FindInDict(objscript,'visual.waveset.envradius',1000)
 
     def _Find(page,name):
         return page.find(0x00FB,name,0)

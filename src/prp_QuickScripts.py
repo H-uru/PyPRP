@@ -332,18 +332,35 @@ def QuickScript_SelfAnimationRegion(obj):
     return False
 
 
-# Hub for different types of SDL - currently only "SDLBoolShowHide" and "RandomBool"
+# Hub for different types of SDL - currently "SDLBoolShowHide", "RandomBool" and "SDLIntActEnabler"
 def QuickScript_SDL(obj):
     objscript = AlcScript.objects.FindOrCreate(obj.name)
-    sdltype = getTextPropertyOrDefault(obj,"sdltype",None)
-    if sdltype is None:
-        sdltype = FindInDict(objscript,"quickscript.sdl.type",None)
 
-    if not sdltype is None:
-        if sdltype == "boolshowhide":
-            return QuickScript_SDLBoolShowHide(obj)
-        elif sdltype == "randombool":
-            return QuickScript_RandomBool(obj)
+  # Modified in order to combine SDL types (previous script allowed only one SDL type)
+  # Text properties support is now completely ditched here
+
+    sdllist = FindInDict(objscript,"quickscript.sdl",None)
+
+    if not sdllist is None:
+        if type(sdllist) != list:
+            sdllist = [sdllist,]
+        #print sdllist
+
+        result = False
+        for sdlscript in list(sdllist):
+            #print sdlscript
+            if type(sdlscript) != dict:
+                continue
+            sdltype = str(FindInDict(sdlscript,"type",""))
+            if sdltype == "boolshowhide":
+                result |= QuickScript_SDLBoolShowHide(obj)
+            elif sdltype == "randombool":
+                result |= QuickScript_RandomBool(obj,sdlscript)
+            elif sdltype == "intactenabler":
+                result |= QuickScript_SDLIntActEnabler(obj)
+
+        if result:
+            return result
 
     return False
 
@@ -352,34 +369,36 @@ def QuickScript_SDLBoolShowHide(obj):
     print "  [QuickScript - SDLBoolShowHide]"
     objscript = AlcScript.objects.FindOrCreate(obj.name)
 
-    acttxt  = "type: pythonfile\n"
-    acttxt += "pythonfile:\n"
-    acttxt += "    file: xAgeSDLBoolShowHide\n"
-    acttxt += "    parameters:\n"
-    acttxt += "      - type: string\n"
-    acttxt += "        value: " + str(obj.name) + "Vis" + "\n"
-    acttxt += "      - type: bool\n"
-    acttxt += "        value: true\n"
+    acttxt  = "- type: pythonfile\n"
+    acttxt += "  tag: BoolShowHide\n"
+    acttxt += "  pythonfile:\n"
+    acttxt += "      file: xAgeSDLBoolShowHide\n"
+    acttxt += "      parameters:\n"
+    acttxt += "        - type: string\n"
+    acttxt += "          value: " + str(obj.name) + "Vis\n"
+    acttxt += "        - type: bool\n"
+    acttxt += "          value: true\n"
+
+    print "Resulting Code for .logic.actions:\n",acttxt
 
     myactscript = AlcScript(acttxt).GetRootScript()
 
     # Add the parsed script to the correct space in the dictionary, or create that space
     actscript = FindInDict(objscript,"logic.actions",None)
     if actscript is None or type(actscript) != list:
-        StoreInDict(objscript,"logic.actions",[myactscript])
+        StoreInDict(objscript,"logic.actions", myactscript)
     else:
-        actscript.append(myactscript)
+        for script in myactscript:
+            actscript.append(script)
 
     return True
 
 # add RandomBool
-def QuickScript_RandomBool(obj):
+def QuickScript_RandomBool(obj,sdlscript):
     print "  [QuickScript - RandomBool]"
     objscript = AlcScript.objects.FindOrCreate(obj.name)
 
-    region = getTextPropertyOrDefault(obj,"region",None)
-    if region is None:
-        region = FindInDict(objscript,"quickscript.sdl.region",None)
+    region = FindInDict(sdlscript,"region",None)
 
     if not region is None:
         modtxt  = "- tag: ProxiSensor_Enter\n"
@@ -468,6 +487,46 @@ def QuickScript_RandomBool(obj):
                 modscript.append(script)
 
         return True
+
+    return False
+
+# add IntActEnabler
+def QuickScript_SDLIntActEnabler(obj):
+    print "  [QuickScript - SDLIntActEnabler]"
+    objscript = AlcScript.objects.FindOrCreate(obj.name)
+
+    # Check for simpleclick quickscript!
+    check = FindInDict(objscript,"quickscript.simpleclick",None)
+
+    if not check is None:
+        acttxt  = "- type: pythonfile\n"
+        acttxt += "  tag: IntActEnabler\n"
+        acttxt += "  pythonfile:\n"
+        acttxt += "      file: xAgeSDLIntActEnabler\n"
+        acttxt += "      parameters:\n"
+        acttxt += "        - type: string\n"
+        acttxt += "          value: " + str(obj.name) + "Func\n"
+        # Use activator from simpleclick quickscript
+        acttxt += "        - type: activator\n"
+        acttxt += "          ref: logicmod:$AutoClick\n"
+        acttxt += "        - type: string\n"
+        acttxt += "          value: 1\n"
+
+        print "Resulting Code for .logic.actions:\n",acttxt
+
+        myactscript = AlcScript(acttxt).GetRootScript()
+
+        # Add the parsed script to the correct space in the dictionary, or create that space
+        actscript = FindInDict(objscript,"logic.actions",None)
+        if actscript is None or type(actscript) != list:
+            StoreInDict(objscript,"logic.actions", myactscript)
+        else:
+            for script in myactscript:
+                actscript.append(script)
+
+        return True
+    else:
+        print "No simpleclick quickscript for " + str(obj.name) + ": Abort SDLIntActEnabler\n"
 
     return False
 
