@@ -36,6 +36,7 @@ from prp_ConvexHull import *
 from prp_AbsClasses import *
 from prp_MatClasses import *
 from prp_AlcScript import *
+from prp_Classes import *
 
 
 import prp_Config, prp_HexDump
@@ -382,6 +383,23 @@ class plDirectionalLightInfo(plLightInfo):
                 refparser = ScriptRefParser(self.getRoot(),str(self.Key.name),"softvolume")
                 volume = refparser.MixedRef_FindCreate(propString)
                 self.softvol = volume.data.getRef()
+        
+        propString = FindInDict(objscript,"lamp.visregions", [])
+        if type(propString) == list:
+            for reg in propString:
+                if (reg != None):
+                    if(self.softVolumeParser != None and self.softVolumeParser.isStringProperty(propString)):
+                        volume = self.softVolumeParser.parseProperty(str(reg),str(self.Key.name))
+                    else:
+                        refparser = ScriptRefParser(self.getRoot(),str(self.Key.name),"softvolume")
+                        volume = refparser.MixedRef_FindCreateRef(reg)
+                    vr = self.getRoot().find(0x0116, volume.Key.name, 1)
+                    vr.data.scenenode = self.scenenode
+                    vr.data.BitFlags.clear()
+                    vr.data.BitFlags.SetBit(plVisRegion.VecFlags["kReplaceNormal"])
+                    vr.data.BitFlags.SetBit(plVisRegion.VecFlags["kIsNot"])
+                    vr.data.fRegion = volume
+                    self.visregs.append(vr.data.getRef())
 
         flags = FindInDict(objscript,"lamp.flags",None)
         if type(flags) == list:
