@@ -500,6 +500,23 @@ class alcUruPage:
                     plAudioInterface.Export(self,obj,scnobj,name,SceneNodeRef,softVolumeParser)
                     # Logical Export
                     AlcLogicHelper.Export(self,obj,scnobj,name)
+                if alctype=="randomsound":
+                    print ""
+                    print "[Random Sound %s]" % name
+
+                    #find the sceneobject or create it
+                    scnobj = plSceneObject.FindCreate(self.prp,name)
+                    scnobj.data.scene=SceneNodeRef
+                    scnobj.data.export_object(obj, objscript)
+
+                    ##PhysImpactSnds = FindInDict(objscript,'physical.impact',{})
+                    ##PhysSlideSnds = FindInDict(objscript,'physical.slide',[])
+                    RndSndDict = FindInDict(objscript,'randomsound.sounds',{})
+                    plCoordinateInterface.Export(self,obj,scnobj,name,1,objlist)
+                    plAudioInterface.Export(self,obj,scnobj,name,SceneNodeRef,softVolumeParser,RndSndDict)
+                    plRandomSoundMod.Export(self.prp, obj, scnobj, name)
+                    # Logical Export
+                    AlcLogicHelper.Export(self,obj,scnobj,name)
 
                 elif alctype=="oneshot":
                     print ""

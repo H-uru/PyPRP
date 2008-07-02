@@ -48,6 +48,7 @@ from prp_AbsClasses import *
 from prp_VolumeIsect import *
 from prp_MatClasses import *
 from prp_AlcScript import *
+from prp_LogicClasses import *
 import prp_Config
 import prp_HexDump
 
@@ -75,13 +76,14 @@ class plAudioInterface(plObjInterface):             #Type 0x11
     def dump(self):
         print "Dump() deprecated on Audio and Sound classes"
 
-    def _Export(page,obj,scnobj,name,SceneNodeRef,softVolumeParser):
+    def _Export(page,obj,scnobj,name,SceneNodeRef,softVolumeParser, MultiSounds=[]):
         # Get this object's AlcScript section
         objscript = AlcScript.objects.Find(obj.name)
 
         # if no sound info specified, return none...
-        if FindInDict(objscript,"sound",None) is None:
-            return
+        if MultiSounds == []:
+            if FindInDict(objscript,"sound",None) is None:
+                return
 
         audioIface = plAudioInterface.FindCreate(page, name) #Create the audio Interface
         if audioIface == None:
@@ -89,24 +91,40 @@ class plAudioInterface(plObjInterface):             #Type 0x11
             return
 
         audioIface.data.parentref = scnobj.data.getRef()
-
-        #Generate all of the fun plSound stuff >.<
-        if string.lower(FindInDict(objscript, "sound.buffer", "stream")) == "static":
-            win32snd = plWin32StaticSound.FindCreate(page, name)
+        if MultiSounds:
+            print MultiSounds
+            aud = plWinAudible.FindCreate(page, name)
+            aud.data.fSceneObj = SceneNodeRef
+            for WSound in MultiSounds:
+                WSoundScript = WSound[(WSound.keys()[0])]
+                if string.lower(FindInDict(WSoundScript, "sound.buffer", "stream")) == "static":
+                    win32snd = plWin32StaticSound.FindCreate(page, (WSound.keys()[0]))
+                else:
+                    win32snd = plWin32StreamingSound.FindCreate(page, (WSound.keys()[0]))
+                win32snd.data.exportObj(obj, softVolumeParser,RndSndName=WSoundScript)
+                aud.data.appendSound(win32snd.data.getRef())
+            
+            audioIface.data.fAudible = aud.data.getRef()
+    
+            scnobj.data.audio = audioIface.data.getRef()
         else:
-            win32snd = plWin32StreamingSound.FindCreate(page, name)#Create the Win32 streaming sound
-
-        win32snd.data.exportObj(obj, softVolumeParser) #We need to pass the parser
-
-        #Generate the Audible
-        aud = plWinAudible.FindCreate(page, name)
-        aud.data.fSceneObj = SceneNodeRef
-        aud.data.appendSound(win32snd.data.getRef())
-
-        audioIface.data.fAudible = aud.data.getRef()
-
-        scnobj.data.audio = audioIface.data.getRef() #Set the Audio Interface ref to the scene node
-
+            #Generate all of the fun plSound stuff >.<
+            if string.lower(FindInDict(objscript, "sound.buffer", "stream")) == "static":
+                win32snd = plWin32StaticSound.FindCreate(page, name)
+            else:
+                win32snd = plWin32StreamingSound.FindCreate(page, name)#Create the Win32 streaming sound
+    
+            win32snd.data.exportObj(obj, softVolumeParser) #We need to pass the parser
+    
+            #Generate the Audible
+            aud = plWinAudible.FindCreate(page, name)
+            aud.data.fSceneObj = SceneNodeRef
+            aud.data.appendSound(win32snd.data.getRef())
+    
+            audioIface.data.fAudible = aud.data.getRef()
+    
+            scnobj.data.audio = audioIface.data.getRef() #Set the Audio Interface ref to the scene node
+    
     Export = staticmethod(_Export)
 
 
@@ -611,8 +629,11 @@ class plWin32Sound(plSound):
     # Interface Functions #
     #######################
 
-    def exportObj(self, obj, softVolumeParser):
-        objscript = AlcScript.objects.Find(obj.getName())
+    def exportObj(self, obj, softVolumeParser, RndSndName=''):
+        if RndSndName:
+            objscript = RndSndName
+        else:
+            objscript = AlcScript.objects.Find(obj.getName())
 
         flags = FindInDict(objscript,"sound.flags",[])
         if type(flags) == list:
@@ -715,8 +736,8 @@ class plWin32StaticSound(plWin32Sound):
     def dump(self,buf):
         print "Dump() deprecated on Audio and Sound classes"
 
-    def exportObj(self, obj, softVolumeParser):
-        plWin32Sound.exportObj(self, obj, softVolumeParser)
+    def exportObj(self, obj, softVolumeParser,RndSndName=''):
+        plWin32Sound.exportObj(self, obj, softVolumeParser,RndSndName)
 
 
 class plWin32StreamingSound(plWin32Sound):
@@ -740,5 +761,37 @@ class plWin32StreamingSound(plWin32Sound):
     def dump(self,buf):
         print "Dump() deprecated on Audio and Sound classes"
 
-    def exportObj(self, obj, softVolumeParser):
-        plWin32Sound.exportObj(self, obj, softVolumeParser)
+    def exportObj(self, obj, softVolumeParser,RndSndName=''):
+        plWin32Sound.exportObj(self, obj, softVolumeParser,RndSndName)
+
+
+class plRandomSoundMod(plRandomCommandMod):
+    def __init__(self,parent,name="unnamed",type=0x0079):
+        plRandomCommandMod.__init__(self,parent,name,type)
+        self.fGroups = hsTArray()
+
+    def _Find(page,name):
+        return page.find(0x0079,name,0)
+    Find = staticmethod(_Find)
+
+    def _FindCreate(page,name):
+        return page.find(0x0079,name,1)
+    FindCreate = staticmethod(_FindCreate)
+    
+    def _Export(page, obj, scnobj, name):
+        RandomSoundMod = plRandomSoundMod.FindCreate(page, name)
+        RandomSoundMod.data.export_obj(obj)
+        scnobj.data.addModifier(RandomSoundMod)
+    Export = staticmethod(_Export)
+
+    def export_obj(self, obj):
+        self.fMode = 11
+        self.fState = 1
+
+    def read(self, stream):
+        self.fGroups.write(stream)
+
+    def write(self, stream):
+        plRandomCommandMod.write(self, stream)
+        self.fGroups.write(stream)
+

@@ -503,6 +503,26 @@ class plInterfaceInfoModifier(plSingleModifier):
 
     Export = staticmethod(_Export)
 
+class plRandomCommandMod(plSingleModifier):
+    def __init__(self,parent,name="unnamed",type=None):
+        plSingleModifier.__init__(self,parent,name,type)
+        self.fMode = 0x0
+        self.fState = 0x0
+        self.fMinDelay = 0.0
+        self.fMaxDelay = 0.0
+    def read(self, stream):
+        plSingleModifier.read(self, stream)
+        stream.ReadByte(self.fMode)
+        stream.ReadByte(self.fState)
+        stream.ReadFloat(self.fMinDelay)
+        stream.ReadFloat(self.fMaxDelay)
+    def write(self, stream):
+        plSingleModifier.write(self, stream)
+        stream.WriteByte(self.fMode)
+        stream.WriteByte(self.fState)
+        stream.WriteFloat(self.fMinDelay)
+        stream.WriteFloat(self.fMaxDelay)
+
 class plLogicModBase(plSingleModifier):                   #Type 0x4F
     Flags = \
     { \

@@ -224,7 +224,6 @@ class plSceneObject(plSynchedObject):                       #Type 0x01
         if obj.type == "Lamp":
             laipo = obj.data.ipo
         if obj.ipo or laipo:
-            print '--> We have an IPO Curve! <--'
             # this will specify animation names and markers
             animParams = FindInDict(objscript, "animations", [])
             agmm = plAGMasterMod.FindCreate(self.getRoot(), obj.name)
@@ -1341,6 +1340,12 @@ class plHKPhysical(plPhysical):
         # retrieve alcscript for this object
         objscript = AlcScript.objects.Find(obj.name)
 
+        #now lets add a SndGroup if we need to
+        isSndGroup = FindInDict(objscript,'physical.sndgroup',0)
+        if isSndGroup:
+            plPhysicalSndGroup.Export(self.getRoot(), obj, scnobj, obj.name)
+            sndGroupObj = plPhysicalSndGroup.Find(self.getRoot(),obj.name)
+            self.fSndGroup = sndGroupObj.data.getRef()
         #subworld-refs are processed
         Subref = FindInDict(objscript,'physical.subworld',None)
         if Subref:
@@ -1632,4 +1637,82 @@ class plHKSubWorld(plSynchedObject):
         self.fSceneRef.write(s)
         self.fSubworldOffset.write(s)
         s.Write32(self.fSomeOddData)
-        
+
+class plPhysicalSndGroup(hsKeyedObject):
+    fSoundGroup = \
+    { \
+        "kNone"   : 0x00, \
+        "kMetal"  : 0x01, \
+        "kGrass"  : 0x02, \
+        "kWood"   : 0x03, \
+        "kStone"  : 0x04 \
+    }
+    def __init__(self,parent,name="unnamed",type=0x0127):
+        hsKeyedObject.__init__(self,parent,name,type)
+        self.fGroup = 0x00 #unsigned
+        self.fCurrSlideSnd = 0
+        self.fImpactSounds = hsTArray([],self.getVersion())
+        self.fSlideSounds = hsTArray([],self.getVersion())
+
+    def _Find(page,name):
+        return page.find(0x0127,name,0)
+    Find = staticmethod(_Find)
+
+    def _FindCreate(page,name):
+        return page.find(0x0127,name,1)
+    FindCreate = staticmethod(_FindCreate)
+
+    def _Export(page, obj, scnobj, name):
+        PhysicalSndGroup = plPhysicalSndGroup.FindCreate(page, name)
+        PhysicalSndGroup.data.export_obj(obj)
+    Export = staticmethod(_Export)
+
+    def export_obj(self, obj):
+        objscript = AlcScript.objects.Find(obj.name)
+        refparser = ScriptRefParser(self.getRoot(),str(self.Key.name), 0x0079, [0x0079,])
+
+        ##Enter a land of insanity
+        self.fImpactSounds.append(UruObjectRef(self.getVersion()))
+        self.fImpactSounds.append(UruObjectRef(self.getVersion()))
+        self.fImpactSounds.append(UruObjectRef(self.getVersion()))
+        self.fImpactSounds.append(UruObjectRef(self.getVersion()))
+        PhysImpactSnd = FindInDict(objscript,'physical.impact','')
+        if PhysImpactSnd:
+            PhysImpactSndObj = refparser.MixedRef_FindCreate(PhysImpactSnd)
+            self.fImpactSounds.append(PhysImpactSndObj.data.getRef())
+        else:
+            self.fImpactSounds.append(UruObjectRef(self.getVersion()))
+            
+        self.fSlideSounds.append(UruObjectRef(self.getVersion()))
+        self.fSlideSounds.append(UruObjectRef(self.getVersion()))
+        self.fSlideSounds.append(UruObjectRef(self.getVersion()))
+        self.fSlideSounds.append(UruObjectRef(self.getVersion()))
+        PhysSlideSnd = FindInDict(objscript,'physical.slide','')
+        if PhysSlideSnd:
+            PhysSlideSndObj = refparser.MixedRef_FindCreate(PhysSlideSnd)
+            self.fSlideSounds.append(PhysSlideSndObj.data.getRef())
+        else:
+            self.fSlideSounds.append(UruObjectRef(self.getVersion()))
+        ##Exit a land of insanity
+
+        SndGroupFlags = FindInDict(objscript,'physical.flag','')
+        if SndGroupFlags == 'metal':
+            self.fGroup |= self.fSoundGroup['kMetal']
+        if SndGroupFlags == 'grass':
+            self.fGroup |= self.fSoundGroup['kGrass']
+        if SndGroupFlags == 'wood':
+            self.fGroup |= self.fSoundGroup['kWood']
+        if SndGroupFlags == 'stone':
+            self.fGroup |= self.fSoundGroup['kStone']
+
+    def read(self, stream):
+        hsKeyedObject.read(self, stream)
+        stream.ReadInt(self.fGroup)
+        self.fImpactSounds.read(stream)
+        self.fSlideSounds.read(stream)
+
+    def write(self, stream):
+        hsKeyedObject.write(self, stream)
+        stream.WriteInt(self.fGroup)
+        self.fImpactSounds.write(stream)
+        self.fSlideSounds.write(stream)

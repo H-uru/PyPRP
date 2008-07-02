@@ -138,6 +138,10 @@ class PrpObject:
                 self.data=plCameraRegionDetector(self)
             elif self.type==0x0077:
                 self.data=plOneShotMod(self)
+            elif self.type==0x0078:
+                self.data=plRandomCommandMod(self)
+            elif self.type==0x0079:
+                self.data=plRandomSoundMod(self)
             elif self.type==0x007A:
                 self.data=plPostEffectMod(self)
             elif self.type==0x007B:
@@ -240,6 +244,8 @@ class PrpObject:
                 self.data=hsKeyedObject(self) #Not really... But close enough ;)
             elif self.type==0x011E:
                 self.data=plRelevanceRegion(self)
+            elif self.type==0x0127:
+                self.data=plPhysicalSndGroup(self)
             elif self.type==0x012E:
                 self.data=plSwimRegion(self)
             elif self.type==0x012F:

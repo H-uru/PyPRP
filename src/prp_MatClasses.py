@@ -2876,8 +2876,17 @@ class plWaveSet7(plMultiModifier):
         texstate.fChop = FindInDict(objscript,'visual.waveset.texstate.chop',0.5)
         texstate.fAngleDev = FindInDict(objscript,'visual.waveset.texstate.angledev',1.00356)
         self.fState.fRippleScale = FindInDict(objscript,'visual.waveset.ripplescale',100)
-        # this should be based on an empty used as a vector. I'm not doin it now. :P
-        self.fState.fWindDir = Vertex(0.0871562,0.996195,0)
+        windObj = FindInDict(objscript,'visual.waveset.winddir', None)
+        windSpeed = FindInDict(objscript,'visual.waveset.windspeed', 1.0)
+        if windObj:
+            windMat = Blender.Object.Get(windObj).getMatrix()
+            # now we make the wind direction the y axis of the empty, times windspeed
+            windX = windMat[1][0] * windSpeed
+            windY = windMat[1][1] * windSpeed
+            windZ = windMat[1][2] * windSpeed
+            self.fState.fWindDir = Vertex(windX, windY, windZ)
+        else:
+            self.fState.fWindDir = Vertex(0.0871562,0.996195,0)
         # expects list [noise, start, end]
         specnoise = FindInDict(objscript,'visual.waveset.specnoise',0.5)
         specstart = FindInDict(objscript,'visual.waveset.specstart',250)
@@ -2908,7 +2917,6 @@ class plWaveSet7(plMultiModifier):
         self.fState.fEnvCenter = Vertex(obj.loc[0], obj.loc[1], obj.loc[2])
         self.fState.fEnvRefresh = FindInDict(objscript,'visual.waveset.envrefresh',3)
         self.fState.fEnvRadius = FindInDict(objscript,'visual.waveset.envradius',1000)
-
     def _Find(page,name):
         return page.find(0x00FB,name,0)
     Find = staticmethod(_Find)
