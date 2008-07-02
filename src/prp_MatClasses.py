@@ -414,7 +414,7 @@ class hsGMaterial(plSynchedObject):         # Type 0x07
 
                 if not layer_info["stencil"]:
                     mtex = layer_info["mtex"]
-                    layer = root.find(0x06,mtex.tex.name,1)
+                    layer = root.find(0x06,mat.name + "-" + mtex.tex.name,1)
                     if(not layer.isProcessed):
                         layer.data.FromBlenderMTex(mtex,obj,mat)
                         layer.data.FromBlenderMat(obj,mat)
@@ -436,7 +436,7 @@ class hsGMaterial(plSynchedObject):         # Type 0x07
                         # Append the next layer first, and say that it has a stencil
                         layer_info = layerlist[i+1]
                         mtex = layer_info["mtex"]
-                        layer = root.find(0x06,mtex.tex.name,1)
+                        layer = root.find(0x06,mat.name + "-" + mtex.tex.name,1)
                         if(not layer.isProcessed):
                             layer.data.FromBlenderMat(obj,mat)
                             layer.data.FromBlenderMTex(mtex,obj,mat,False,True)
@@ -468,6 +468,8 @@ class hsGMaterial(plSynchedObject):         # Type 0x07
                             animlayer.data.FromBlender(obj,mat,mtex,chan)
                             animlayer.data.fUnderlay = layer.data.getRef()
                             self.fLayers.append(animlayer.data.getRef())
+
+                        self.fCompFlags |= hsGMaterial.hsGCompFlags["kCompNeedsBlendChannel"]
 
                         # And ofcourse increase by 2 instead of one...
                         i += 2
