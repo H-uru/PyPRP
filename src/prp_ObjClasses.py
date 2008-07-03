@@ -1672,39 +1672,36 @@ class plPhysicalSndGroup(hsKeyedObject):
         refparser = ScriptRefParser(self.getRoot(),str(self.Key.name), 0x0079, [0x0079,])
 
         ##Enter a land of insanity
-        self.fImpactSounds.append(UruObjectRef(self.getVersion()))
-        self.fImpactSounds.append(UruObjectRef(self.getVersion()))
-        self.fImpactSounds.append(UruObjectRef(self.getVersion()))
-        self.fImpactSounds.append(UruObjectRef(self.getVersion()))
         PhysImpactSnd = FindInDict(objscript,'physical.impact','')
         if PhysImpactSnd:
+            self.fImpactSounds.append(UruObjectRef(self.getVersion()))
+            self.fImpactSounds.append(UruObjectRef(self.getVersion()))
+            self.fImpactSounds.append(UruObjectRef(self.getVersion()))
+            self.fImpactSounds.append(UruObjectRef(self.getVersion()))
             PhysImpactSndObj = refparser.MixedRef_FindCreate(PhysImpactSnd)
             self.fImpactSounds.append(PhysImpactSndObj.data.getRef())
-        else:
-            self.fImpactSounds.append(UruObjectRef(self.getVersion()))
-            
-        self.fSlideSounds.append(UruObjectRef(self.getVersion()))
-        self.fSlideSounds.append(UruObjectRef(self.getVersion()))
-        self.fSlideSounds.append(UruObjectRef(self.getVersion()))
-        self.fSlideSounds.append(UruObjectRef(self.getVersion()))
+
         PhysSlideSnd = FindInDict(objscript,'physical.slide','')
-        if PhysSlideSnd:
+        if PhysSlideSnd:            
+            self.fSlideSounds.append(UruObjectRef(self.getVersion()))
+            self.fSlideSounds.append(UruObjectRef(self.getVersion()))
+            self.fSlideSounds.append(UruObjectRef(self.getVersion()))
+            self.fSlideSounds.append(UruObjectRef(self.getVersion()))
             PhysSlideSndObj = refparser.MixedRef_FindCreate(PhysSlideSnd)
             self.fSlideSounds.append(PhysSlideSndObj.data.getRef())
-        else:
-            self.fSlideSounds.append(UruObjectRef(self.getVersion()))
         ##Exit a land of insanity
 
-        SndGroupFlags = FindInDict(objscript,'physical.flag','')
+        SndGroupFlags = FindInDict(objscript,'physical.sndgroup','')
         if SndGroupFlags == 'metal':
             self.fGroup |= self.fSoundGroup['kMetal']
-        if SndGroupFlags == 'grass':
+        elif SndGroupFlags == 'grass':
             self.fGroup |= self.fSoundGroup['kGrass']
-        if SndGroupFlags == 'wood':
+        elif SndGroupFlags == 'wood':
             self.fGroup |= self.fSoundGroup['kWood']
-        if SndGroupFlags == 'stone':
+        elif SndGroupFlags == 'stone':
             self.fGroup |= self.fSoundGroup['kStone']
-
+        else:
+            self.fGroup = int(SndGroupFlags)
     def read(self, stream):
         hsKeyedObject.read(self, stream)
         stream.ReadInt(self.fGroup)
