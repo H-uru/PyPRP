@@ -500,7 +500,7 @@ class alcUruPage:
                     plAudioInterface.Export(self,obj,scnobj,name,SceneNodeRef,softVolumeParser)
                     # Logical Export
                     AlcLogicHelper.Export(self,obj,scnobj,name)
-                if alctype=="randomsound":
+                elif alctype=="randomsound":
                     print ""
                     print "[Random Sound %s]" % name
 
