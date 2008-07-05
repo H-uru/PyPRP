@@ -115,7 +115,7 @@ class plViewFaceModifier(plSingleModifier):
         "kOffsetLocal"  : 10, \
         "kMaxBounds"    : 11  \
     }
-    
+
     ScriptModVFFlags = \
     { \
         "pivotface"    :  0, \
@@ -193,10 +193,10 @@ class plViewFaceModifier(plSingleModifier):
                         cidx = plViewFaceModifier.ScriptModVFFlags[cmd.lower()]
                         BVData |= 1 << cidx
             else:
-                BVData = plViewFaceModifer.plVFFlags['kFaceCam']    | \
-                         plViewFaceModifer.plVFFlags['kPivotY']     | \
-                         plViewFaceModifer.plVFFlags['kPivotFavorY']
-                
+                BVData = plViewFaceModifier.plVFFlags['kFaceCam']    | \
+                         plViewFaceModifier.plVFFlags['kPivotY']     | \
+                         plViewFaceModifier.plVFFlags['kPivotFavorY']
+
         self.bitVector.append(BVData)
 
         # get the matrices
