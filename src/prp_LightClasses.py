@@ -388,7 +388,7 @@ class plDirectionalLightInfo(plLightInfo):
         if type(propString) == list:
             for reg in propString:
                 if (reg != None):
-                    if(self.softVolumeParser != None and self.softVolumeParser.isStringProperty(propString)):
+                    if(self.softVolumeParser != None and self.softVolumeParser.isStringProperty(str(reg))):
                         volume = self.softVolumeParser.parseProperty(str(reg),str(self.Key.name))
                     else:
                         refparser = ScriptRefParser(self.getRoot(),str(self.Key.name),"softvolume")

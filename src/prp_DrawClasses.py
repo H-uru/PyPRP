@@ -1830,7 +1830,7 @@ class plDrawInterface(plObjInterface):
         if type(propString) == list:
             for reg in propString:
                 if (reg != None):
-                    if(softVolParser != None and softVolParser.isStringProperty(propString)):
+                    if(softVolParser != None and softVolParser.isStringProperty(str(reg))):
                         volume = softVolParser.parseProperty(str(reg),str(self.Key.name))
                     else:
                         refparser = ScriptRefParser(self.getRoot(),str(self.Key.name),"softvolume")
