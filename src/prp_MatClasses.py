@@ -414,21 +414,27 @@ class hsGMaterial(plSynchedObject):         # Type 0x07
 
                 if not layer_info["stencil"]:
                     mtex = layer_info["mtex"]
-                    layer = root.find(0x06,mat.name + "-" + mtex.tex.name,1)
+                    layer = root.find(0x06,mtex.tex.name,1)
                     if(not layer.isProcessed):
                         layer.data.FromBlenderMTex(mtex,obj,mat)
                         layer.data.FromBlenderMat(obj,mat)
-                        if layer.data.fState.fMiscFlags & hsGMatState.hsGMatMiscFlags["kMiscLightMap"]:
-                            self.fCompFlags |= hsGMaterial.hsGCompFlags["kCompIsLightMapped"]
                         layer.isProcessed = 1
                     if not layer_info["anim"]:
-                        self.fLayers.append(layer.data.getRef())
+                        if layer.data.fState.fMiscFlags & hsGMatState.hsGMatMiscFlags["kMiscLightMap"]:
+                            self.fCompFlags |= hsGMaterial.hsGCompFlags["kCompIsLightMapped"]
+                            self.fPiggyBacks.append(layer.data.getRef())
+                        else:
+                            self.fLayers.append(layer.data.getRef())
                     else:
                         chan = layer_info["channel"]
                         animlayer = root.find(0x0043,layer.data.getName(),1)
                         animlayer.data.FromBlender(obj,mat,mtex,chan)
                         animlayer.data.fUnderlay = layer.data.getRef()
-                        self.fLayers.append(animlayer.data.getRef())
+                        if layer.data.fState.fMiscFlags & hsGMatState.hsGMatMiscFlags["kMiscLightMap"]:
+                            self.fCompFlags |= hsGMaterial.hsGCompFlags["kCompIsLightMapped"]
+                            self.fPiggyBacks.append(animlayer.data.getRef())
+                        else:
+                            self.fLayers.append(animlayer.data.getRef())
                     i += 1
                 else:
                     if i < len(layerlist) - 1: # if it's not the last one

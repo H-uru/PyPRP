@@ -190,19 +190,39 @@ class plWAVHeader:
     }
 
     def __init__(self):
-        self.fFormatTag = 1
+        self.fFormatTag = plWAVHeader.Formats["kPCMFormatTag"]
         self.fNumChannels = 0
         self.fNumSamplesPerSec = 0
         self.fAvgBytesPerSec = 0
         self.fBlockAlign = 0
         self.fBitsPerSample = 0
 
-    def makeFromInput(self, wavfile):
-        assert wavfile.read(4) == 'RIFF'
-        wavfile.read(4)
-        assert wavfile.read(4) == 'WAVE'
-        assert wavfile.read(4) == 'fmt '
-        wavfile.read(4)
+    def read(self, stream):
+        self.fFormatTag = stream.Read16()
+        self.fNumChannels = stream.Read16()
+        self.fNumSamplesPerSec = stream.Read32()
+        self.fAvgBytesPerSec = stream.Read32()
+        self.fBlockAlign = stream.Read16()
+        self.fBitsPerSample = stream.Read16()
+
+    def write(self, stream):
+        stream.Write16(self.fFormatTag)
+        stream.Write16(self.fNumChannels)
+        stream.Write32(self.fNumSamplesPerSec)
+        stream.Write32(self.fAvgBytesPerSec)
+        stream.Write16(self.fBlockAlign)
+        stream.Write16(self.fBitsPerSample)
+
+    def makeFromInput(self, filename):
+        wavfile = file(filename,'rb')
+        try:
+            assert wavfile.read(4) == 'RIFF'
+            wavfile.read(4)
+            assert wavfile.read(4) == 'WAVE'
+            assert wavfile.read(4) == 'fmt '
+            wavfile.read(4)
+        except:
+            raise IOError, "The file %s is not a valid WAV file" % filename
         #We're all good to go! It must be a valid .wav file!
 
         ## Using the struct.unpack here because we're working on a wave file,
@@ -214,6 +234,41 @@ class plWAVHeader:
         self.fBlockAlign = struct.unpack("<H", wavfile.read(2))[0]
         self.fBitsPerSample = struct.unpack("<H", wavfile.read(2))[0]
 
+
+    def makeFromOGG(self, oggFileName):
+        oggfile = file(oggFileName,'rb')
+        try:
+            # OGG packet header
+            assert oggfile.read(4) == 'OggS'
+            streamVersion = struct.unpack("<B", oggfile.read(1))[0]
+            assert streamVersion == 0
+            headerTypeFlag = struct.unpack("<B", oggfile.read(1))[0]
+            assert headerTypeFlag == 2
+            absoluteGranulePosition = struct.unpack("<Q", oggfile.read(8))[0]
+            assert absoluteGranulePosition == 0
+            oggfile.read(4) # stream serial number
+            pageSeqNum = struct.unpack("<i", oggfile.read(4))[0]
+            assert pageSeqNum == 0
+            oggfile.read(4) # checksum
+            numPageSegments = struct.unpack("<B", oggfile.read(1))[0]
+            for i in range(numPageSegments):
+                oggfile.read(1) # entry in segment table
+            # VORBIS header
+            headerType = struct.unpack("<B", oggfile.read(1))[0]
+            assert headerType == 1
+            assert oggfile.read(6) == 'vorbis'
+            vorbisVersion = struct.unpack("<I", oggfile.read(4))[0]
+            assert vorbisVersion == 0 
+        except:
+            raise IOError, "The file %s was not a valid OGG file" % oggFileName
+
+        # It is a valid OGG VORBIS file!
+        self.fNumChannels = struct.unpack("<B", oggfile.read(1))[0]
+        self.fNumSamplesPerSec = struct.unpack("<I",oggfile.read(4))[0]
+        oggfile.close()
+        self.fBitsPerSample = 16
+        self.fBlockAlign = self.fNumChannels * (self.fBitsPerSample / 8)
+        self.fAvgBytesPerSec = self.fBlockAlign * self.fNumSamplesPerSec
 
 
 class plSoundBuffer(hsKeyedObject):                     #Type 0x29
@@ -251,12 +306,7 @@ class plSoundBuffer(hsKeyedObject):                     #Type 0x29
         self.fDataLength = stream.Read32()
         self.fFileName.read(stream)
 
-        self.fHeader.fFormatTag = stream.Read16()
-        self.fHeader.fNumChannels = stream.Read16()
-        self.fHeader.fNumSamplesPerSec = stream.Read32()
-        self.fHeader.fAvgBytesPerSec = stream.Read32()
-        self.fHeader.fBlockAlign = stream.Read16()
-        self.fHeader.fBitsPerSample = stream.Read16()
+        self.fHeader.read(stream)
 
         if not self.fFlags & plSoundBuffer.Flags["kIsExternal"]:
             self.fData.append(stream.Read(self.fDataLength))
@@ -269,12 +319,7 @@ class plSoundBuffer(hsKeyedObject):                     #Type 0x29
         stream.Write32(self.fDataLength)
         self.fFileName.write(stream)
 
-        stream.Write16(self.fHeader.fFormatTag)
-        stream.Write16(self.fHeader.fNumChannels)
-        stream.Write32(self.fHeader.fNumSamplesPerSec)
-        stream.Write32(self.fHeader.fAvgBytesPerSec)
-        stream.Write16(self.fHeader.fBlockAlign)
-        stream.Write16(self.fHeader.fBitsPerSample)
+        self.fHeader.write(stream)
 
         if not self.fFlags & plSoundBuffer.Flags["kIsExternal"]:
             if self.fData[0] != None:
@@ -287,21 +332,30 @@ class plSoundBuffer(hsKeyedObject):                     #Type 0x29
     # Interface Functions #
     #######################
 
-    def makeFromInput(self, wavobj):
-        wavobj.setCurrent() #Make it the current sound object... just because we can :P
+    def makeFromInput(self, filename):
 
-        self.fFileName.set(os.path.basename(wavobj.getFilename()).replace(".wav", ".ogg"))
+        if filename[-3:] == "wav" or filename[-3:] == "WAV":
+            isWAVFile = True
+            sname = filename.replace(".wav",".ogg")
+        else:
+            isWAVFile = False
+            sname = filename
+        self.fFileName.set(Blender.sys.basename(sname))
+        #DEBUG
+        print "  Sound source file: ", filename
+        print "  In-game file: ", self.fFileName.name
 
         self.fFlags |= plSoundBuffer.Flags["kIsExternal"]
         self.fFlags |= plSoundBuffer.Flags["kAlwaysExternal"]
         self.fFlags |= plSoundBuffer.Flags["kStreamCompressed"]
         #Assume that the sound is always external... let's not deal with embedded sounds o.o
+        self.fDataLength = os.path.getsize(filename) #should get us the size
 
-        self.fDataLength = os.path.getsize(Blender.sys.expandpath(wavobj.getFilename())) #should get us the size
-
-        wav = file(Blender.sys.expandpath(wavobj.getFilename())) #Open the stream
-
-        self.fHeader.makeFromInput(wav) #Make the header
+        #Make the header
+        if isWAVFile:
+            self.fHeader.makeFromInput(filename) 
+        else:
+            self.fHeader.makeFromOGG(filename)
 
 
 class plEAXSourceSoftSettings:
@@ -625,6 +679,21 @@ class plWin32Sound(plSound):
     def dump(self,buf):
         print "Dump() deprecated on Audio and Sound classes"
 
+    def getFullFileName(self, filename):
+        fullFileName = Blender.sys.expandpath(filename)
+        if not Blender.sys.exists(fullFileName):
+            # Try the sound directory
+            baseFilename = Blender.sys.basename(filename)
+            fullFileName = Blender.Get('soundsdir') + Blender.sys.sep + baseFilename
+            if not Blender.sys.exists(fullFileName):
+                # Look in the same directory as the .blend file
+                blendfile = Blender.Get('filename')
+                fullFileName = Blender.sys.dirname(blendfile) + Blender.sys.sep + baseFilename
+                if not Blender.sys.exists(fullFileName):
+                    fullFileName = None
+        return fullFileName
+
+
     #######################
     # Interface Functions #
     #######################
@@ -657,26 +726,39 @@ class plWin32Sound(plSound):
 
         minFallDist = FindInDict(objscript,"sound.minfdist", 5)
         self.fMinFalloff = int(minFallDist)
-
+        wavobj = None
+        fullsname = None
         try:
             wavobj = Blender.Sound.Get(sname)
-            if not wavobj:
-                raise ValueExcepttion, "This exception is supposed to be caught and process, so you should never see it"
         except:
-            wavobj = Blender.Sound.Get(sname+".wav")
+            try:
+                wavobj = Blender.Sound.Get(sname+".wav")
+            except:
+                wavobj = None
+                fullsname = self.getFullFileName(sname + ".wav")
+                if fullsname == None:
+                    fullsname = self.getFullFileName(sname + ".ogg")
+                    if fullsname == None:
+                        raise ValueError, "Cannot locate any sound named \"%s\"" % sname
 
         if wavobj:
             #HACK - Save the sound so that Blender doesn't eat it >.<
             wavobj.fakeUser = 1
-            #Export a SoundBuffer
-            root=self.getRoot()
-            sbuff = root.find(0x0029, wavobj.getName(), 1)
-            sbuff.data.makeFromInput(wavobj)
-            if(chan == "right"):
-                sbuff.data.fFlags |= plSoundBuffer.Flags["kOnlyRightChannel"]
-            if(chan == "left"):
-                sbuff.data.fFlags |= plSoundBuffer.Flags["kOnlyLeftChannel"]
-            self.fDataBuffer = sbuff.data.getRef() #We have our sound buffer
+            wavobj.setCurrent() #Make it the current sound object... just because we can :P
+            fullsname = self.getFullFileName(wavobj.getFilename())
+            if fullsname == None:
+                raise ValueError, "Cannot locate any sound named \"%s\"" % wavobj.getFilename()
+
+
+        #Export a SoundBuffer
+        root=self.getRoot()
+        sbuff = root.find(0x0029, sname, 1)
+        sbuff.data.makeFromInput(fullsname)
+        if(chan == "right"):
+            sbuff.data.fFlags |= plSoundBuffer.Flags["kOnlyRightChannel"]
+        if(chan == "left"):
+            sbuff.data.fFlags |= plSoundBuffer.Flags["kOnlyLeftChannel"]
+        self.fDataBuffer = sbuff.data.getRef() #We have our sound buffer
 
         vol = FindInDict(objscript,"sound.volume", 1.0)
         self.fDesiredVol = vol
