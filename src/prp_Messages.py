@@ -489,7 +489,7 @@ class plCameraMsg(plMessage):                   # Message Type: 0x020A - plCamer
         "resetonexit"                          :  9, \
         "changeparams"                         : 10, \
         "worldspace"                           : 11, \
-        "createnewdefaultCam"                  : 12, \
+        "createnewdefaultcam"                  : 12, \
         "regionpushcamera"                     : 13, \
         "regionpopcamera"                      : 14, \
         "regionpushpoa"                        : 15, \

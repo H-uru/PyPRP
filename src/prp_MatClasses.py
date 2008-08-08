@@ -414,7 +414,7 @@ class hsGMaterial(plSynchedObject):         # Type 0x07
 
                 if not layer_info["stencil"]:
                     mtex = layer_info["mtex"]
-                    layer = root.find(0x06,mtex.tex.name,1)
+                    layer = root.find(0x06,mat.name + "-" + mtex.tex.name,1)
                     if(not layer.isProcessed):
                         layer.data.FromBlenderMTex(mtex,obj,mat)
                         layer.data.FromBlenderMat(obj,mat)
