@@ -2108,8 +2108,6 @@ class plMipMap(plBitmap):                    # Type 0x04
 
         print "Done"
 
-    UniquePrefix = 1
-
     def _FindCreateByMipMapInfo(page,name,mipmapinfo,exportTexturesToPrp):
         resmgr = page.resmanager
         tex=resmgr.findPrp("Textures")
@@ -2128,7 +2126,6 @@ class plMipMap(plBitmap):                    # Type 0x04
 
 #        print "Locating mipmap for mipmapinfo:"
 #        print mipmapinfo
-        nameExists = False
         # See if we have already got one of these....
         idx = page.findidx(0x0004)
         for plobj in idx.listobjects():
@@ -2138,17 +2135,16 @@ class plMipMap(plBitmap):                    # Type 0x04
 
             if plobj.data.MipMapInfo.equals(mipmapinfo):
                 return plobj
-            if plobj.data.Key.name==name:
-                nameExists = True
-
-
 
         # else, create one
 
         # make sure we have a unique name....
-        if nameExists:
-            name = str(plMipMap.UniquePrefix) +"-" + name
-            plMipMap.UniquePrefix += 1
+        names = [plobj.data.Key.name for plobj in idx.listobjects()]
+        namebase = name
+        uniquePrefix = 1
+        while name in names:
+            name = str(uniquePrefix) + "-" + namebase
+            uniquePrefix += 1
 
         plobj = plMipMap.FindCreate(page,name)
         plobj.data.MipMapInfo = mipmapinfo

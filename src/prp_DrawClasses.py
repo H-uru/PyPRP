@@ -1601,6 +1601,20 @@ class plDrawInterface(plObjInterface):
         # build up a weight map if neccessary, and fill it with the default value to start with
         if len(mesh.getVertGroupNames()) > 0:
             weightCount = 1 # Blender supports only one weight :)
+        
+        # recompute the normals if requested (they will be overwritten with Blender-computed normals again next time edit mode is exited for the mesh)
+        if getTextPropertyOrDefault(obj, "renormal", FindInDict(objscript, "visual.renormal", None)) == "areaweighted":
+            # compute vertex normals as the average of the face normals of all faces adjacent to the vertex, weighted by face area
+            normals = [Mathutils.Vector((0, 0, 0)) for i in range(len(mesh.verts))]
+            for f in mesh.faces:
+                n = f.area*f.no
+                for v in f:
+                    normals[v.index] += n
+            for i, n in enumerate(normals):
+                n.normalize()
+                if n.length > 0: # keep the existing normal if the newly computed one ended up as zero (NaN after normalizing)
+                    mesh.verts[i].no = n
+            del normals # help the garbage collector
 
         # Now, we need to make groups of faces for each assigned material :)
         # initialize the MaterialGroups list
