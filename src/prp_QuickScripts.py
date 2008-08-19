@@ -61,6 +61,7 @@ def RunQuickScripts(obj):
     result |= QuickScript_Footstep(obj)
     result |= QuickScript_SoundRegion(obj)
     result |= QuickScript_SimpleClickable(obj)
+    result |= QuickScript_StateAnimation(obj)
     # this needs to be added lastly
     result |= QuickScript_SelfAnimationRegion(obj)
     result |= QuickScript_SDL(obj)
@@ -227,11 +228,13 @@ def QuickScript_SoundRegion(obj):
             acttxt += "          params:\n"
             acttxt += "              receivers:\n"
         for emitter in list(emitters):
+            emitscript = AlcScript.objects.FindOrCreate(emitter)
+            emitvolume = FindInDict(emitscript,"sound.volume",1)
             acttxt += "                - 0011:" + str(emitter) + "\n"
             acttxt += "              cmds:\n"
             acttxt += "                - play\n"
             acttxt += "                - setvolume\n"
-            acttxt += "              volume: 1\n"
+            acttxt += "              volume: " + str(emitvolume) + "\n"
             acttxt += "          waiton: -1\n"
             acttxt += "      nextstate: 1\n"
             acttxt += "      waittocmd: 0\n"
@@ -495,40 +498,43 @@ def QuickScript_SDLIntActEnabler(obj):
     print "  [QuickScript - SDLIntActEnabler]"
     objscript = AlcScript.objects.FindOrCreate(obj.name)
 
-    # Check for simpleclick quickscript!
-    check = FindInDict(objscript,"quickscript.simpleclick",None)
+    # Check for clickable quickscripts!
+    simpleclick = FindInDict(objscript,"quickscript.simpleclick",None)
+    stateanimation = FindInDict(objscript,"quickscript.stateanimation",None)
 
-    if not check is None:
-        acttxt  = "- type: pythonfile\n"
-        acttxt += "  tag: IntActEnabler\n"
-        acttxt += "  pythonfile:\n"
-        acttxt += "      file: xAgeSDLIntActEnabler\n"
-        acttxt += "      parameters:\n"
-        acttxt += "        - type: string\n"
-        acttxt += "          value: " + str(obj.name) + "Func\n"
-        # Use activator from simpleclick quickscript
-        acttxt += "        - type: activator\n"
+    if simpleclick is None and stateanimation is None:
+        print "No simpleclick or stateanimation quickscript for " + str(obj.name) + ": Abort SDLIntActEnabler\n"
+        return False
+
+    acttxt  = "- type: pythonfile\n"
+    acttxt += "  tag: IntActEnabler\n"
+    acttxt += "  pythonfile:\n"
+    acttxt += "      file: xAgeSDLIntActEnabler\n"
+    acttxt += "      parameters:\n"
+    acttxt += "        - type: string\n"
+    acttxt += "          value: " + str(obj.name) + "Func\n"
+    acttxt += "        - type: activator\n"
+    # Use activator from clickable quickscript (must find another way for this)
+    if not simpleclick is None:
         acttxt += "          ref: logicmod:$AutoClick\n"
-        acttxt += "        - type: string\n"
-        acttxt += "          value: 1\n"
+    elif not stateanimation is None:
+        acttxt += "          ref: logicmod:$StateAnim\n"
+    acttxt += "        - type: string\n"
+    acttxt += "          value: 1\n"
 
-        print "Resulting Code for .logic.actions:\n",acttxt
+    print "Resulting Code for .logic.actions:\n",acttxt
 
-        myactscript = AlcScript(acttxt).GetRootScript()
+    myactscript = AlcScript(acttxt).GetRootScript()
 
-        # Add the parsed script to the correct space in the dictionary, or create that space
-        actscript = FindInDict(objscript,"logic.actions",None)
-        if actscript is None or type(actscript) != list:
-            StoreInDict(objscript,"logic.actions", myactscript)
-        else:
-            for script in myactscript:
-                actscript.append(script)
-
-        return True
+    # Add the parsed script to the correct space in the dictionary, or create that space
+    actscript = FindInDict(objscript,"logic.actions",None)
+    if actscript is None or type(actscript) != list:
+        StoreInDict(objscript,"logic.actions", myactscript)
     else:
-        print "No simpleclick quickscript for " + str(obj.name) + ": Abort SDLIntActEnabler\n"
+        for script in myactscript:
+            actscript.append(script)
 
-    return False
+    return True
 
 
 def QuickScript_SimpleClickable(obj):
@@ -542,17 +548,21 @@ def QuickScript_SimpleClickable(obj):
         autorun = getTextPropertyOrDefault(obj,"autorun","false")
         soundemitter = getTextPropertyOrDefault(obj,"soundemitter",None)
         facevalue = getTextPropertyOrDefault(obj,"facevalue",None)
+        objectname = getTextPropertyOrDefault(obj,"objectname",None)
+        animname = getTextPropertyOrDefault(obj,"animname",None)
     else:
-        clickfile =     FindInDict(objscript,"quickscript.simpleclick.pythonfile",None)
-        region =        FindInDict(objscript,"quickscript.simpleclick.region",None)
-        animation =     FindInDict(objscript,"quickscript.simpleclick.animation",None)
-        animtarget =    FindInDict(objscript,"quickscript.simpleclick.animtarget","/")
-        autorun =       FindInDict(objscript,"quickscript.simpleclick.autorun","false")
-        soundemitter =  FindInDict(objscript,"quickscript.simpleclick.soundemitter",None)
-        facevalue =     FindInDict(objscript,"quickscript.simpleclick.facevalue",None)
+        clickfile =    FindInDict(objscript,"quickscript.simpleclick.pythonfile",None)
+        region =       FindInDict(objscript,"quickscript.simpleclick.region",None)
+        animation =    FindInDict(objscript,"quickscript.simpleclick.animation",None)
+        animtarget =   FindInDict(objscript,"quickscript.simpleclick.animtarget","/")
+        autorun =      FindInDict(objscript,"quickscript.simpleclick.autorun","false")
+        soundemitter = FindInDict(objscript,"quickscript.simpleclick.soundemitter",None)
+        facevalue =    FindInDict(objscript,"quickscript.simpleclick.facevalue",None)
+        objectname =   FindInDict(objscript,"quickscript.simpleclick.objectname",None)
+        animname =     FindInDict(objscript,"quickscript.simpleclick.animname",None)
 
-    if not animation is None and clickfile is None:
-        # User wants animation but does not use python file: force autorun
+    if clickfile is None:
+        # No python file to call actions: force autorun to true
         autorun = "true"
 
     if not soundemitter is None:
@@ -600,8 +610,14 @@ def QuickScript_SimpleClickable(obj):
                 modtxt += "      ref: $AutoClick\n"
 
         if not soundemitter is None:
-            modtxt += "    - type: responder\n"
-            modtxt += "      ref: $SoundResp\n"
+            if str(autorun).lower() == "true":
+                modtxt += "    - type: responder\n"
+                modtxt += "      ref: $SoundResp\n"
+
+        if not objectname is None and not animname is None:
+            if str(autorun).lower() == "true":
+                modtxt += "    - type: responder\n"
+                modtxt += "      ref: $AnimResp\n"
 
         acttxt = ""
 
@@ -616,10 +632,26 @@ def QuickScript_SimpleClickable(obj):
             acttxt += "        - type: string\n"
             acttxt += "          value: "+str(obj.name) +"\n"
 
-            if not animation is None:
-                if str(autorun).lower() == "false":
-                    acttxt += "        - type: behavior\n"
-                    acttxt += "          ref: oneshotmod:$AutoClick\n"
+            if not animation is None and str(autorun).lower() == "false":
+                acttxt += "        - type: behavior\n"
+                acttxt += "          ref: oneshotmod:$AutoClick\n"
+            else:
+                #index 3 reserved for oneshotmod
+                acttxt += "        - type: skip\n"
+
+            if not soundemitter is None and str(autorun).lower() == "false":
+                acttxt += "        - type: responder\n"
+                acttxt += "          ref: $SoundResp\n"
+            else:
+                #index 4 reserved for sound responder
+                acttxt += "        - type: skip\n"
+
+            if not objectname is None and not animname is None and str(autorun).lower() == "false":
+                acttxt += "        - type: responder\n"
+                acttxt += "          ref: $AnimResp\n"
+            else:
+                #index 5 reserved for animation responder
+                acttxt += "        - type: skip\n"
 
         if not animation is None:
             acttxt += "- type: oneshot\n"
@@ -652,6 +684,26 @@ def QuickScript_SimpleClickable(obj):
             acttxt += "    flags:\n"
             acttxt += "      - detecttrigger\n"
 
+        if not objectname is None and not animname is None:
+            acttxt += "- type: responder\n"
+            acttxt += "  tag: AnimResp\n"
+            acttxt += "  responder:\n"
+            acttxt += "     states:\n"
+            acttxt += "       - cmds:\n"
+            acttxt += "           - type: animcmdmsg\n"
+            acttxt += "             params:\n"
+            acttxt += "                 receivers:\n"
+            acttxt += "                   - 006D:" + str(objectname) + "\n"
+            acttxt += "                 animname: " + str(animname) + "\n"
+            acttxt += "                 cmds:\n"
+            acttxt += "                   - continue\n"
+            acttxt += "             waiton: -1\n"
+            acttxt += "         nextstate: 0\n"
+            acttxt += "         waittocmd: 0\n"
+            acttxt += "     curstate: 0\n"
+            acttxt += "     flags:\n"
+            acttxt += "       - detecttrigger\n"
+
 
         print "Resulting Code for .logic.modifiers:\n",modtxt
         print "Resulting Code for .logic.actions:\n",acttxt
@@ -680,5 +732,369 @@ def QuickScript_SimpleClickable(obj):
     return False
 
 
+def QuickScript_StateAnimation(obj):
+    objscript = AlcScript.objects.FindOrCreate(obj.name)
 
+    objectname =   FindInDict(objscript,"quickscript.stateanimation.objectname",None)
+    region =       FindInDict(objscript,"quickscript.stateanimation.region",None)
+    sdlname =      FindInDict(objscript,"quickscript.stateanimation.sdlname",None)
+    facevalue =    FindInDict(objscript,"quickscript.stateanimation.facevalue",None)
+    #Get avatar animation variables
+    avanimation =  FindInDict(objscript,"quickscript.stateanimation.avatar.animation",None)
+    animtarget =   FindInDict(objscript,"quickscript.stateanimation.avatar.animtarget",None)
+    #Get forewards animation variables. Spelling consistent with full alcscript ;)
+    fwanimation =  FindInDict(objscript,"quickscript.stateanimation.forewards.animation",None)
+    fwanimsound =  FindInDict(objscript,"quickscript.stateanimation.forewards.animsound",None)
+    fwclickanim =  FindInDict(objscript,"quickscript.stateanimation.forewards.clickanim",None)
+    fwclicksound = FindInDict(objscript,"quickscript.stateanimation.forewards.clicksound",None)
+    #Get backwards animation variables.
+    bwanimation =  FindInDict(objscript,"quickscript.stateanimation.backwards.animation",None)
+    bwanimsound =  FindInDict(objscript,"quickscript.stateanimation.backwards.animsound",None)
+    bwclickanim =  FindInDict(objscript,"quickscript.stateanimation.backwards.clickanim",None)
+    bwreversed =   FindInDict(objscript,"quickscript.stateanimation.backwards.clickreverse","false")
+    bwclicksound = FindInDict(objscript,"quickscript.stateanimation.backwards.clicksound",None)
+
+    if fwanimation is None or bwanimation is None:
+        return False
+
+    animreverse = 0
+    if fwanimation == bwanimation:
+        animreverse = 1
+
+    if not objectname is None:
+        if region is None or sdlname is None:
+            return False
+
+        print "  [QuickScript - State Animation]"
+        # Force the object's physical logic to 'detect'
+        StoreInDict(objscript,"physical.physlogic","detect")
+            # Build up the required script
+
+        modtxt  = "- tag: StateAnim\n"
+        modtxt += "  cursor: poised\n"
+        modtxt += "  flags:\n"
+        modtxt += "    - localelement\n"
+        modtxt += "  activators:\n"
+        modtxt += "    - type: objectinvolume\n"
+        modtxt += "      remote: " + str(region) + "\n"
+        modtxt += "      triggers:\n"
+        modtxt += "        - any\n"
+        modtxt += "  conditions:\n"
+        modtxt += "    - type: activator\n"
+        modtxt += "      activators:\n"
+        modtxt += "        - type: picking\n"
+        modtxt += "    - type: objectinbox\n"
+        modtxt += "      satisfied: true\n"
+
+        if not facevalue is None:
+            modtxt += "    - type: facing\n"
+            modtxt += "      satisfied: true\n"
+            modtxt += "      directional: true\n"
+            modtxt += "      tolerance: " + str(facevalue) + "\n"
+
+        modtxt += "  actions:\n"
+        modtxt += "    - type: pythonfile\n"
+        modtxt += "      ref: $BoolToggle\n"
+
+        #this should be turned into a sdl quickscript later
+        acttxt  = "- type: pythonfile\n"
+        acttxt += "  tag: BoolToggle\n"
+        acttxt += "  pythonfile:\n"
+        acttxt += "      file: xAgeSDLBoolToggle\n"
+        acttxt += "      parameters:\n"
+        acttxt += "        - type: activator\n"
+        acttxt += "          ref: logicmod:$StateAnim\n"
+        acttxt += "        - type: string\n"
+        acttxt += "          value: " + str(sdlname) +"\n"
+        acttxt += "        - type: skip\n"
+        acttxt += "        - type: skip\n"
+        acttxt += "        - type: string\n"
+        acttxt += "          value: QuickScript_StateAnimation\n"
+
+        #this should be turned into a sdl quickscript later
+        acttxt += "- type: pythonfile\n"
+        acttxt += "  tag: BoolRespond\n"
+        acttxt += "  pythonfile:\n"
+        acttxt += "      file: xAgeSDLBoolRespond\n"
+        acttxt += "      parameters:\n"
+        acttxt += "        - type: string\n"
+        acttxt += "          value: " + str(sdlname) +"\n"
+        acttxt += "        - type: responder\n"
+        acttxt += "          ref: $AnimFW\n"
+        acttxt += "        - type: responder\n"
+        acttxt += "          ref: $AnimBW\n"
+        acttxt += "        - type: bool\n"
+        acttxt += "          value: false\n"
+        acttxt += "        - type: bool\n"
+        acttxt += "          value: true\n"
+
+    #the forwards responder
+        acttxt += "- type: responder\n"
+        acttxt += "  tag: AnimFW\n"
+        acttxt += "  responder:\n"
+        acttxt += "     states:\n"
+        acttxt += "       - cmds:\n"
+
+        avwait = 0
+
+        #handle the avatar
+        if not avanimation is None and not animtarget is None:
+            acttxt += "           - type: oneshotmsg\n"
+            acttxt += "             params:\n"
+            acttxt += "                 receivers:\n"
+            acttxt += "                   - oneshotmod:" + str(animtarget) + "\n"
+            acttxt += "                 callbacks:\n"
+            acttxt += "                   - marker: " + str(avanimation) + "\n"
+            acttxt += "                     receiver: respondermod:$AnimFW\n"
+            acttxt += "                     user: 0\n"
+            acttxt += "             waiton: -1\n"
+
+            avwait = 1
+
+        #handle the button
+        if not fwclickanim is None:
+            clickreverse = 0
+            if not bwclickanim is None:
+                if fwclickanim == bwclickanim:
+                    if str(bwreversed).lower() == "true":
+                        clickreverse = 1
+
+            acttxt += "           - type: animcmdmsg\n"
+            acttxt += "             params:\n"
+            acttxt += "                 receivers:\n"
+            acttxt += "                   - 006D:" + str(obj.name) + "\n"
+            acttxt += "                 animname: " + str(fwclickanim) + "\n"
+            acttxt += "                 cmds:\n"
+            if clickreverse:
+                acttxt += "                   - setforewards\n"
+            acttxt += "                   - continue\n"
+            if avwait:
+                acttxt += "             waiton: 0\n"
+                avwait = 0
+            else:
+                acttxt += "             waiton: -1\n"
+        if not fwclicksound is None:
+            emitscript = AlcScript.objects.FindOrCreate(fwclicksound)
+            emitvolume = FindInDict(emitscript,"sound.volume",1)
+            acttxt += "           - type: soundmsg\n"
+            acttxt += "             params:\n"
+            acttxt += "                 receivers:\n"
+            acttxt += "                   - 0011:" + str(fwclicksound) + "\n"
+            acttxt += "                 cmds:\n"
+            acttxt += "                   - play\n"
+            acttxt += "                   - setvolume\n"
+            acttxt += "                 volume: " + str(emitvolume) + "\n"
+            if avwait:
+                acttxt += "             waiton: 0\n"
+                avwait = 0
+            else:
+                acttxt += "             waiton: -1\n"
+
+        #handle the actual animation
+        if not fwanimation is None:
+            acttxt += "           - type: animcmdmsg\n"
+            acttxt += "             params:\n"
+            acttxt += "                 receivers:\n"
+            acttxt += "                   - 006D:" + str(objectname) + "\n"
+            acttxt += "                 animname: " + str(fwanimation) + "\n"
+            acttxt += "                 cmds:\n"
+            if animreverse:
+                acttxt += "                   - setforewards\n"
+            acttxt += "                   - continue\n"
+            if avwait:
+                acttxt += "             waiton: 0\n"
+                avwait = 0
+            else:
+                acttxt += "             waiton: -1\n"
+        if not fwanimsound is None:
+            emitscript = AlcScript.objects.FindOrCreate(fwanimsound)
+            emitvolume = FindInDict(emitscript,"sound.volume",1)
+            acttxt += "           - type: soundmsg\n"
+            acttxt += "             params:\n"
+            acttxt += "                 receivers:\n"
+            acttxt += "                   - 0011:" + str(fwanimsound) + "\n"
+            acttxt += "                 cmds:\n"
+            acttxt += "                   - play\n"
+            acttxt += "                   - setvolume\n"
+            acttxt += "                 volume: " + str(emitvolume) + "\n"
+            if avwait:
+                acttxt += "             waiton: 0\n"
+                avwait = 0
+            else:
+                acttxt += "             waiton: -1\n"
+
+        acttxt += "         nextstate: 1\n"
+        acttxt += "         waittocmd:\n"
+        acttxt += "           - key: 0\n"
+        acttxt += "             msg: 0\n"
+        acttxt += "     curstate: 0\n"
+        acttxt += "     flags:\n"
+        acttxt += "       - detecttrigger\n"
+
+    #the backwards responder
+        acttxt += "- type: responder\n"
+        acttxt += "  tag: AnimBW\n"
+        acttxt += "  responder:\n"
+        acttxt += "     states:\n"
+        acttxt += "       - cmds:\n"
+
+        avwait = 0
+
+        #handle the avatar
+        if not avanimation is None and not animtarget is None:
+            acttxt += "           - type: oneshotmsg\n"
+            acttxt += "             params:\n"
+            acttxt += "                 receivers:\n"
+            acttxt += "                   - oneshotmod:" + str(animtarget) + "\n"
+            acttxt += "                 callbacks:\n"
+            acttxt += "                   - marker: " + str(avanimation) + "\n"
+            acttxt += "                     receiver: respondermod:$AnimBW\n"
+            acttxt += "                     user: 0\n"
+            acttxt += "             waiton: -1\n"
+
+            avwait = 1
+
+        #handle the button
+        if not bwclickanim is None:
+            clickreverse = 0
+            if not fwclickanim is None:
+                if fwclickanim == bwclickanim:
+                    if str(bwreversed).lower() == "true":
+                        clickreverse = 1
+
+            acttxt += "           - type: animcmdmsg\n"
+            acttxt += "             params:\n"
+            acttxt += "                 receivers:\n"
+            acttxt += "                   - 006D:" + str(obj.name) + "\n"
+            acttxt += "                 animname: " + str(bwclickanim) + "\n"
+            acttxt += "                 cmds:\n"
+            if clickreverse:
+                acttxt += "                   - setbackwards\n"
+            acttxt += "                   - continue\n"
+            if avwait:
+                acttxt += "             waiton: 0\n"
+                avwait = 0
+            else:
+                acttxt += "             waiton: -1\n"
+        if not bwclicksound is None:
+            emitscript = AlcScript.objects.FindOrCreate(bwclicksound)
+            emitvolume = FindInDict(emitscript,"sound.volume",1)
+            acttxt += "           - type: soundmsg\n"
+            acttxt += "             params:\n"
+            acttxt += "                 receivers:\n"
+            acttxt += "                   - 0011:" + str(bwclicksound) + "\n"
+            acttxt += "                 cmds:\n"
+            acttxt += "                   - play\n"
+            acttxt += "                   - setvolume\n"
+            acttxt += "                 volume: " + str(emitvolume) + "\n"
+            if avwait:
+                acttxt += "             waiton: 0\n"
+                avwait = 0
+            else:
+                acttxt += "             waiton: -1\n"
+
+        #handle the actual animation
+        if not bwanimation is None:
+            acttxt += "           - type: animcmdmsg\n"
+            acttxt += "             params:\n"
+            acttxt += "                 receivers:\n"
+            acttxt += "                   - 006D:" + str(objectname) + "\n"
+            acttxt += "                 animname: " + str(bwanimation) + "\n"
+            acttxt += "                 cmds:\n"
+            if animreverse:
+                acttxt += "                   - setbackwards\n"
+            acttxt += "                   - continue\n"
+            if avwait:
+                acttxt += "             waiton: 0\n"
+                avwait = 0
+            else:
+                acttxt += "             waiton: -1\n"
+        if not bwanimsound is None:
+            emitscript = AlcScript.objects.FindOrCreate(bwanimsound)
+            emitvolume = FindInDict(emitscript,"sound.volume",1)
+            acttxt += "           - type: soundmsg\n"
+            acttxt += "             params:\n"
+            acttxt += "                 receivers:\n"
+            acttxt += "                   - 0011:" + str(bwanimsound) + "\n"
+            acttxt += "                 cmds:\n"
+            acttxt += "                   - play\n"
+            acttxt += "                   - setvolume\n"
+            acttxt += "                 volume: " + str(emitvolume) + "\n"
+            if avwait:
+                acttxt += "             waiton: 0\n"
+                avwait = 0
+            else:
+                acttxt += "             waiton: -1\n"
+
+        acttxt += "         nextstate: 1\n"
+        acttxt += "         waittocmd:\n"
+        acttxt += "           - key: 0\n"
+        acttxt += "             msg: 0\n"
+        acttxt += "     curstate: 0\n"
+        acttxt += "     flags:\n"
+        acttxt += "       - detecttrigger\n"
+
+
+        print "Resulting Code for .logic.modifiers:\n",modtxt
+        print "Resulting Code for .logic.actions:\n",acttxt
+
+        # Parse the code
+        myactscript = AlcScript(acttxt).GetRootScript()
+        mymodscript = AlcScript(modtxt).GetRootScript()
+
+        # Add the parsed script to the correct space in the dictionary, or create that space
+        actscript = FindInDict(objscript,"logic.actions",None)
+        if actscript is None or type(actscript) != list:
+            StoreInDict(objscript,"logic.actions", myactscript)
+        else:
+            for script in myactscript:
+                actscript.append(script)
+
+        modscript = FindInDict(objscript,"logic.modifiers",None)
+        if actscript is None or type(modscript) != list:
+            StoreInDict(objscript,"logic.modifiers",mymodscript)
+        else:
+            for script in mymodscript:
+                modscript.append(script)
+
+        #create the script for the avatar animation target if needed
+        if not avanimation is None and not animtarget is None:
+            targetscript = AlcScript.objects.FindOrCreate(animtarget)
+            actscript = FindInDict(targetscript,"logic.actions",None)
+
+            maketarget = 1
+            if not actscript is None:
+                if type(actscript) != list:
+                    actscript = [actscript,]
+                for script in list(actscript):
+                    if type(script) != dict:
+                        continue
+                    gettype = str(FindInDict(script,"type",""))
+                    if gettype == "oneshot":
+                        name = FindInDict(script,"name","")
+                        if name == animtarget:
+                            maketarget = 0
+                            break
+
+            if maketarget:
+                acttxt  = "- type: oneshot\n"
+                acttxt += "  name: " + str(animtarget) + "\n"
+                acttxt += "  oneshot:\n"
+                acttxt += "      animation: " + str(avanimation) + "\n"
+
+                print "Resulting Code for " + str(animtarget) + ".logic.actions:\n",acttxt
+
+                # Parse the code
+                myactscript = AlcScript(acttxt).GetRootScript()
+
+                # Add the parsed script to the correct space in the dictionary, or create that space
+                if actscript is None or type(actscript) != list:
+                    StoreInDict(targetscript,"logic.actions", myactscript)
+                else:
+                    for script in myactscript:
+                        actscript.append(script)
+
+        return True
+
+    return False
 

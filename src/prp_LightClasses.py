@@ -397,7 +397,6 @@ class plDirectionalLightInfo(plLightInfo):
                     vr.data.scenenode = self.scenenode
                     vr.data.BitFlags.clear()
                     vr.data.BitFlags.SetBit(plVisRegion.VecFlags["kReplaceNormal"])
-                    vr.data.BitFlags.SetBit(plVisRegion.VecFlags["kIsNot"])
                     vr.data.fRegion = volume
                     self.visregs.append(vr.data.getRef())
 
