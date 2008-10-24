@@ -1674,7 +1674,7 @@ class plDrawInterface(plObjInterface):
                 if mesh.vertexColors:
                     if len(ColorLayers) > 0:
                         try:
-                            col_a=1.0
+                            col_a=255
                             for vc in range(len(ColorLayers)):
                                 if(ColorLayers[vc].lower() == "col"): #Mesh vertex colours
                                     mesh.activeColorLayer = ColorLayers[vc]
