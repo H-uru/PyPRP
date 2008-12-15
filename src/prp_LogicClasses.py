@@ -1834,7 +1834,7 @@ class plPythonParameter :
                 param = plPythonParameter(pyfmod)
                 param.fID = index
                 param.fValueType = typeinfo["typenum"]
-                pyfmod.data.addParameter(param)
+                #pyfmod.data.addParameter(param)
             elif typeinfo["type"] == "key":
                 ref = FindInDict(argscript,"ref",None)
                 plPythonParameter.ExportKey(pyfmod,ref,typeinfo,index,scnobj)

@@ -362,7 +362,6 @@ class plDynaRippleVSMgr(plDynaRippleMgr):
             # add the ZInc flag for all the layers in the material
             for layer in MatPreShade.data.fLayers:
                 self.getRoot().findref(layer).data.fState.fZFlags |= hsGMatState.hsGMatZFlags["kZIncLayer"]
-                self.getRoot().findref(layer).data.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendMADD"]
             self.fMatPreShade = MatPreShade.data.getRef()
 
         matref = FindInDict(script,'matrtshade', None)
@@ -370,7 +369,6 @@ class plDynaRippleVSMgr(plDynaRippleMgr):
         # add the ZInc flag for all the layers in the material
         for layer in MatRTShade.data.fLayers:
             self.getRoot().findref(layer).data.fState.fZFlags |= hsGMatState.hsGMatZFlags["kZIncLayer"]
-            self.getRoot().findref(layer).data.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendMADD"]
         self.fMatRTShade = MatRTShade.data.getRef()
 
         scnrefs = list(FindInDict(script,'targets', []))
@@ -450,7 +448,6 @@ class plDynaPuddleMgr(plDynaRippleMgr):
             # add the ZInc flag for all the layers in the material
             for layer in MatPreShade.data.fLayers:
                 self.getRoot().findref(layer).data.fState.fZFlags |= hsGMatState.hsGMatZFlags["kZIncLayer"]
-                self.getRoot().findref(layer).data.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendMADD"]
             self.fMatPreShade = MatPreShade.data.getRef()
 
         matref = FindInDict(script,'matrtshade', None)
@@ -458,7 +455,6 @@ class plDynaPuddleMgr(plDynaRippleMgr):
         # add the ZInc flag for all the layers in the material
         for layer in MatRTShade.data.fLayers:
             self.getRoot().findref(layer).data.fState.fZFlags |= hsGMatState.hsGMatZFlags["kZIncLayer"]
-            self.getRoot().findref(layer).data.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendMADD"]
         self.fMatRTShade = MatRTShade.data.getRef()
 
         scnrefs = list(FindInDict(script,'targets', []))

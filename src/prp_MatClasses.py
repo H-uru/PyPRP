@@ -1171,9 +1171,9 @@ class plLayer(plLayerInterface):             # Type 0x06
         if mat.zOffset > 0.0:
             self.fState.fZFlags |= hsGMatState.hsGMatZFlags["kZIncLayer"]
 
-        # If we have two vertex color layers, the 2nd is used as alpha layer - if we have vertex alpha,
+        # If we have two vertex color layers, the one named Alpha is used as alpha layer - if we have vertex alpha,
         # we need to have the alpha blending flag set, and we need to have
-        if len(mesh.getColorLayerNames()) > 1:
+        if "Alpha" in mesh.getColorLayerNames():
             self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlpha"]
 
 
@@ -2845,6 +2845,7 @@ class plWaveSet7(plMultiModifier):
         shoreNames = list(FindInDict(objscript, 'visual.waveset.shores', []))
         for shoreName in shoreNames:
             shoreObj = refparser.MixedRef_FindCreate(shoreName)
+	    print "WaveSet Shore Ref: " + shoreName
             self.fShores.append(shoreObj.data.getRef())
         # add decal refs
         decalNames = list(FindInDict(objscript, 'visual.waveset.decals', []))
