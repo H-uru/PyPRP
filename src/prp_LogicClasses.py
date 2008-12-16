@@ -2080,6 +2080,7 @@ class plResponderCmd:
         "soundmsg"          : 0x0255, \
         "animcmdmsg"        : 0x0206, \
         "timercallbackmsg"  : 0x024A, \
+        "eventcallbackmsg"  : 0x024B, \
     }
 
     def __init__(self,parent):

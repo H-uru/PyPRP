@@ -40,6 +40,7 @@ import prp_Config, prp_HexDump, prp_GeomClasses
 # Message Type: 0x0206 - plAnimCmdMsg
 # Message Type: 0x024F - plEnableMsg
 # Message Type: 0x024A - plTimerCallbackMsg
+# Message Type: 0x024B - plEventCallbackMsg
 
 ## Still Needed at the moment:
 # Message Type: 0x02E1 - plLinkToAgeMsg
@@ -81,6 +82,8 @@ class PrpMessage:
                 self.data = plAnimCmdMsg(self)
             elif self.msgtype == 0x024A:
                 self.data = plTimerCallbackMsg(self)
+            elif self.msgtype == 0x024B:
+                self.data = plEventCallbackMsg(self)
             else:
                 raise ValueError, "Unsupported message type %04X %s" % (self.msgtype,MsgKeyToMsgName(self.msgtype))
         elif self.version == 6:
@@ -740,6 +743,19 @@ class plOneShotMsg(plMessage):
         self.fCallbacks.export_script(callbacks,refparser)
 
 class plMessageWithCallbacks(plMessage):
+    ScriptMsgTypes = \
+    { \
+        "notifymsg"         : 0x02E8, \
+        "armatureeffectmsg" : 0x038E, \
+        "oneshotmsg"        : 0x0302, \
+        "cameramsg"         : 0x020A, \
+        "enablemsg"         : 0x024F, \
+        "soundmsg"          : 0x0255, \
+        "animcmdmsg"        : 0x0206, \
+        "timercallbackmsg"  : 0x024A, \
+        "eventcallbackmsg"  : 0x024B, \
+    }
+    
     def __init__(self,parent=None,type=0x0302):
         plMessage.__init__(self,parent,type)
         self.fCallbacks = []
@@ -751,12 +767,29 @@ class plMessageWithCallbacks(plMessage):
         for i in range(count):
             msg = PrpMessage.FromStream(stream)
             self.fCallbacks.append(msg)
+    
     def write(self,stream):
         self.IMsgWrite(stream)
 
         stream.Write32(len(self.fCallbacks))
         for msg in self.fCallbacks:
             PrpMessage.ToStream(stream,msg)
+            
+    def export_script(self, script, refparser):
+        plMessage.export_script(self, script, refparser)
+        
+        callbacks = FindInDict(script, 'callbacks', None)
+        if type(callbacks) == list:
+            for callback in callbacks:
+                msgtype = FindInDict(callback, "type", None)
+                if not plMessageWithCallbacks.ScriptMsgTypes.has_key(str(msgtype)):
+                    print "ERROR: Uknown message type in plMessageWithCallbacks"
+                    assert 0
+                paramscript = FindInDict(callback, "params", None)
+                if type(paramscript) == dict:
+                    callbackmsg = PrpMessage(plMessageWithCallbacks.ScriptMsgTypes[msgtype], self.parent.getVersion())
+                    callbackmsg.data.export_script(paramscript, refparser)
+                    self.fCallbacks.append(callbackmsg)
 
 class plAnimCmdMsg(plMessageWithCallbacks):
     ModAnimCmds = \
@@ -863,7 +896,7 @@ class plAnimCmdMsg(plMessageWithCallbacks):
         stream.WriteSafeString(self.fLoopName)
 
     def export_script(self, script, refparser):
-        plMessage.export_script(self, script, refparser)
+        plMessageWithCallbacks.export_script(self, script, refparser)
         self.fAnimName = FindInDict(script, "animname", str())
         self.fLoopName = FindInDict(script, "loopname", str())
         cmdlist = list(FindInDict(script,"cmds",list()))
@@ -981,7 +1014,7 @@ class plSoundMsg(plMessageWithCallbacks):
         stream.WriteByte(self.fFadeType)
 
     def export_script(self,script,refparser):
-        plMessage.export_script(self,script,refparser)
+        plMessageWithCallbacks.export_script(self,script,refparser)
 
         volume = FindInDict(script, "volume", None)
         if volume != None:
@@ -1049,8 +1082,47 @@ class plTimerCallbackMsg(plMessage):
     def export_script(self,script,refparser):
         plMessage.export_script(self,script,refparser)
         
-        self.fID = FindInDict(script, "id", 0)
-        self.fTime = FindInDict(script, "time", 0)
+        self.fID = FindInDict(script, "id", self.fID)
+        self.fTime = FindInDict(script, "time", self.fTime)
+
+class plEventCallbackMsg(plMessage):
+    def __init__(self, parent=None, type=0x024B):
+        plMessage.__init__(self, parent, type)
+        self.fBCastFlags |= plMessage.plBCastFlags["kLocalPropagate"]
+        
+        self.fEventTime = float()
+        self.fEvent = int()
+        self.fIndex = int()
+        self.fRepeats = int()
+        self.fUser = int()
+        
+    def read(self, stream):
+        self.IMsgRead(stream)
+        
+        self.fEventTime = stream.ReadFloat()
+        self.fEvent = stream.ReadShort()
+        self.fIndex = stream.ReadShort()
+        self.fRepeats = stream.ReadShort()
+        self.fUser = stream.ReadShort()
+        
+    def write(self, stream):
+        self.IMsgWrite(stream)
+        
+        stream.WriteFloat(self.fEventTime)
+        stream.WriteShort(self.fEvent)
+        stream.WriteShort(self.fIndex)
+        stream.WriteShort(self.fRepeats)
+        stream.WriteShort(self.fUser)
+        
+    def export_script(self, script, refparser):
+        plMessage.export_script(self, script, refparser)
+        
+        self.fEventTime = FindInDict(script, "eventtime", self.fEventTime)
+        self.fEvent = FindInDict(script, "event", self.fEvent)
+        self.fIndex = FindInDict(script, "index", self.fIndex)
+        self.fRepeats = FindInDict(script, "repeats", self.fRepeats)
+        self.fUser = FindInDict(script, "user", self.fUser)
+        
 
 class plEnableMsg(plMessage):
     ModCmds = \
