@@ -1007,37 +1007,60 @@ class plGeometrySpan:
 
 
 class plCullPoly:
+    Flags = \
+    { \
+        "kNone"     : 0, \
+        "kHole"     : 1, \
+        "kTwoSided" : 2  \
+    }
+   
     def __init__(self):
-        self.i0 = 0
-        self.v18 = Vertex()
-        self.f24 = 0
-        self.v28 = Vertex()
-        self.f34 = 0
-        self.vV10 = []
-
+        self.fFlags = 0
+        self.fNorm = Vertex()
+        self.fDist = 0
+        self.fCentre = Vertex()
+        self.fRadius = 0
+        self.fVerts = []
+ 
     def read(self,buf):
-        self.i0 = buf.Read32()
-        self.v18.read(buf)
-        self.f24 = buf.ReadFloat()
-        self.v28.read(buf)
-        self.f34 = buf.ReadFloat()
+        self.fFlags = buf.Read32()
+        self.fNorm.read(buf)
+        self.fDist = buf.ReadFloat()
+        self.fCentre.read(buf)
+        self.fRadius = buf.ReadFloat()
         vCount = buf.Read32()
         for i in range(vCount):
             vertex = Vertex()
             vertex.read(buf)
-            self.vV10[i] = vertex
-
+            self.fVerts[i] = vertex
+ 
     def write(self,buf):
-        buf.Write32(self.i0)
-        self.v18.write(buf)
-        buf.WriteFloat(self.f24)
-        self.v28.write(buf)
-        buf.WriteFloat(self.f34)
-        vCount = len(self.vV10)
+        buf.Write32(self.fFlags)
+        self.fNorm.write(buf)
+        buf.WriteFloat(self.fDist)
+        self.fCentre.write(buf)
+        buf.WriteFloat(self.fRadius)
+        vCount = len(self.fVerts)
         buf.Write32(vCount)
         for i in range(vCount):
-            self.vV10[i].write(buf)
-
+            self.fVerts[i].write(buf)
+ 
+    def export_face(self, verts, normal):
+        self.fNorm.setVector(normal)
+        self.fDist = -Blender.Mathutils.DotVecs(verts[0], normal)
+        center = Blender.Mathutils.Vector()
+        for v in verts:
+            center += v
+        center /= len(verts)
+        self.fCentre.setVector(center)
+        self.fRadius
+        for v in verts:
+            if (center - v).length > self.fRadius:
+                self.fRadius = (center - v).length
+        for v in verts:
+            newVertex = Vertex()
+            newVertex.setVector(v)
+            self.fVerts.append(newVertex)
 
 class plRenderLevel:
     MajorLevel =  { \

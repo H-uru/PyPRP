@@ -717,7 +717,22 @@ class alcUruPage:
                     # Visual Export (Also contains drawablespans export code)
                     if FindInDict(objscript, "visual.render", True):
                         plDrawInterface.Export(self,obj,scnobj,name,SceneNodeRef,isdynamic,softVolumeParser, water)
+                        
+                elif (alctype=="occluder"): #plOccluder
+                    print ""
+                    print "[plOccluder %s]" % name
 
+                    #find the sceneobject or create it
+                    scnobj = plSceneObject.FindCreate(self.prp,name)
+                    scnobj.data.scene=SceneNodeRef
+                    scnobj.data.export_object(obj, objscript)
+
+                    # Export the occluder
+                    plOccluder.Export(self,obj,scnobj,name,SceneNodeRef)
+                    
+                    # Logic Export
+                    AlcLogicHelper.Export(self,obj,scnobj,name)
+                    
                 else: #if alctype=="object" or alctype=="sprite" or anything else...
                     #find the sceneobject or create it
                     scnobj = plSceneObject.FindCreate(self.prp,name)

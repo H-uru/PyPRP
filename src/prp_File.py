@@ -128,6 +128,8 @@ class PrpObject:
                 self.data=plOmniLightInfo(self)
             elif self.type==0x0057:
                 self.data=plSpotLightInfo(self)
+            elif self.type==0x0067:
+                self.data=plOccluder(self)
             elif self.type==0x006A:
                 self.data=plLimitedDirLightInfo(self)
             elif self.type==0x006C:

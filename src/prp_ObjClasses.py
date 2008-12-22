@@ -1638,6 +1638,90 @@ class plHKSubWorld(plSynchedObject):
         self.fSubworldOffset.write(s)
         s.Write32(self.fSomeOddData)
 
+class plOccluder(plObjInterface):
+    def __init__(self, parent=None, name="unnamed", type=0x0067): # [0x0067]
+        plObjInterface.__init__(self, parent, name, type)
+        self.fWorldBounds = hsBounds3Ext()
+        self.fPriority = float()
+        self.fPolyList = [] #plCullPoly()
+        self.fSceneNode = UruObjectRef(self.getVersion())
+        self.fVisRegions = [] #UruObjectRef()
+        
+    def _Find(page,name):
+        return page.find(0x0067,name,0)
+    Find = staticmethod(_Find)
+
+    def _FindCreate(page,name):
+        return page.find(0x0067,name,1)
+    FindCreate = staticmethod(_FindCreate)
+    
+    def _Export(page, obj, scnobj, name, sceneNode):
+        Occluder = plOccluder.FindCreate(page, name)
+        Occluder.data.export_obj(obj, scnobj)
+        Occluder.data.fSceneNode = sceneNode
+        Occluder.data.parentref = scnobj.data.getRef()
+        # attach to sceneobject
+        print "Appending occluder [%s] to sceneobject [%s]" % (Occluder.data.Key.name, scnobj.data.Key.name)
+        scnobj.data.data1.append(Occluder.data.getRef())
+    Export = staticmethod(_Export)
+    
+    def read(self, stream):
+        plObjInterface.read(self, stream)
+        self.fWorldBounds.read(stream)
+        stream.WriteFloat(self.fPriority)
+        for i in range(stream.ReadShort()):
+            newPoly = plCullPoly()
+            newPoly.read(stream)
+            self.fPolyList.append(newPoly)
+        self.fSceneNode.read(stream)
+        for i in range(stream.ReadShort()):
+            newVisRegion = UruObjectRef(self.getVersion())
+            newVisRegion.read(stream)
+            self.fVisRegions.append(newVisRegion)
+    
+    def write(self, stream):
+        plObjInterface.write(self, stream)
+        self.fWorldBounds.write(stream)
+        stream.WriteFloat(self.fPriority)
+        stream.WriteShort(len(self.fPolyList))
+        for poly in self.fPolyList:
+            poly.write(stream)
+        # uhm, this is The scene node
+        self.fSceneNode.write(stream)
+        stream.WriteShort(len(self.fVisRegions))
+        for visRegion in self.fVisRegions:
+            visRegion.write(stream)
+            
+    def export_obj(self, obj, scnobj):
+        tmatrix = getMatrix(obj)
+        tmatrix.transpose()
+        for face in obj.data.faces:
+            if (len(face.v) > 0):
+                # reversed uru space
+                Nor = tmatrix.rotationPart().invert().transpose() * Blender.Mathutils.Vector(face.no) * -1
+                Nor.normalize()
+                # transform verts into world space (transposed for uru's reversed space)
+                Verts = []
+                for v in face.v:
+                    vertVec = tmatrix * Blender.Mathutils.Vector(v.co.x, v.co.y, v.co.z)
+                    Verts.append(vertVec)
+                    # this is mightiliy annoying, why can't these use subscripting? :P
+                    if(self.fWorldBounds.min.x > vertVec.x):
+                        self.fWorldBounds.min.x = vertVec.x
+                    if(self.fWorldBounds.min.y > vertVec.y):
+                        self.fWorldBounds.min.y = vertVec.y
+                    if(self.fWorldBounds.min.z > vertVec.z):
+                        self.fWorldBounds.min.z = vertVec.z
+                    if(self.fWorldBounds.max.x < vertVec.x):
+                        self.fWorldBounds.max.x = vertVec.x
+                    if(self.fWorldBounds.max.y < vertVec.y):
+                        self.fWorldBounds.max.y = vertVec.y
+                    if(self.fWorldBounds.max.z < vertVec.z):
+                        self.fWorldBounds.max.z = vertVec.z
+                newPoly = plCullPoly()
+                newPoly.export_face(Verts, Nor)
+                self.fPolyList.append(newPoly)
+
 class plPhysicalSndGroup(hsKeyedObject):
     fSoundGroup = \
     { \
