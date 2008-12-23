@@ -93,7 +93,11 @@ class mfs:
             f.mtime=status.st_mtime
             #print "Computing checksum for %s" %f.fullpath
             read=file(f.fullpath,"rb")
-            md5obj=md5.new(read.read())
+            md5obj=md5.new()
+            chunk="x"
+            while chunk!="":
+                chunk=read.read(4096)
+                md5obj.update(chunk)
             f.md5=md5obj.hexdigest()
             f.md5bin=md5obj.digest()
             del md5obj
