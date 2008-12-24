@@ -103,7 +103,12 @@ class mfs:
             del md5obj
             read.seek(0)
             if cryptoworks:
-                f.sha1=SHA.new(read.read()).hexdigest()
+                shaobj=SHA.new()
+                chunk="x"
+                while chunk!="":
+                    chunk=read.read(4096)
+                    shaobj.update(chunk)
+                f.sha1=shaobj.hexdigest()
             else:
                 "Cannot compute SHA checksum, Please install the Python Crypto Toolkit"
             read.close()
