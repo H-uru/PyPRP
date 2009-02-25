@@ -1498,8 +1498,10 @@ class plHKPhysical(plPhysical):
             else:
                 if coltype == "storepos":
                     self.gColType = plHKPhysical.Collision["cStorePosition"]
+                    self.gFlagsRespond = 0x03800000
                 elif coltype == "resetpos":
                     self.gColType = plHKPhysical.Collision["cResetPosition"]
+                    self.gFlagsRespond = 0x03800000
                 elif coltype == "detect":
                     self.gColType = plHKPhysical.Collision["cDetector"]
 
@@ -1507,7 +1509,6 @@ class plHKPhysical(plPhysical):
                     self.gColType = plHKPhysical.Collision["cDetector"]
                     self.fProps[plSimulationInterface.plSimulationProperties["kWarp"]] = 1
                     self.fLOSDB = plHKPhysical.plLOSDB["kLOSDBUIItems"]
-
                 else: # if coltype == "none":
                     self.gColType = plHKPhysical.Collision["cNone"]
 
