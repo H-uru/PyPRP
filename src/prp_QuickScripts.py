@@ -82,7 +82,6 @@ def QuickScript_Footstep(obj):
     rgntype = getTextPropertyOrDefault(obj,"regiontype",rgntype)
 
     if rgntype == "footstep":
-
         surfaces = FindInDict(objscript,"region.surfaces",None)
         if surfaces is None:
             surface = FindInDict(objscript,"region.surface",None)
@@ -93,8 +92,13 @@ def QuickScript_Footstep(obj):
         if not surfaces is None and type(surfaces) == list:
             print "  [QuickScript - Footstep]"
 
-            # Build up the required script
+            # Force the object to type region if needed
+            if alctype != "region":
+                StoreInDict(objscript,"type","region")
+            # And set the region type to logic just in case
+            StoreInDict(objscript,"region.type","logic")
 
+            # Build up the required script
             modtxt  = "- tag: Enter_Ft\n"
             modtxt += "  flags:\n"
             modtxt += "    - multitrigger\n"
@@ -107,7 +111,6 @@ def QuickScript_Footstep(obj):
             modtxt += "  actions:\n"
             modtxt += "    - type: responder\n"
             modtxt += "      ref: $FootSnd\n"
-            modtxt += "\n"
             modtxt += "- tag: Exit_Ft\n"
             modtxt += "  flags:\n"
             modtxt += "    - multitrigger\n"
@@ -120,32 +123,37 @@ def QuickScript_Footstep(obj):
             modtxt += "  actions:\n"
             modtxt += "    - type: responder\n"
             modtxt += "      ref: $FootSnd\n"
-            modtxt += "\n"
 
             acttxt  = "type: responder\n"
             acttxt += "tag: FootSnd\n"
             acttxt += "responder:\n"
-            acttxt += "  states:\n"
-            acttxt += "    - cmds:\n"
+            acttxt += "    states:\n"
+            acttxt += "      - cmds:\n"
         # make a list of commands for each footstep sound, and set the option to append for each
-            # command after the first
+        # command after the first.
+        # D'Lanor: That is not what it did > corrected so that it follows the above specs.
+        # (whether correct or not)
 
-            first = False
+            first = True
             for surface in list(surfaces):
-                acttxt += "        - type: armatureeffectmsg\n"
-                acttxt += "          params:\n"
-                acttxt += "              surface: " + str(surface) + "\n"
-                if not first:
-                    acttxt += "              append: false\n"
+                acttxt += "          - type: armatureeffectmsg\n"
+                acttxt += "            params:\n"
+                acttxt += "                surface: " + str(surface) + "\n"
+                if first:
+                    acttxt += "                append: false\n"
+                    first = False
                 else:
-                    acttxt += "              append: true\n"
+                    acttxt += "                append: true\n"
 
-            acttxt += "          waiton: -1\n"
-            acttxt += "      nextstate: 0\n"
-            acttxt += "      waittocmd: 0\n"
-            acttxt += "  curstate: 0\n"
-            acttxt += "  flags:\n"
-            acttxt += "    - detecttrigger\n"
+            acttxt += "            waiton: -1\n"
+            acttxt += "        nextstate: 0\n"
+            acttxt += "        waittocmd: 0\n"
+            acttxt += "    curstate: 0\n"
+            acttxt += "    flags:\n"
+            acttxt += "      - detecttrigger\n"
+
+            print "Resulting Code for .logic.modifiers:\n",modtxt
+            print "Resulting Code for .logic.actions:\n",acttxt
 
             # Parse the code
             myactscript = AlcScript(acttxt).GetRootScript()
@@ -179,7 +187,6 @@ def QuickScript_SoundRegion(obj):
     rgntype = getTextPropertyOrDefault(obj,"regiontype",rgntype)
 
     if rgntype == "soundregion":
-
         emitters = FindInDict(objscript,"region.soundemitters",None)
         if emitters is None:
             emitter = FindInDict(objscript,"region.soundemitter",None)
@@ -190,13 +197,20 @@ def QuickScript_SoundRegion(obj):
         if not emitters is None and type(emitters) == list:
             print "  [QuickScript - SoundRegion]"
 
-            # Build up the required script
+            # Force the object to type region if needed
+            if alctype != "region":
+                StoreInDict(objscript,"type","region")
+            # And set the region type to logic just in case
+            StoreInDict(objscript,"region.type","logic")
 
+            # Build up the required script
             modtxt  = "- tag: Enter_SndRgn\n"
             modtxt += "  flags:\n"
             modtxt += "    - multitrigger\n"
             modtxt += "  activators:\n"
             modtxt += "    - type: objectinvolume\n"
+            modtxt += "      triggers:\n"
+            modtxt += "        - enter\n"
             modtxt += "  conditions:\n"
             modtxt += "    - type: volumesensor\n"
             modtxt += "      satisfied: true\n"
@@ -204,12 +218,13 @@ def QuickScript_SoundRegion(obj):
             modtxt += "  actions:\n"
             modtxt += "    - type: responder\n"
             modtxt += "      ref: $SndRgn\n"
-            modtxt += "\n"
             modtxt += "- tag: Exit_SndRgn\n"
             modtxt += "  flags:\n"
             modtxt += "    - multitrigger\n"
             modtxt += "  activators:\n"
             modtxt += "    - type: objectinvolume\n"
+            modtxt += "      triggers:\n"
+            modtxt += "        - exit\n"
             modtxt += "  conditions:\n"
             modtxt += "    - type: volumesensor\n"
             modtxt += "      satisfied: true\n"
@@ -217,41 +232,43 @@ def QuickScript_SoundRegion(obj):
             modtxt += "  actions:\n"
             modtxt += "    - type: responder\n"
             modtxt += "      ref: $SndRgn\n"
-            modtxt += "\n"
 
             acttxt  = "type: responder\n"
             acttxt += "tag: SndRgn\n"
             acttxt += "responder:\n"
-            acttxt += "  states:\n"
-            acttxt += "    - cmds:\n"
-            acttxt += "        - type: soundmsg\n"
-            acttxt += "          params:\n"
-            acttxt += "              receivers:\n"
-        for emitter in list(emitters):
-            emitscript = AlcScript.objects.FindOrCreate(emitter)
-            emitvolume = FindInDict(emitscript,"sound.volume",1)
-            acttxt += "                - 0011:" + str(emitter) + "\n"
-            acttxt += "              cmds:\n"
-            acttxt += "                - play\n"
-            acttxt += "                - setvolume\n"
-            acttxt += "              volume: " + str(emitvolume) + "\n"
-            acttxt += "          waiton: -1\n"
-            acttxt += "      nextstate: 1\n"
-            acttxt += "      waittocmd: 0\n"
-            acttxt += "    - cmds:\n"
-            acttxt += "        - type: soundmsg\n"
-            acttxt += "          params:\n"
-            acttxt += "              receivers:\n"
-        for emitter in list(emitters):
-            acttxt += "                - 0011:" + str(emitter) + "\n"
-            acttxt += "              cmds:\n"
-            acttxt += "                - stop\n"
-            acttxt += "          waiton: -1\n"
-            acttxt += "      nextstate: 0\n"
-            acttxt += "      waittocmd: 0\n"
-            acttxt += "  curstate: 0\n"
-            acttxt += "  flags:\n"
-            acttxt += "    - detecttrigger\n"
+            acttxt += "    states:\n"
+            acttxt += "      - cmds:\n"
+            for emitter in list(emitters):
+                emitscript = AlcScript.objects.FindOrCreate(emitter)
+                emitvolume = FindInDict(emitscript,"sound.volume",1)
+                acttxt += "          - type: soundmsg\n"
+                acttxt += "            params:\n"
+                acttxt += "                receivers:\n"
+                acttxt += "                  - 0011:" + str(emitter) + "\n"
+                acttxt += "                cmds:\n"
+                acttxt += "                  - play\n"
+                acttxt += "                  - setvolume\n"
+                acttxt += "                volume: " + str(emitvolume) + "\n"
+                acttxt += "            waiton: -1\n"
+            acttxt += "        nextstate: 1\n"
+            acttxt += "        waittocmd: 0\n"
+            acttxt += "      - cmds:\n"
+            for emitter in list(emitters):
+                acttxt += "          - type: soundmsg\n"
+                acttxt += "            params:\n"
+                acttxt += "                receivers:\n"
+                acttxt += "                  - 0011:" + str(emitter) + "\n"
+                acttxt += "                cmds:\n"
+                acttxt += "                  - stop\n"
+                acttxt += "            waiton: -1\n"
+            acttxt += "        nextstate: 0\n"
+            acttxt += "        waittocmd: 0\n"
+            acttxt += "    curstate: 0\n"
+            acttxt += "    flags:\n"
+            acttxt += "      - detecttrigger\n"
+
+            print "Resulting Code for .logic.modifiers:\n",modtxt
+            print "Resulting Code for .logic.actions:\n",acttxt
 
             # Parse the code
             myactscript = AlcScript(acttxt).GetRootScript()
@@ -288,6 +305,9 @@ def QuickScript_SelfAnimationRegion(obj):
         animation = getTextPropertyOrDefault(obj,"selfanimation",None)
         animation = FindInDict(objscript,"quickscript.selfanimation.animation",animation)
 
+        animtarget = getTextPropertyOrDefault(obj,"animtarget",None)
+        animtarget = FindInDict(objscript,"quickscript.selfanimation.animtarget",animtarget)
+
         if rgntype == "logic" and not animation is None and type(animation) == str:
             print "  [QuickScript - SelfAnimation]"
 
@@ -311,6 +331,13 @@ def QuickScript_SelfAnimationRegion(obj):
             acttxt += "tag: SelfAnim\n"
             acttxt += "oneshot: \n"
             acttxt += "    animation: " + str(animation) + "\n"
+            # Set seekpoint if any. Default = obj center
+            # (no need to set default in the quickscript it seems)
+            if not animtarget is None:
+                acttxt += "    remote: " + str(animtarget) + "\n"
+
+            print "Resulting Code for .logic.modifiers:\n",modtxt
+            print "Resulting Code for .logic.actions:\n",acttxt
 
             # Parse the code
             myactscript = AlcScript(acttxt).GetRootScript()
@@ -739,9 +766,11 @@ def QuickScript_StateAnimation(obj):
     region =       FindInDict(objscript,"quickscript.stateanimation.region",None)
     sdlname =      FindInDict(objscript,"quickscript.stateanimation.sdlname",None)
     facevalue =    FindInDict(objscript,"quickscript.stateanimation.facevalue",None)
+    clicktimeout = FindInDict(objscript,"quickscript.stateanimation.clicktimeout",None)
     #Get avatar animation variables
     avanimation =  FindInDict(objscript,"quickscript.stateanimation.avatar.animation",None)
     animtarget =   FindInDict(objscript,"quickscript.stateanimation.avatar.animtarget",None)
+    animmarker =   FindInDict(objscript,"quickscript.stateanimation.avatar.marker",None)
     #Get forewards animation variables. Spelling consistent with full alcscript ;)
     fwanimation =  FindInDict(objscript,"quickscript.stateanimation.forewards.animation",None)
     fwanimsound =  FindInDict(objscript,"quickscript.stateanimation.forewards.animsound",None)
@@ -796,6 +825,10 @@ def QuickScript_StateAnimation(obj):
         modtxt += "    - type: pythonfile\n"
         modtxt += "      ref: $BoolToggle\n"
 
+        if not clicktimeout is None:
+            modtxt += "    - type: responder\n"
+            modtxt += "      ref: $NoClick\n"
+
         #this should be turned into a sdl quickscript later
         acttxt  = "- type: pythonfile\n"
         acttxt += "  tag: BoolToggle\n"
@@ -844,8 +877,11 @@ def QuickScript_StateAnimation(obj):
             acttxt += "                 receivers:\n"
             acttxt += "                   - oneshotmod:" + str(animtarget) + "\n"
             acttxt += "                 callbacks:\n"
-            acttxt += "                   - marker: " + str(avanimation) + "\n"
-            acttxt += "                     receiver: respondermod:$AnimFW\n"
+            if not animmarker is None:
+                acttxt += "                   - marker: " + str(animmarker) + "\n"
+                acttxt += "                     receiver: respondermod:$AnimFW\n"
+            else:
+                acttxt += "                   - receiver: respondermod:$AnimFW\n"
             acttxt += "                     user: 0\n"
             acttxt += "             waiton: -1\n"
 
@@ -947,8 +983,11 @@ def QuickScript_StateAnimation(obj):
             acttxt += "                 receivers:\n"
             acttxt += "                   - oneshotmod:" + str(animtarget) + "\n"
             acttxt += "                 callbacks:\n"
-            acttxt += "                   - marker: " + str(avanimation) + "\n"
-            acttxt += "                     receiver: respondermod:$AnimBW\n"
+            if not animmarker is None:
+                acttxt += "                   - marker: " + str(animmarker) + "\n"
+                acttxt += "                     receiver: respondermod:$AnimBW\n"
+            else:
+                acttxt += "                   - receiver: respondermod:$AnimBW\n"
             acttxt += "                     user: 0\n"
             acttxt += "             waiton: -1\n"
 
@@ -1033,6 +1072,44 @@ def QuickScript_StateAnimation(obj):
         acttxt += "     curstate: 0\n"
         acttxt += "     flags:\n"
         acttxt += "       - detecttrigger\n"
+
+    #temporarily disable clickable if requested
+        if not clicktimeout is None:
+            acttxt += "- type: responder\n"
+            acttxt += "  tag: NoClick\n"
+            acttxt += "  responder:\n"
+            acttxt += "     states:\n"
+            acttxt += "       - cmds:\n"
+            acttxt += "           - type: enablemsg\n"
+            acttxt += "             params:\n"
+            acttxt += "                 receivers:\n"
+            acttxt += "                   - logicmod:$StateAnim\n"
+            acttxt += "                 cmds:\n"
+            acttxt += "                   - physical\n"
+            acttxt += "                   - disable\n"
+            acttxt += "             waiton: -1\n"
+            acttxt += "           - type: timercallbackmsg\n"
+            acttxt += "             params:\n"
+            acttxt += "                 receivers:\n"
+            acttxt += "                   - respondermod:$NoClick\n"
+            acttxt += "                 id: 0\n"
+            acttxt += "                 time: " + str(clicktimeout) + "\n"
+            acttxt += "             waiton: -1\n"
+            acttxt += "           - type: enablemsg\n"
+            acttxt += "             params:\n"
+            acttxt += "                 receivers:\n"
+            acttxt += "                   - logicmod:$StateAnim\n"
+            acttxt += "                 cmds:\n"
+            acttxt += "                   - physical\n"
+            acttxt += "                   - enable\n"
+            acttxt += "             waiton: 0\n"
+            acttxt += "         nextstate: 0\n"
+            acttxt += "         waittocmd:\n"
+            acttxt += "           - key: 0\n"
+            acttxt += "             msg: 0\n"
+            acttxt += "     curstate: 0\n"
+            acttxt += "     flags:\n"
+            acttxt += "       - detecttrigger\n"
 
 
         print "Resulting Code for .logic.modifiers:\n",modtxt
