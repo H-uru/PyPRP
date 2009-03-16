@@ -359,8 +359,14 @@ class plDirectionalLightInfo(plLightInfo):
 
         #Set some shadow flags
         if lamp.mode & (Lamp.Modes["RayShadow"]):
-            print "  >>> kLPCastShadows <<<"
-            self.BitFlags[plLightInfo.Props["kLPCastShadows"]] = 1
+            if prp_Config.ver2==11:
+            #Added because UU crashes on kLPCastShadows. Shadow is cast anyway because of kSelfShadow.
+            #So do we need this flag at all?
+                print "  >>> !kLPCastShadows <<< UU compatible"
+                self.BitFlags[plLightInfo.Props["kLPCastShadows"]] = 0
+            else:
+                print "  >>> kLPCastShadows <<<"
+                self.BitFlags[plLightInfo.Props["kLPCastShadows"]] = 1
         else:
             print "  >>> !kLPCastShadows <<<"
             self.BitFlags[plLightInfo.Props["kLPCastShadows"]] = 0
@@ -681,7 +687,7 @@ class plShadowMaster(plObjInterface):    # Type: 0x00D3
 
         self.fAttenDist = 10
 
-        self.fPower = lamp.energy
+        self.fPower = lamp.energy * 2
         print "  Power: %f" % self.fPower
         pass
 
