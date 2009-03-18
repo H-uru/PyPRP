@@ -1173,8 +1173,9 @@ class plLayer(plLayerInterface):             # Type 0x06
 
         # If we have two vertex color layers, the one named Alpha is used as alpha layer - if we have vertex alpha,
         # we need to have the alpha blending flag set, and we need to have
-        if "Alpha" in mesh.getColorLayerNames():
-            self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlpha"]
+        for colLayerName in mesh.getColorLayerNames():
+            if(colLayerName.lower() == "alpha"):
+                self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlpha"]
 
 
     def FromUvTex(self,image,obj):
