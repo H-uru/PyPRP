@@ -659,6 +659,34 @@ class plSpan:
         "kPartialSort"         : 0x800000, \
         "kVisLOS"             : 0x1000000  \
     }
+    
+    scriptProps = \
+    { \
+        "litematerial"          : 0x0, \
+        "nodraw"                : 0x1, \
+        "noshadowcast"          : 0x2, \
+        "facessortable"         : 0x4, \
+        "volatile"              : 0x8, \
+        "waterheight"           : 0x10, \
+        "runtimelight"          : 0x20, \
+        "reversesort"           : 0x40, \
+        "haspermalights"        : 0x80, \
+        "haspermaprojs"         : 0x100, \
+        "litevtxpreshaded"      : 0x200, \
+        "litevtxnonpreshaded"   : 0x400, \
+        "liteprojection"        : 0x800, \
+        "liteshadowerase"       : 0x1000, \
+        "liteshadow"            : 0x2000, \
+        "mathasspecular"        : 0x10000, \
+        "projasvtx"             : 0x20000, \
+        "skipprojection"        : 0x40000, \
+        "noshadow"              : 0x80000, \
+        "forceshadow"           : 0x100000, \
+        "disablenormal"         : 0x200000, \
+        "character"             : 0x400000, \
+        "partialsort"           : 0x800000, \
+        "vislos"                : 0x1000000  \
+    }
 
     plSpanType = \
     {
