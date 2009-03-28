@@ -1364,8 +1364,17 @@ class plDrawableSpans(plDrawable):
                 icicle.fProps |= (plSpan.Props["kWaterHeight"] | plSpan.Props["kLiteVtxNonPreshaded"] | plSpan.Props["kPropRunTimeLight"] | plSpan.Props["kPropReverseSort"] | plSpan.Props["kPropNoShadow"])
                 icicle.fWaterHeight = obj.loc[2]
             
-            if not FindInDict(script, "visual.icicle", 0) == 0:
-                icicle.fProps = int(FindInDict(script, "visual.icicle", 0))
+            flags = FindInDict(script,"visual.icicle",None)
+            if type(flags) == list:
+                icicle.fProps = 0
+                for flag in flags:
+                    if flag.lower() in plSpan.scriptProps:
+                        print "    set flag: " + flag.lower()
+                        icicle.fProps |= plSpan.scriptProps[flag.lower()]
+            elif type(flags) == int:
+                # the old way
+                print "Warning: setting icicle properties as int is depreciated"
+                icicle.fProps = flags
 
 
             # Store info about the Vertex Storage
