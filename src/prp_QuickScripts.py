@@ -217,7 +217,7 @@ def QuickScript_SoundRegion(obj):
             modtxt += "      direction: enter\n"
             modtxt += "  actions:\n"
             modtxt += "    - type: responder\n"
-            modtxt += "      ref: $SndRgn\n"
+            modtxt += "      ref: $Enter_SndRgn\n"
             modtxt += "- tag: Exit_SndRgn\n"
             modtxt += "  flags:\n"
             modtxt += "    - multitrigger\n"
@@ -231,41 +231,48 @@ def QuickScript_SoundRegion(obj):
             modtxt += "      direction: exit\n"
             modtxt += "  actions:\n"
             modtxt += "    - type: responder\n"
-            modtxt += "      ref: $SndRgn\n"
+            modtxt += "      ref: $Exit_SndRgn\n"
 
-            acttxt  = "type: responder\n"
-            acttxt += "tag: SndRgn\n"
-            acttxt += "responder:\n"
-            acttxt += "    states:\n"
-            acttxt += "      - cmds:\n"
+            acttxt  = "- type: responder\n"
+            acttxt += "  tag: Enter_SndRgn\n"
+            acttxt += "  responder:\n"
+            acttxt += "      states:\n"
+            acttxt += "        - cmds:\n"
             for emitter in list(emitters):
                 emitscript = AlcScript.objects.FindOrCreate(emitter)
                 emitvolume = FindInDict(emitscript,"sound.volume",1)
-                acttxt += "          - type: soundmsg\n"
-                acttxt += "            params:\n"
-                acttxt += "                receivers:\n"
-                acttxt += "                  - 0011:" + str(emitter) + "\n"
-                acttxt += "                cmds:\n"
-                acttxt += "                  - play\n"
-                acttxt += "                  - setvolume\n"
-                acttxt += "                volume: " + str(emitvolume) + "\n"
-                acttxt += "            waiton: -1\n"
-            acttxt += "        nextstate: 1\n"
-            acttxt += "        waittocmd: 0\n"
-            acttxt += "      - cmds:\n"
+                acttxt += "            - type: soundmsg\n"
+                acttxt += "              params:\n"
+                acttxt += "                  receivers:\n"
+                acttxt += "                    - 0011:" + str(emitter) + "\n"
+                acttxt += "                  cmds:\n"
+                acttxt += "                    - play\n"
+                acttxt += "                    - setvolume\n"
+                acttxt += "                  volume: " + str(emitvolume) + "\n"
+                acttxt += "              waiton: -1\n"
+            acttxt += "          nextstate: 0\n"
+            acttxt += "          waittocmd: 0\n"
+            acttxt += "      curstate: 0\n"
+            acttxt += "      flags:\n"
+            acttxt += "        - detecttrigger\n"
+            acttxt += "- type: responder\n"
+            acttxt += "  tag: Exit_SndRgn\n"
+            acttxt += "  responder:\n"
+            acttxt += "      states:\n"
+            acttxt += "        - cmds:\n"
             for emitter in list(emitters):
-                acttxt += "          - type: soundmsg\n"
-                acttxt += "            params:\n"
-                acttxt += "                receivers:\n"
-                acttxt += "                  - 0011:" + str(emitter) + "\n"
-                acttxt += "                cmds:\n"
-                acttxt += "                  - stop\n"
-                acttxt += "            waiton: -1\n"
-            acttxt += "        nextstate: 0\n"
-            acttxt += "        waittocmd: 0\n"
-            acttxt += "    curstate: 0\n"
-            acttxt += "    flags:\n"
-            acttxt += "      - detecttrigger\n"
+                acttxt += "            - type: soundmsg\n"
+                acttxt += "              params:\n"
+                acttxt += "                  receivers:\n"
+                acttxt += "                    - 0011:" + str(emitter) + "\n"
+                acttxt += "                  cmds:\n"
+                acttxt += "                    - stop\n"
+                acttxt += "              waiton: -1\n"
+            acttxt += "          nextstate: 0\n"
+            acttxt += "          waittocmd: 0\n"
+            acttxt += "      curstate: 0\n"
+            acttxt += "      flags:\n"
+            acttxt += "        - detecttrigger\n"
 
             print "Resulting Code for .logic.modifiers:\n",modtxt
             print "Resulting Code for .logic.actions:\n",acttxt
@@ -277,10 +284,11 @@ def QuickScript_SoundRegion(obj):
             # Add the parsed script to the correct space in the dictionary, or create that space
             actscript = FindInDict(objscript,"logic.actions",None)
             if actscript is None or type(actscript) != list:
-                StoreInDict(objscript,"logic.actions",[myactscript])
+                StoreInDict(objscript,"logic.actions", myactscript)
             else:
-                actscript.append(myactscript)
-
+                for script in myactscript:
+                    actscript.append(script)
+    
             modscript = FindInDict(objscript,"logic.modifiers",None)
             if actscript is None or type(modscript) != list:
                 StoreInDict(objscript,"logic.modifiers",mymodscript)
