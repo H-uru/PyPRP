@@ -1611,6 +1611,19 @@ class plDrawInterface(plObjInterface):
         if len(mesh.getVertGroupNames()) > 0:
             weightCount = 1 # Blender supports only one weight :)
         
+        # if the object has modifiers, apply them
+        if len(obj.modifiers) > 0:
+            if len(mesh.getVertGroupNames()) == 0:
+                mesh = Mesh.New()
+                # ignore the OB/ME switch and only use materials linked to the mesh, as with modifier-less objects
+                savedcolbits = obj.colbits
+                obj.colbits = 0
+                mesh.getFromObject(obj)
+                obj.colbits = savedcolbits
+            else:
+                print "  WARNING: This object has both modifiers (" + ", ".join(m.name for m in obj.modifiers) + ") and vertex groups (" + ", ".join(mesh.getVertGroupNames()) + "),"
+                print "           which is not supported by PyPRP. Ignoring the modifiers."
+        
         # recompute the normals if requested (they will be overwritten with Blender-computed normals again next time edit mode is exited for the mesh)
         if getTextPropertyOrDefault(obj, "renormal", FindInDict(objscript, "visual.renormal", None)) == "areaweighted":
             # compute vertex normals as the average of the face normals of all faces adjacent to the vertex, weighted by face area
