@@ -35,13 +35,7 @@ from prp_Types import *
 
 class hsStream:
     def __init__(self,fl,mode="rb"):
-        self.file = file(fl,mode)
-        self.fs = None
-        if (mode=="rb"):
-            self.fs = cStringIO.StringIO(self.file.read())
-            self.file.close()
-        elif (mode=="wb"):
-            self.fs = self.file
+        self.fs = file(fl,mode)
 
     #-Read Functions-#
     def ReadBool(self):
