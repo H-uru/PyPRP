@@ -2769,7 +2769,7 @@ class plDynamicEnvMap(plCubicRenderTarget):
         self.fHither = FindInDict(objscript,'dynenv.hither',0.3)
         self.fYon = FindInDict(objscript,'dynenv.yon',10000)
         self.fIncCharacters = FindInDict(objscript,'dynenv.inccharacters',0)
-        self.fPos = Vertex(obj.loc[0], obj.loc[1], obj.loc[2])
+        self.fPos = Vertex(*obj.getLocation("worldspace"))
         self.fRefreshRate = FindInDict(objscript,'dynenv.refreshrate',0.5)
         # rendertarget props
         self.fWidth = FindInDict(objscript,'dynenv.width',256)
