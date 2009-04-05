@@ -1473,6 +1473,17 @@ class plDrawableSpans(plDrawable):
 # As the draw interface is linked closely to the DrawableSpans, it is included here:
 
 class plDrawInterface(plObjInterface):
+
+    #Actually part of plRenderLevel, but we handle it here
+    scriptRenderLevels = \
+    { \
+        "opaque"  : 0x0, \
+        "fb"      : 0x1, \
+        "defrend" : 0x2, \
+        "blend"   : 0x4, \
+        "late"    : 0x8
+    }
+    
     def __init__(self,parent,name="unnamed",type=0x0016):
         plObjInterface.__init__(self,parent,name,type)
         self.reset() # contains initialization of f-variables
@@ -1623,7 +1634,7 @@ class plDrawInterface(plObjInterface):
             else:
                 print "  WARNING: This object has both modifiers (" + ", ".join(m.name for m in obj.modifiers) + ") and vertex groups (" + ", ".join(mesh.getVertGroupNames()) + "),"
                 print "           which is not supported by PyPRP. Ignoring the modifiers."
-        
+
         # recompute the normals if requested (they will be overwritten with Blender-computed normals again next time edit mode is exited for the mesh)
         if getTextPropertyOrDefault(obj, "renormal", FindInDict(objscript, "visual.renormal", None)) == "areaweighted":
             # compute vertex normals as the average of the face normals of all faces adjacent to the vertex, weighted by face area
@@ -1800,12 +1811,13 @@ class plDrawInterface(plObjInterface):
                 Suff = str(obj.passIndex)
                 IntSuff = int(Suff)
 
-                if Suff != '0':
-                    # this seems to cause issues for my ages. Consider using sort faces (vs spans), or have an option for removing this?
-                    Criteria |= plDrawable.Crit["kCritSortSpans"] | plDrawable.Crit["kCritSortFaces"]
-                    Props = plDrawable.Props["kPropSortSpans"] | plDrawable.Props["kPropSortFaces"]
-                else:
-                    Suff = ''
+                #if Suff != '0':
+                #    # this seems to cause issues for my ages. Consider using sort faces (vs spans), or have an option for removing this?
+                #    Criteria |= plDrawable.Crit["kCritSortSpans"] | plDrawable.Crit["kCritSortFaces"]
+                #    Props = plDrawable.Props["kPropSortSpans"] | plDrawable.Props["kPropSortFaces"]
+                #else:
+                #    Suff = ''
+                #If we force this, we could break things with incorrect guesses... ESPECIALLY if they use cluster-span-objects
 
                 if blendSpan:
                     if IntSuff > 1:
@@ -1827,14 +1839,50 @@ class plDrawInterface(plObjInterface):
                 
                 #DO NOT TOUCH!!!
                 #unless you know what *every* flag does and what needs to be set for each object!
-                if (FindInDict(objscript, "visual.drawable", 0) != 0):
-                    RenderLevel.fLevel = int(FindInDict(objscript, "visual.drawable", 0))
+                if (FindInDict(objscript, "visual.renderlevel", 0) != 0):
+                    MAJ = 0
+                    MIN = 0
+                    
+                    major = FindInDict(objscript, "visual.renderlevel.major", [])
+                    if type(major) == list:
+                        for flag in major:
+                            if flag.lower() in plDrawInterface.scriptRenderLevels:
+                                MAJ |= plDrawInterface.scriptRenderLevels[flag.lower()]
+
+                    minor = FindInDict(objscript, "visual.renderlevel.minor", [])
+                    if type(minor) == list:
+                        for flag in minor:
+                            if flag.lower() in plDrawInterface.scriptRenderLevels:
+                                MIN |= plDrawInterface.scriptRenderLevels[flag.lower()]
+
+                    RenderLevel = plRenderLevel(MAJ,MIN)
                 
-                if (FindInDict(objscript, "visual.criteria", 0) != 0):
-                    Criteria = int(FindInDict(objscript, "visual.criteria", 0))
-                
-                if (FindInDict(objscript, "visual.drawflags", 0) != 0):
-                    Props = int(FindInDict(objscript, "visual.drawflags", 0))
+                flags = FindInDict(objscript, "visual.drawflags", [])
+                if type(flags) == list:
+                    for flag in flags:
+                        if flag.lower() == "sortfaces":
+                            Criteria |= plDrawable.Crit["kCritSortFaces"]
+                            Props |= plDrawable.Props["kPropSortFaces"]
+                        elif flag.lower() == "sortspans":
+                            Criteria |= plDrawable.Crit["kCritSortSpans"]
+                            Props |= plDrawable.Props["kPropSortSpans"]
+                        elif flag.lower() == "character":
+                            Criteria |= plDrawable.Crit["kCritCharacter"]
+                            Props |= plDrawable.Props["kPropCharacter"]
+                        elif flag.lower() == "static":
+                            Criteria |= plDrawable.Crit["kCritStatic"]
+                        elif flag.lower() == "nodraw":
+                            Props |= plDrawable.Props["kPropNoDraw"]
+                        elif flag.lower() == "volatile":
+                            Props |= plDrawable.Props["kPropVolatile"]
+                        elif flag.lower() == "noresort":
+                            Props |= plDrawable.Props["kPropNoReSort"]
+                        elif flag.lower() == "partialsort":
+                            Props |= plDrawable.Props["kPropPartialSort"]
+                        elif flag.lower() == "sortasone":
+                            Props |= plDrawable.Props["kPropSortAsOne"]
+                        elif flag.lower() == "hasvislos":
+                            Props |= plDrawable.Props["kPropHasVisLOS"]
 
                 Name_RenderLevel = "%08x" % RenderLevel.fLevel
                 Name_Crit = "%x" % Criteria
