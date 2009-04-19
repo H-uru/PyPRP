@@ -1923,7 +1923,6 @@ class plDrawInterface(plObjInterface):
                     vr.data.scenenode=SceneNodeRef
                     vr.data.BitFlags.clear()
                     vr.data.BitFlags.SetBit(plVisRegion.VecFlags["kReplaceNormal"])
-                    vr.data.BitFlags.SetBit(plVisRegion.VecFlags["kIsNot"])
                     vr.data.fRegion = volume
                     self.fRegions.append(vr.data.getRef())
 
