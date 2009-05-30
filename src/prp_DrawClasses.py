@@ -1883,6 +1883,19 @@ class plDrawInterface(plObjInterface):
                             Props |= plDrawable.Props["kPropSortAsOne"]
                         elif flag.lower() == "hasvislos":
                             Props |= plDrawable.Props["kPropHasVisLOS"]
+                
+                crit = FindInDict(objscript, "visual.criteria", [])
+                if type(crit) == list:
+                    Criteria = 0
+                    for c in crit:
+                        if c.lower() == "sortfaces":
+                            Criteria |= plDrawable.Crit["kCritSortFaces"]
+                        elif flag.lower() == "sortspans":
+                            Criteria |= plDrawable.Crit["kCritSortSpans"]
+                        elif flag.lower() == "character":
+                            Criteria |= plDrawable.Crit["kCritCharacter"]
+                        elif flag.lower() == "static":
+                            Criteria |= plDrawable.Crit["kCritStatic"]
 
                 Name_RenderLevel = "%08x" % RenderLevel.fLevel
                 Name_Crit = "%x" % Criteria
