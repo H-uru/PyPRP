@@ -965,7 +965,7 @@ class plScalarController(plLeafController):
             buf.Write32(1)
             self.fKeyList.write(buf)
             
-    def export_curve(self, curve, endFrame, convrot=0):
+    def export_curve(self, curve, endFrame, convrot=0, multfact = 1):
         pi = 3.14159265358979
         KeyList = []
         for frm in curve.bezierPoints:
@@ -974,7 +974,7 @@ class plScalarController(plLeafController):
 
             frame.fFrameNum = int(num)
             frame.fFrameTime = num/30.0
-            frame.fValue = frm.pt[1]
+            frame.fValue = frm.pt[1] * multfact
             # if this is a bezier curve, set the flag and add the bez values
             if curve.interpolation == Blender.IpoCurve.InterpTypes.BEZIER:
                 frame.fFlags |= hsKeyFrame.kBezController

@@ -2565,7 +2565,7 @@ class plLayerAnimation(plLayerAnimationBase):
         if (Ipo.MA_COL in ipo):
             curve = ipo[Ipo.MA_COL]
             self.fOpacityCtl = prp_AnimClasses.PrpController(0x022F, self.getVersion()) #plScalarController
-            endFrame = self.fOpacityCtl.data.export_curve(curve, endFrame)
+            endFrame = self.fOpacityCtl.data.export_curve(curve, endFrame, 0, 100)
         else:
             self.fOpacityCtl = prp_AnimClasses.PrpController(0x8000, self.getVersion())
 
