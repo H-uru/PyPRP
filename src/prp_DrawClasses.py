@@ -1890,11 +1890,11 @@ class plDrawInterface(plObjInterface):
                     for c in crit:
                         if c.lower() == "sortfaces":
                             Criteria |= plDrawable.Crit["kCritSortFaces"]
-                        elif flag.lower() == "sortspans":
+                        elif c.lower() == "sortspans":
                             Criteria |= plDrawable.Crit["kCritSortSpans"]
-                        elif flag.lower() == "character":
+                        elif c.lower() == "character":
                             Criteria |= plDrawable.Crit["kCritCharacter"]
-                        elif flag.lower() == "static":
+                        elif c.lower() == "static":
                             Criteria |= plDrawable.Crit["kCritStatic"]
 
                 Name_RenderLevel = "%08x" % RenderLevel.fLevel
