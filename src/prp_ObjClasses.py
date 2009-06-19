@@ -449,6 +449,13 @@ class plCoordinateInterface(plObjInterface):
                 parentmtx.invert()
                 self.fParentToLocal.set(parentmtx)
 
+                alctype = getTextPropertyOrDefault(obj,"type","object")
+                if alctype == "collider" and obj.rbFlags & Blender.Object.RBFlags["DYNAMIC"]:
+                    self.BitFlags.SetBit(plCoordinateInterface.plCoordinateProperties["kCanEverDelayTransform"])
+                    self.BitFlags.SetBit(plCoordinateInterface.plCoordinateProperties["kDelayedTransformEval"])
+                    self.fLocalToParent.identity()
+                    self.fParentToLocal.identity()
+
         ## Need to add code to detect children....
         for obj2 in objlist:
             parent = obj2.getParent()
@@ -615,7 +622,17 @@ class plSimulationInterface(plObjInterface):
 
             physical.data.fScene=SceneNodeRef
             physical.data.fSceneObject=scnobj.data.getRef()
-            physical.data.export_obj(obj,scnobj,isdynamic)
+            physical.data.export_obj(obj,scnobj,isdynamic)                
+
+            # Check if this is parented to an object without bounds
+            parent = obj.getParent()
+            if parent != None and (parent.rbFlags &
+            Object.RBFlags["BOUNDS"] == 0) and alctype == "collider" and physical.data.fSubWorld.isNull() and isdynamic:
+                parentScnObj = plSceneObject.Find(page,parent.name)
+                parentScnObj.data.simulation=simi.data.getRef()
+                scnobj.data.simulation=UruObjectRef()
+                simi.data.parentref=parentScnObj.data.getRef()
+                physical.data.fSceneObject=parentScnObj.data.getRef()
 
     Export = staticmethod(_Export)
 
