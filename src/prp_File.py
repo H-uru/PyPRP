@@ -28,6 +28,7 @@ from prp_DrawClasses import *
 from prp_CamClasses import *
 from prp_LogicClasses import *
 from prp_Types import *
+from prp_GuiClasses import *
 import struct
 
 class PrpObject:
@@ -166,6 +167,8 @@ class PrpObject:
                 self.data=plSoftVolumeInvert(self)
             elif self.type==0x0096:
                 self.data=plWin32StaticSound(self)
+            elif self.type==0x0098:
+                self.data=pfGUIDialogMod(self)
             elif self.type==0x0099:
                 self.data=plCameraBrain1(self)
             elif self.type==0x009B:
@@ -174,6 +177,8 @@ class PrpObject:
                 self.data=plCameraBrain1_Avatar(self)
             elif self.type==0x009F:
                 self.data=plCameraBrain1_Fixed(self)
+            elif self.type==0x00A1:
+                self.data=pfGUIButtonMod(self)
             elif self.type==0x00A2:
                 self.data=plPythonFileMod(self)
             elif self.type==0x00A4:

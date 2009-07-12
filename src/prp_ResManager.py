@@ -42,6 +42,7 @@ from prp_Functions import *
 from prp_MFSGen import *
 from prp_LogicClasses import *
 from prp_QuickScripts import *
+from prp_GuiClasses import *
 
 class alcUruPage:
     TypeFlags = \
@@ -806,6 +807,10 @@ class alcUruPage:
                     #Export the darn thing
                     pem = plPostEffectMod.FindCreate(self.prp,name)
                     pem.data.export_obj(obj, SceneNodeRef)
+
+                    if FindInDict(objscript, "dialog", False):
+                        gui = pfGUIDialogMod.FindCreate(self.prp,name)
+                        gui.data.export_obj(obj, SceneNodeRef)
 
                 if (alctype == 'camera') or (alctype == 'object'):
                     print ""

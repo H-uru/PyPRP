@@ -50,6 +50,8 @@ class ScriptRefParser:
         "svintersect"   : 0x008B, \
         "svinvert"      : 0x008C, \
         "sittingmod"    : 0x00AE, \
+        "posteffectmod" : 0x007A, \
+        "guibuttonmod"  : 0x00A1, \
     }
 
     def __init__(self,page,basename="",defaulttype = None, allowlist = [],version=5):
