@@ -1045,12 +1045,12 @@ class plLayer(plLayerInterface):             # Type 0x06
                     # first make a calculation of the uv transformation matrix.
                     uvmobj = Blender.Object.New ('Empty')
 
-                    trickscale = mtex.size[2]
                     # now set the scale (and rotation) to the object
-                    uvmobj.SizeX = mtex.size[0] * trickscale
-                    uvmobj.SizeY = mtex.size[1] * trickscale
-                    uvmobj.LocX = mtex.ofs[0]
-                    uvmobj.LocY = mtex.ofs[1]
+                    uvmobj.SizeX = mtex.size[0]
+                    uvmobj.SizeY = mtex.size[1]
+                    # map Blender offsets to Plasma offsets
+                    uvmobj.LocX = 0.5 - 0.5 * mtex.size[0] + mtex.ofs[0]
+                    uvmobj.LocY = 0.5 - 0.5 * mtex.size[1] - mtex.ofs[1]
                     uvm=getMatrix(uvmobj)
                     uvm.transpose()
                     self.fTransform.set(uvm)
@@ -2536,21 +2536,94 @@ class plLayerAnimation(plLayerAnimationBase):
         ipo.channel = chan
         endFrame = 0
 
-        if (Ipo.MA_OFSX in ipo) and (Ipo.MA_OFSY in ipo) and (Ipo.MA_OFSZ in ipo):
+        # both offsets and scales
+        if ((Ipo.MA_OFSX in ipo) and (Ipo.MA_OFSY in ipo) and (Ipo.MA_OFSZ in ipo) and
+            (Ipo.MA_SIZEX in ipo) and (Ipo.MA_SIZEY in ipo) and (Ipo.MA_SIZEZ in ipo) and
+            (len(ipo[Ipo.MA_OFSX].bezierPoints) == len(ipo[Ipo.MA_SIZEX].bezierPoints))):
+
             KeyList = []
 
             # We need to get the list of BezCurves
             # Then get the value for each and create a matrix
-            # Then store that in a frame and store than in the list
+            # Then store that in a frame and store that in the list
             xcurve = ipo[Ipo.MA_OFSX].bezierPoints
             for frm in range(len(xcurve)):
                 frame = prp_AnimClasses.hsMatrix44Key()
                 num = xcurve[frm].pt[0] - 1
                 frame.fFrameNum = int(num)
                 frame.fFrameTime = num/30.0
+                
+               # map dynamic offsets for Plasma
+                ofsX = 0.5 - 0.5 * ipo[Ipo.MA_SIZEX].bezierPoints[frm].pt[1] + xcurve[frm].pt[1]
+                ofsY = 0.5 - 0.5 * ipo[Ipo.MA_SIZEY].bezierPoints[frm].pt[1] - ipo[Ipo.MA_OFSY].bezierPoints[frm].pt[1]
 
                 matx = hsMatrix44()
-                matx.translate((xcurve[frm].pt[1], ipo[Ipo.MA_OFSY].bezierPoints[frm].pt[1], ipo[Ipo.MA_OFSZ].bezierPoints[frm].pt[1]))
+                matx.translate((ofsX, ofsY, 0.0))
+                
+                # use dynamic scale
+                matx.scale(ipo[Ipo.MA_SIZEX].bezierPoints[frm].pt[1], ipo[Ipo.MA_SIZEY].bezierPoints[frm].pt[1], 1.0)
+
+                frame.fValue = matx
+                KeyList.append(frame)
+
+            self.fTransformCtl = prp_AnimClasses.PrpController(0x0234, self.getVersion()) #plMatrix44Controller
+            self.fTransformCtl.data.fKeys = KeyList
+            if xcurve[-1].pt[0] > endFrame:
+                endFrame = xcurve[-1].pt[0]
+        # just offsets
+        elif (Ipo.MA_OFSX in ipo) and (Ipo.MA_OFSY in ipo) and (Ipo.MA_OFSZ in ipo):
+            KeyList = []
+
+            # We need to get the list of BezCurves
+            # Then get the value for each and create a matrix
+            # Then store that in a frame and store that in the list
+            xcurve = ipo[Ipo.MA_OFSX].bezierPoints
+            for frm in range(len(xcurve)):
+                frame = prp_AnimClasses.hsMatrix44Key()
+                num = xcurve[frm].pt[0] - 1
+                frame.fFrameNum = int(num)
+                frame.fFrameTime = num/30.0
+                
+               # map dynamic offsets for Plasma
+                ofsX = 0.5 - 0.5 * mtex.size[0] + xcurve[frm].pt[1]
+                ofsY = 0.5 - 0.5 * mtex.size[1] - ipo[Ipo.MA_OFSY].bezierPoints[frm].pt[1]
+
+                matx = hsMatrix44()
+                matx.translate((ofsX, ofsY, ipo[Ipo.MA_OFSZ].bezierPoints[frm].pt[1]))
+                
+                # use static scale
+                matx.scale(mtex.size[0], mtex.size[1], 1.0)
+
+                frame.fValue = matx
+                KeyList.append(frame)
+
+            self.fTransformCtl = prp_AnimClasses.PrpController(0x0234, self.getVersion()) #plMatrix44Controller
+            self.fTransformCtl.data.fKeys = KeyList
+            if xcurve[-1].pt[0] > endFrame:
+                endFrame = xcurve[-1].pt[0]
+        # just scales
+        elif (Ipo.MA_SIZEX in ipo) and (Ipo.MA_SIZEY in ipo) and (Ipo.MA_SIZEZ in ipo):
+            KeyList = []
+
+            # We need to get the list of BezCurves
+            # Then get the value for each and create a matrix
+            # Then store that in a frame and store that in the list
+            xcurve = ipo[Ipo.MA_SIZEX].bezierPoints
+            for frm in range(len(xcurve)):
+                frame = prp_AnimClasses.hsMatrix44Key()
+                num = xcurve[frm].pt[0] - 1
+                frame.fFrameNum = int(num)
+                frame.fFrameTime = num/30.0
+                
+                # map static offsets *dynamically* for Plasma
+                ofsX = 0.5 - 0.5 * xcurve[frm].pt[1] + mtex.ofs[0]
+                ofsY = 0.5 - 0.5 * ipo[Ipo.MA_SIZEY].bezierPoints[frm].pt[1] - mtex.ofs[1]
+
+                matx = hsMatrix44()
+                matx.translate((ofsX, ofsY, 1.0))
+                
+                # use dynamic scales
+                matx.scale(xcurve[frm].pt[1], ipo[Ipo.MA_SIZEY].bezierPoints[frm].pt[1], 1.0)
 
                 frame.fValue = matx
                 KeyList.append(frame)
@@ -2846,7 +2919,7 @@ class plWaveSet7(plMultiModifier):
         shoreNames = list(FindInDict(objscript, 'visual.waveset.shores', []))
         for shoreName in shoreNames:
             shoreObj = refparser.MixedRef_FindCreate(shoreName)
-	    print "WaveSet Shore Ref: " + shoreName
+            print "WaveSet Shore Ref: " + shoreName
             self.fShores.append(shoreObj.data.getRef())
         # add decal refs
         decalNames = list(FindInDict(objscript, 'visual.waveset.decals', []))
