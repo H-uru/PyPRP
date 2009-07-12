@@ -40,7 +40,7 @@ __bpydoc__ = """\
 This script attempts to provide easy Age Writing options to be used in URU.
 """
 
-import prp_Config
+from PyPRP import prp_Config
 prp_Config.startup()
 
 import Blender, time, sys, os
@@ -48,9 +48,9 @@ from Blender import NMesh
 from Blender.BGL import *
 from Blender.Draw import *
 from os.path import *
-from prp_ResManager import *
-from prp_AlcScript import *
-from prp_Functions import *
+from PyPRP.prp_ResManager import *
+from PyPRP.prp_AlcScript import *
+from PyPRP.prp_Functions import *
 
 import math
 from math import *

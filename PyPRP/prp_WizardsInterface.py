@@ -40,14 +40,13 @@ This script attempts to upgrade outdated styles from the PRP format
 used in URU.
 """
 
-import prp_Config
+from PyPRP import prp_Config
 prp_Config.startup()
 
 import Blender, time, sys, os
 from os.path import *
 
-import prp_Wizards
-from prp_Wizards import *
+from PyPRP.prp_Wizards import *
 
 def upgrade_book():
     REMOVE_OLD = Blender.Draw.Create(1)

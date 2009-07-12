@@ -41,13 +41,13 @@ This script attempts to import scenes from the PRP format
 used in URU.
 """
 
-import prp_Config
+from PyPRP import prp_Config
 prp_Config.startup()
 
 import Blender, time, sys, os
 from os.path import *
-from prp_ResManager import *
-from prp_Types import *
+from PyPRP.prp_ResManager import *
+from PyPRP.prp_Types import *
 
 
 def import_age(agename,basepath,pagename=None,version=5):

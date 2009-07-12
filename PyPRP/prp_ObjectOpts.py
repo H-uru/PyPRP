@@ -40,14 +40,14 @@ __bpydoc__ = """\
 This script modifies/adds certain object properties of URU PRP objects.
 """
 
-import prp_Config
+from PyPRP import prp_Config
 prp_Config.startup()
 
 import Blender, time, sys, os
 from Blender import Object
 from os.path import *
-from prp_Functions import *
-from prp_ResManager import *
+from PyPRP.prp_Functions import *
+from PyPRP.prp_ResManager import *
 
 
 def CopyProperties():

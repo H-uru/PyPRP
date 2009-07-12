@@ -40,8 +40,8 @@ used in URU.
 
 import Blender, time, sys, os
 from os.path import *
-from prp_Functions import *
-from prp_ResManager import *
+from PyPRP.prp_Functions import *
+from PyPRP.prp_ResManager import *
 
 
 def new_softvolumeplane():

@@ -47,14 +47,14 @@ This script attempts to export scenes to the PRP format
 used in URU.
 """
 
-import prp_Config
+from PyPRP import prp_Config
 prp_Config.startup()
 
 import Blender, time, sys
 from os.path import *
-from prp_ResManager import *
-from prp_Types import *
-from prp_AlcScript import *
+from PyPRP.prp_ResManager import *
+from PyPRP.prp_Types import *
+from PyPRP.prp_AlcScript import *
 
 def export_age(agename,basepath,selection=0,merge=0,pagename=None):
     print "Exporting age %s" %agename
