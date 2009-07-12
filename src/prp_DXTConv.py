@@ -275,7 +275,7 @@ class tDxtImage(tImage):
         if self.type!=1:
             alpha=self.getAlpha(texel)
             self.hasalpha=1
-        u64, = struct.unpack("Q",texel.read(8))
+        u64, = struct.unpack("<Q",texel.read(8))
         #print "<%X" %u64
         #a = 255
         c0 = u64 & 0xFFFF
@@ -343,7 +343,7 @@ class tDxtImage(tImage):
 
     def getAlpha(self,alpha):
         #alpha0, alpha1 = struct.unpack("BB",alpha.read(2))
-        u64, = struct.unpack("Q",alpha.read(8))
+        u64, = struct.unpack("<Q",alpha.read(8))
         alpha0 = u64 & 0xFF
         u64 = u64>>8
         alpha1 = u64 & 0xFF
@@ -493,7 +493,7 @@ class tDxtImage(tImage):
             #if i!=15:
             #    u64 = u64 << 2
         #print ">%X" %u64
-        self.rawdata.write(struct.pack("Q",u64))
+        self.rawdata.write(struct.pack("<Q",u64))
 
 
     def distance(self,a1,a2,b1,b2,c1,c2):
@@ -550,7 +550,7 @@ class tDxtImage(tImage):
             u64 |= w << ((3*(x-1))+16)
             #if x!=16:
             #    u64 = u64<<3
-        self.rawdata.write(struct.pack("Q",u64))
+        self.rawdata.write(struct.pack("<Q",u64))
 
 
 class tJpgImage(tImage):
@@ -576,21 +576,21 @@ class tJpgImage(tImage):
         if self.type & 0x01: #RLE 1
             count=1
             while count:
-                count,color = struct.unpack("II",buf.read(8))
-                self.rawdata.write(struct.pack("II",count,color))
+                count,color = struct.unpack("<II",buf.read(8))
+                self.rawdata.write(struct.pack("<II",count,color))
         else: #JPG 1
-            self.jpg1size, = struct.unpack("I",buf.read(4))
-            self.rawdata.write(struct.pack("I",self.jpg1size))
+            self.jpg1size, = struct.unpack("<I",buf.read(4))
+            self.rawdata.write(struct.pack("<I",self.jpg1size))
             self.rawdata.write(buf.read(self.jpg1size))
         #The alpha channel encoded in the red channel
         if self.type & 0x02: #RLE 2
             count=1
             while count:
-                count,color = struct.unpack("II",buf.read(8))
-                self.rawdata.write(struct.pack("II",count,color))
+                count,color = struct.unpack("<II",buf.read(8))
+                self.rawdata.write(struct.pack("<II",count,color))
         else: #JPG 1
-            self.jpg2size, = struct.unpack("I",buf.read(4))
-            self.rawdata.write(struct.pack("I",self.jpg2size))
+            self.jpg2size, = struct.unpack("<I",buf.read(4))
+            self.rawdata.write(struct.pack("<I",self.jpg2size))
             self.rawdata.write(buf.read(self.jpg2size))
 
 
@@ -605,14 +605,14 @@ class tJpgImage(tImage):
             count=1
             tcount=0
             while count:
-                count, = struct.unpack("I",self.rawdata.read(4))
+                count, = struct.unpack("<I",self.rawdata.read(4))
                 tcount=tcount + count
                 b,g,r,a = struct.unpack("BBBB",self.rawdata.read(4))
                 for i in range(count):
                     aux.write(struct.pack("BBB",r,g,b))
             assert(tcount==self.w * self.h)
         else: #JPG
-            self.jpg1size, = struct.unpack("I",self.rawdata.read(4))
+            self.jpg1size, = struct.unpack("<I",self.rawdata.read(4))
             jpg1=cStringIO.StringIO()
             jpg1.write(self.rawdata.read(self.jpg1size))
             jpg1.seek(0)
@@ -627,7 +627,7 @@ class tJpgImage(tImage):
             count=1
             tcount=0
             while count:
-                count, = struct.unpack("I",self.rawdata.read(4))
+                count, = struct.unpack("<I",self.rawdata.read(4))
                 tcount=tcount + count
                 b,g,r,a = struct.unpack("BBBB",self.rawdata.read(4))
                 assert(a==0)
@@ -640,7 +640,7 @@ class tJpgImage(tImage):
                     self.data.write(struct.pack("BBBB",rx,gx,bx,r))
             assert(tcount==self.w * self.h)
         else: #JPG
-            self.jpg2size, = struct.unpack("I",self.rawdata.read(4))
+            self.jpg2size, = struct.unpack("<I",self.rawdata.read(4))
             jpg2=cStringIO.StringIO()
             jpg2.write(self.rawdata.read(self.jpg2size))
             jpg2.seek(0)
@@ -682,16 +682,16 @@ class tJpgImage(tImage):
                 if ri==r and gi==g and bi==b:
                     count=count+1
                 else:
-                    self.rawdata.write(struct.pack("I",count))
+                    self.rawdata.write(struct.pack("<I",count))
                     self.rawdata.write(struct.pack("BBBB",bi,gi,ri,0))
                     count=1
                     ri=r
                     gi=g
                     bi=b
             if count:
-                self.rawdata.write(struct.pack("I",count))
+                self.rawdata.write(struct.pack("<I",count))
                 self.rawdata.write(struct.pack("BBBB",bi,gi,ri,0))
-            self.rawdata.write(struct.pack("II",0,0))
+            self.rawdata.write(struct.pack("<II",0,0))
         else: #jpg 1
             jpg1=cStringIO.StringIO()
             me = Image.new("RGBA",(self.w,self.h))
@@ -700,7 +700,7 @@ class tJpgImage(tImage):
             del me
             jpg1.read()
             self.jpg1size = jpg1.tell()
-            self.rawdata.write(struct.pack("I",self.jpg1size))
+            self.rawdata.write(struct.pack("<I",self.jpg1size))
             jpg1.seek(0)
             self.rawdata.write(jpg1.read())
             del jpg1
@@ -718,14 +718,14 @@ class tJpgImage(tImage):
                 if ai==a:
                     count=count+1
                 else:
-                    self.rawdata.write(struct.pack("I",count))
+                    self.rawdata.write(struct.pack("<I",count))
                     self.rawdata.write(struct.pack("BBBB",0,0,ai,0))
                     count=1
                     ai=a
             if count:
-                self.rawdata.write(struct.pack("I",count))
+                self.rawdata.write(struct.pack("<I",count))
                 self.rawdata.write(struct.pack("BBBB",0,0,ai,0))
-            self.rawdata.write(struct.pack("II",0,0))
+            self.rawdata.write(struct.pack("<II",0,0))
         else: #jpg 2
             aux=cStringIO.StringIO()
             for i in range(self.w * self.h):
@@ -739,7 +739,7 @@ class tJpgImage(tImage):
             del me
             jpg1.read()
             self.jpg2size = jpg1.tell()
-            self.rawdata.write(struct.pack("I",self.jpg2size))
+            self.rawdata.write(struct.pack("<I",self.jpg2size))
             jpg1.seek(0)
             self.rawdata.write(jpg1.read())
             del jpg1

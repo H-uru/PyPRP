@@ -141,7 +141,7 @@ class mfs:
                 count=count+1
         sum=Wdys()
         sum.open(path,"wb")
-        sum.write(struct.pack("II",count,0))
+        sum.write(struct.pack("<II",count,0))
         for f in self.files:
             if f.type in ["page"]:
                 if f.type=="page" and old_style:
@@ -152,5 +152,5 @@ class mfs:
                 str=Ustr(name,5)
                 str.write(sum)
                 sum.write(f.md5bin)
-                sum.write(struct.pack("II",f.mtime,0))
+                sum.write(struct.pack("<II",int(f.mtime),0))
         sum.close()

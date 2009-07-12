@@ -393,11 +393,11 @@ class PrpIndex:
             i.changePageRaw(sid,did,stype,dtype)
 
     def read(self,buf):
-        self.type, = struct.unpack("H",buf.read(2))
+        self.type, = struct.unpack("<H",buf.read(2))
         if self.parent.version==6: #myst5
-            size, = struct.unpack("I",buf.read(4))
+            size, = struct.unpack("<I",buf.read(4))
             extra, = struct.unpack("B",buf.read(1))
-        self.count, = struct.unpack("I",buf.read(4))
+        self.count, = struct.unpack("<I",buf.read(4))
         for i in range(self.count):
             dsc=plKey(self.parent.version,self.parent.age.getSeq())
             dsc.read(buf)
@@ -405,7 +405,7 @@ class PrpIndex:
             assert(dsc.page_id==self.page_id)
             assert(dsc.page_type==self.page_type)
             assert(dsc.object_type==self.type)
-            offset, size = struct.unpack("II",buf.read(8))
+            offset, size = struct.unpack("<II",buf.read(8))
             me = buf.tell()
             #print dsc, offset, size, me
             o = PrpObject(self,self.type)
@@ -427,11 +427,11 @@ class PrpIndex:
 
     def writeindex(self,buf):
         self.count=len(self.objs)
-        buf.write(struct.pack("H",self.type))
-        buf.write(struct.pack("I",self.count))
+        buf.write(struct.pack("<H",self.type))
+        buf.write(struct.pack("<I",self.count))
         for o in self.objs:
             o.data.Key.write(buf)
-            buf.write(struct.pack("II",o.offset,o.size))
+            buf.write(struct.pack("<II",o.offset,o.size))
 
 
 class PrpFileInfo:
@@ -492,23 +492,23 @@ class PrpFileInfo:
 
 
     def read(self,buf):
-        self.version, = struct.unpack("H",buf.read(2))
+        self.version, = struct.unpack("<H",buf.read(2))
         if self.version not in[0x05,0x06]:
             raise RuntimeError, "Unsuported Prp version %i!"%self.version
         if self.version==0x06: #myst5
-            count, = struct.unpack("H",buf.read(2))
+            count, = struct.unpack("<H",buf.read(2))
             for i in range(count):
-                type, flags = struct.unpack("HH",buf.read(4))
+                type, flags = struct.unpack("<HH",buf.read(4))
                 self.list1.append(type)
                 self.list2.append(flags)
         else: #uru
-            blank, = struct.unpack("H",buf.read(2))
+            blank, = struct.unpack("<H",buf.read(2))
             assert(blank==0)
-        self.page_id, = struct.unpack("I",buf.read(4))
+        self.page_id, = struct.unpack("<I",buf.read(4))
         if self.version==0x06: #myst5
             self.page_type, = struct.unpack("B",buf.read(1))
         else: #uru
-            self.page_type, = struct.unpack("H",buf.read(2))
+            self.page_type, = struct.unpack("<H",buf.read(2))
         self.name.setType(self.version)
         self.name.read(buf)
         if self.version==0x05: #only on Uru
@@ -523,9 +523,9 @@ class PrpFileInfo:
             pass
         else:
             #print "* Reading %s_District_%s %08X %04X" %(self.name,self.page,self.page_id,self.page_type),
-            self.vmax, self.vmin = struct.unpack("HH",buf.read(4))
+            self.vmax, self.vmin = struct.unpack("<HH",buf.read(4))
             #print " Version %i,%i" %(self.vmax,self.vmin)
-            unk1,unk2 = struct.unpack("II",buf.read(8))
+            unk1,unk2 = struct.unpack("<II",buf.read(8))
             assert(unk1==0)
             assert(unk2==8)
 
@@ -605,10 +605,10 @@ class PrpFile(PrpFileInfo):
 
     def read(self,buf):
         PrpFileInfo.read(self,buf)
-        a, b, c = struct.unpack("III",buf.read(12))
+        a, b, c = struct.unpack("<III",buf.read(12))
         buf.seek(c) #go to the index
         # read the index
-        n, = struct.unpack("I",buf.read(4))
+        n, = struct.unpack("<I",buf.read(4))
         for i in range(n):
             obj = PrpIndex(self,self.page_type)
             obj.read(buf)
@@ -616,19 +616,19 @@ class PrpFile(PrpFileInfo):
 
 
     def write(self,buf):
-        buf.write(struct.pack("H",self.version))
+        buf.write(struct.pack("<H",self.version))
         if self.version==0x06: #myst5
             count = len(self.list1)
-            buf.write(struct.pack("H",count))
+            buf.write(struct.pack("<H",count))
             for i in range(count):
-                buf.write(struct.pack("HH",self.list1[i],self.list2[i]))
+                buf.write(struct.pack("<HH",self.list1[i],self.list2[i]))
         else: #uru
-            buf.write(struct.pack("H",0))
-        buf.write(struct.pack("I",self.page_id))
+            buf.write(struct.pack("<H",0))
+        buf.write(struct.pack("<I",self.page_id))
         if self.version==0x06: #myst5
             buf.write(struct.pack("B",self.page_type))
         else: #uru
-            buf.write(struct.pack("H",self.page_type))
+            buf.write(struct.pack("<H",self.page_type))
         self.name.setType(self.version)
         self.name.write(buf)
         if self.version==0x05: #only on Uru
@@ -638,12 +638,12 @@ class PrpFile(PrpFileInfo):
         self.page.setType(self.version)
         self.page.write(buf)
         if self.version!=6:
-            buf.write(struct.pack("HH",self.vmax,self.vmin))
-            buf.write(struct.pack("II",0,8))
+            buf.write(struct.pack("<HH",self.vmax,self.vmin))
+            buf.write(struct.pack("<II",0,8))
         start=buf.tell()
-        buf.write(struct.pack("I",0))
-        buf.write(struct.pack("I",buf.tell()+8))
-        buf.write(struct.pack("I",0))
+        buf.write(struct.pack("<I",0))
+        buf.write(struct.pack("<I",buf.tell()+8))
+        buf.write(struct.pack("<I",0))
         size=buf.tell()
         #clean the index
 
@@ -665,22 +665,21 @@ class PrpFile(PrpFileInfo):
                     oldidx.remove(o)
                     break
 
-        struct.pack("I",len(self.idx))
         for o in self.idx:
             o.page_id=self.page_id
             o.page_type=self.page_type
             o.writeobjects(buf)
         index=buf.tell()
 
-        buf.write(struct.pack("I",len(self.idx)))
+        buf.write(struct.pack("<I",len(self.idx)))
         for o in self.idx:
             o.writeindex(buf)
         size=buf.tell()-size
         end=buf.tell()
         buf.seek(start)
-        buf.write(struct.pack("I",size))
+        buf.write(struct.pack("<I",size))
         buf.seek(start+8)
-        buf.write(struct.pack("I",index))
+        buf.write(struct.pack("<I",index))
         #print "Index is at %08X" %index
 
 

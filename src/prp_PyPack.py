@@ -32,7 +32,7 @@ class alcpyfile:
 
 
     def read(self,buf):
-        size, = struct.unpack("I",buf.read(4))
+        size, = struct.unpack("<I",buf.read(4))
         self.data=cStringIO.StringIO()
         #print size
         self.data.write(buf.read(size))
@@ -40,7 +40,7 @@ class alcpyfile:
 
     def write(self,buf):
         self.data.read()
-        buf.write(struct.pack("I",self.data.tell()))
+        buf.write(struct.pack("<I",self.data.tell()))
         self.data.seek(0)
         buf.write(self.data.read())
 
@@ -52,12 +52,12 @@ class alcpypack:
 
 
     def read(self,buf):
-        num, = struct.unpack("I",buf.read(4))
+        num, = struct.unpack("<I",buf.read(4))
         for i in range(num):
             name = Ustr()
             name.setType(self.version)
             name.read(buf)
-            off, = struct.unpack("I",buf.read(4))
+            off, = struct.unpack("<I",buf.read(4))
             cat = buf.tell()
             buf.seek(off)
             file = alcpyfile()
@@ -69,7 +69,7 @@ class alcpypack:
 
 
     def write(self,buf):
-        buf.write(struct.pack("I",len(self.list)))
+        buf.write(struct.pack("<I",len(self.list)))
         size=4
         for i in self.list:
             size=size + 4 + len(i.name) + 2
@@ -78,7 +78,7 @@ class alcpypack:
             name.setType(self.version)
             name.set(i.name)
             name.write(buf)
-            buf.write(struct.pack("I",size))
+            buf.write(struct.pack("<I",size))
             me = buf.tell()
             buf.seek(size)
             i.write(buf)

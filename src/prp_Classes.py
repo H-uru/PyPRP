@@ -647,7 +647,7 @@ class plMsgForwarder(hsKeyedObject):
 
     def read(self,stream):
         hsKeyedObject.read(self,stream)
-        count1, = struct.unpack("I",stream.read(4))
+        count1, = struct.unpack("<I",stream.read(4))
         self.mods=[]
         for i in range(count1):
             ref = UruObjectRef(self.getVersion())
@@ -660,7 +660,7 @@ class plMsgForwarder(hsKeyedObject):
 
     def write(self,stream):
         hsKeyedObject.write(self,stream)
-        stream.write(struct.pack("I",len(self.mods)))
+        stream.write(struct.pack("<I",len(self.mods)))
         for ref in self.mods:
             ##ref.update(self.Key)
             ref.write(stream)

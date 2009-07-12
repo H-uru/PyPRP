@@ -318,7 +318,7 @@ class str32: # Bstr
     def write(self,buf):
         if self.type==0:
             size = len(self.name)
-            buf.write(struct.pack("I",size+1))
+            buf.write(struct.pack("<I",size+1))
             buf.write(self.name)
             buf.write(struct.pack("B",0))
         else:
@@ -362,7 +362,7 @@ class wpstr: # wpstr
             b = buf.ReadByte()
             assert(b==0)
         else:
-            size, = struct.unpack("H",buf.read(4))
+            size, = struct.unpack("<H",buf.read(4))
             str = buf.read(size)
             self.name=str
 
@@ -370,7 +370,7 @@ class wpstr: # wpstr
     def write(self,buf):
         if self.type==0:
             size = len(self.name)
-            buf.write(struct.pack("H",size+1))
+            buf.write(struct.pack("<H",size+1))
             buf.write(self.name)
             buf.write(struct.pack("B",0))
         else:
@@ -777,17 +777,17 @@ class pRaw(hsKeyedObject):
         print "change page %08X %08X %04X %04X" %(sid,did,stype,dtype)
         foo = self.data.read(4)
         while foo!="" and len(foo)==4:
-            foo, = struct.unpack("I",foo)
+            foo, = struct.unpack("<I",foo)
             if foo==sid:
                 print "checking %08X %08X" %(foo,sid),
                 bar = self.data.read(2)
                 if bar=="" or len(bar)!=2:
                     return
-                bar, = struct.unpack("H",bar)
+                bar, = struct.unpack("<H",bar)
                 if bar==stype:
                     self.data.seek(-6,1)
-                    self.data.write(struct.pack("I",did))
-                    self.data.write(struct.pack("H",dtype))
+                    self.data.write(struct.pack("<I",did))
+                    self.data.write(struct.pack("<H",dtype))
                     print "key changed"
                 else:
                     self.data.seek(-5,1)

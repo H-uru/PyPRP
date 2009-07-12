@@ -155,7 +155,7 @@ class plVertexCoder:
             if not compress:
                 #uncompressed
                 for e in range(3):
-                   buf.write(struct.pack("fHH",Vector[e],1,0)) #vertex base, n_vertexs, offset
+                   buf.write(struct.pack("<fHH",Vector[e],1,0)) #vertex base, n_vertexs, offset
             else:
                 #compressed
                 for e in range(3):
@@ -174,15 +174,15 @@ class plVertexCoder:
                                 VarA[e]=VarA[e]+1
                             else:
                                 break
-                        buf.write(struct.pack("fH",VBase[e],VarA[e]))
+                        buf.write(struct.pack("<fH",VBase[e],VarA[e]))
                     off = (Vector[e]-VBase[e]) * 1024.0
-                    buf.write(struct.pack("H",off))
+                    buf.write(struct.pack("<H",off))
                     VarA[e]=VarA[e]-1
 
             #Vertex weights
             if not compress:
                 for e in range(bufferGroup.GetNumSkinWeights()):
-                    buf.write(struct.pack("fHH",vert.blend[e],1,0)) #blend base, n, offset
+                    buf.write(struct.pack("<fHH",vert.blend[e],1,0)) #blend base, n, offset
             else:
                 for e in range(bufferGroup.GetNumSkinWeights()):
                     if VarB[e]==0:
@@ -196,9 +196,9 @@ class plVertexCoder:
                                 VarB[e]=VarB[e]+1
                             else:
                                 break
-                        buf.write(struct.pack("fH",BBase[e],VarB[e]))
+                        buf.write(struct.pack("<fH",BBase[e],VarB[e]))
                     off = (vert.blend[e] - BBase[e]) * 32768.0
-                    buf.write(struct.pack("H",off))
+                    buf.write(struct.pack("<H",off))
                     VarB[e]=VarB[e]-1
             if bufferGroup.GetNumSkinWeights() and bufferGroup.GetSkinIndices():
                 buf.write(struct.pack("BBBB",vert.bones[0],vert.bones[1],vert.bones[2],vert.bones[3]))
@@ -219,7 +219,7 @@ class plVertexCoder:
             elif nz < -32767:
                 nz = -32767
             try:
-                buf.write(struct.pack("hhh",nx,ny,nz))
+                buf.write(struct.pack("<hhh",nx,ny,nz))
             except:
                 raise "wtf %i %i %i, %i %i %i" %(vert.nx,vert.ny,vert.nz,nx,ny,nz)
             #colors
@@ -227,7 +227,7 @@ class plVertexCoder:
             vcolor=[vert.color.b,vert.color.g,vert.color.r,vert.color.a]
             if not compress:
                 for e in range(4):
-                    buf.write(struct.pack("H",1))
+                    buf.write(struct.pack("<H",1))
                     buf.write(struct.pack("B",vcolor[e]))
             else:
                 for e in range(4):
@@ -245,13 +245,13 @@ class plVertexCoder:
                             cf=0
                         else:
                             cf=0x8000
-                        buf.write(struct.pack("HB",VarC[e] | cf,color[e]))
+                        buf.write(struct.pack("<HB",VarC[e] | cf,color[e]))
                     VarC[e]=VarC[e]-1
             #texture coordinates
             if not compress:
                 for j in range(bufferGroup.GetUVCount()):
                     for k in range(3):
-                        buf.write(struct.pack("fHH",vert.tex[j][k],1,0)) #base, n, offset
+                        buf.write(struct.pack("<fHH",vert.tex[j][k],1,0)) #base, n, offset
                         #buf.write(struct.pack("fHH",0,1,0))
             else:
                 for j in range(bufferGroup.GetUVCount()):
@@ -268,12 +268,12 @@ class plVertexCoder:
                                     VarD[e]=VarD[e]+1
                                 else:
                                     break
-                            buf.write(struct.pack("fH",TBase[e],VarD[e]))
+                            buf.write(struct.pack("<fH",TBase[e],VarD[e]))
                         #print vert.tex[j][k],TBase[e]
                         off=(vert.tex[j][k]-TBase[e]) * 65536.0
                         #assert((TBase[e]+(off/65536.0))==vert.tex[j][k])
                         #print i,j,k,e,off
-                        buf.write(struct.pack("H",off))
+                        buf.write(struct.pack("<H",off))
                         VarD[e]=VarD[e]-1
 
 
