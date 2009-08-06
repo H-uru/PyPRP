@@ -23,10 +23,12 @@
 Name: 'PyPRP Wizards'
 Blender: 245
 Group: 'Wizards'
-Submenu: 'Upgrade Book' i_book
-Submenu: 'Add missing Blender materials and textures' i_mattex
-Submenu: 'Upgrade properties' i_props
-Submenu: 'Assign default bounds to selected objects' i_bounds
+Submenu: '1.5 to 1.6 - Compatibility Report' w_Wizard_15_to_16_report
+Submenu: '1.5 to 1.6 - Convert Texture Transform' w_Wizard_15_to_16_textransform
+Submenu: 'Upgrade Book' i_upgrade_book
+Submenu: 'Add missing Blender materials and textures' w_Wizard_mattex_create
+Submenu: 'Upgrade properties' w_Wizard_property_update
+Submenu: 'Assign default bounds to selected objects' i_setbounds
 Tooltip: 'GoW PyPRP Upgrade'
 """
 
@@ -46,7 +48,8 @@ prp_Config.startup()
 import Blender, time, sys, os
 from os.path import *
 
-from PyPRP.prp_Wizards import *
+import PyPRP
+from PyPRP.prp_Wizards import Wizard_BookUpgrade
 
 def upgrade_book():
     REMOVE_OLD = Blender.Draw.Create(1)
@@ -70,20 +73,18 @@ def setbounds():
     objects = Blender.Scene.GetCurrent().objects.selected
     for sobject in objects:
         sobject.rbFlags |= Blender.Object.RBFlags.BOUNDS
-        print Object.RBShapes
+        print Blender.Object.RBShapes
         sobject.rbShapeBoundType = Blender.Object.RBShapes["POLYHEDERON"]
 
 def do_main():
     args = __script__['arg']
-    w = args.split("_")
-    if w[1]=="book":
-        upgrade_book()
-    elif w[1]=="props":
-        Wizard_property_update()
-    elif w[1]=="bounds":
-        setbounds()
-    elif w[1]=="mattex":
-        Wizard_mattex_create()
+    w = args.split("_", 1)
+    if w[0] == "i":
+        # call function defined in this file
+        globals()[w[1]]()
+    elif w[0] == "w":
+        # call function defined in prp_Wizards
+        getattr(PyPRP.prp_Wizards, w[1])()
     else:
         raise "Unknown options %s" %(w)
 

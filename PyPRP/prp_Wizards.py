@@ -21,6 +21,7 @@
 
 try:
     import Blender
+    import bpy
     try:
         from Blender import NMesh, Object, Mathutils
     except Exception, detail:
@@ -28,7 +29,7 @@ try:
 except ImportError:
     pass
 
-import random, md5,math, binascii, struct
+import random, md5,math, binascii, struct, textwrap
 
 from prp_AlcScript import *
 from prp_SpecialObjs import *
@@ -1058,3 +1059,223 @@ def Wizard_mattex_create():
     Blender.Draw.PupMenu(message)
 
 
+def Wizard_15_to_16_report():
+    AlcScript.LoadFromBlender()
+    report = ""
+    count = 0
+    
+    # check for modifiers
+    topic = "The following objects have modifiers. PyPRP will export the modified mesh. If that is not what you want, remove the modifiers."
+    notes = ""
+    for obj in bpy.data.scenes.active.objects:
+        if len(obj.modifiers) > 0:
+            notes += "    " + obj.name.ljust(22) + ", ".join(m.name for m in obj.modifiers) + "\n"
+            count += 1
+    if notes != "":
+        report += textwrap.fill(topic) + "\n\n" + notes + "\n\n"
+    
+    # check for visregions
+    topic = "The following objects have visregions. Their visibility will be reversed."
+    notes = ""
+    for obj in bpy.data.scenes.active.objects:
+        objscript = AlcScript.objects.Find(obj.name)
+        ovisr = FindInDict(objscript, "visual.visregions")
+        lvisr = FindInDict(objscript, "lamp.visregions")
+        if type(ovisr) == list and len(ovisr) > 0 or type(lvisr) == list and len(lvisr) > 0:
+            notes += "    " + obj.name + "\n"
+            count += 1
+    if notes != "":
+        report += textwrap.fill(topic) + "\n\n" + notes + "\n\n"
+    
+    # check for lightmaps
+    topic = "The following texture layers are marked as lightmaps. They may appear brighter in moderately-lit areas. To get the old look back: Turn off the \"Amb\" button to treat them as plain multiplicative layers."
+    notes = ""
+    for mat in bpy.data.materials:
+        for mtex in mat.textures:
+            if mtex != None and mtex.mtAmb:
+                notes += "    " + mtex.tex.name.ljust(22) + "(material: " + mat.name + ")\n"
+                count += 1
+    if notes != "":
+        report += textwrap.fill(topic) + "\n\n" + notes + "\n\n"
+    
+    # check for texture transforms
+    topic1 = "The following texture layers have (static or animated) offsets or size factors. They can be converted using the \"Convert Texture Transform\" option."
+    topic2 = "The following texture layers have offsets or size factors that cannot be converted because they exceed the range allowed by Blender. You will need to use a separate UV layer instead to reproduce their effect."
+    notes1 = ""
+    notes2 = ""
+    for mat in bpy.data.materials:
+        for i, mtex in enumerate(mat.textures):
+            if mtex != None:
+                
+                # calculate the new static parameters
+                sx = mtex.size[0]*mtex.size[2]
+                sy = mtex.size[1]*mtex.size[2]
+                ox = mtex.ofs[0] + 0.5 * sx - 0.5
+                oy = -(mtex.ofs[1] + 0.5 * sy - 0.5)
+                # for repeating textures, wrapping modulo 1 changes nothing, makes for nicer numbers, and can correct a possible out-of-range offset
+                if mtex.tex.extend == Blender.Texture.ExtendModes.REPEAT:
+                    ox = math.fmod(ox, 1.0)
+                    oy = math.fmod(oy, 1.0)
+                
+                ok = None
+                processedIpo = False
+                ipo = mat.ipo
+                if ipo != None:
+                    ipo.channel = i
+                    
+                    # both offsets and scales
+                    if ((Blender.Ipo.MA_OFSX in ipo) and (Blender.Ipo.MA_OFSY in ipo) and (Blender.Ipo.MA_OFSZ in ipo) and
+                        (Blender.Ipo.MA_SIZEX in ipo) and (Blender.Ipo.MA_SIZEY in ipo) and (Blender.Ipo.MA_SIZEZ in ipo) and
+                        len(ipo[Blender.Ipo.MA_OFSX].bezierPoints) == len(ipo[Blender.Ipo.MA_SIZEX].bezierPoints)):
+                        # always convertible
+                        ok = True
+                        processedIpo = True
+                    
+                    # just offsets
+                    elif (Blender.Ipo.MA_OFSX in ipo) and (Blender.Ipo.MA_OFSY in ipo) and (Blender.Ipo.MA_OFSZ in ipo):
+                        # check static size range
+                        ok = -100 <= sx and sx <= 100 and -100 <= sy and sy <= 100
+                        processedIpo = True
+                    
+                    # just scales
+                    elif (Blender.Ipo.MA_SIZEX in ipo) and (Blender.Ipo.MA_SIZEY in ipo) and (Blender.Ipo.MA_SIZEZ in ipo):
+                        # check static offset range
+                        ok = -10 <= ox and ox <= 10 and -10 <= oy and oy <= 10
+                        processedIpo = True
+                
+                if not processedIpo and (mtex.ofs[0] != 0 or mtex.ofs[1] != 0 or mtex.size[0] != 1 or mtex.size[1] != 1 or mtex.size[2] != 1):
+                    # check static size and offset range
+                    ok = -100 <= sx and sx <= 100 and -100 <= sy and sy <= 100 and -10 <= ox and ox <= 10 and -10 <= oy and oy <= 10
+                
+                if ok == True:
+                    notes1 += "    " + mtex.tex.name.ljust(22) + "(material: " + mat.name + ")\n"
+                    count += 1
+                elif ok == False:
+                    notes2 += "    " + mtex.tex.name.ljust(22) + "(material: " + mat.name + ")\n"
+                    count += 1
+    if notes1 != "":
+        report += textwrap.fill(topic1) + "\n\n" + notes1 + "\n\n"
+    if notes2 != "":
+        report += textwrap.fill(topic2) + "\n\n" + notes2 + "\n\n"
+    
+    # done checking
+    if count > 0:
+        try:
+            text = Blender.Text.Get("Compatibility Report")
+            text.clear()
+        except NameError:
+            text = Blender.Text.New("Compatibility Report")
+        text.write("PyPRP 1.5 to 1.6 Compatibility Report\n\n\n")
+        text.write(report)
+        Blender.Draw.PupMenu("Open a text editor window to review %d notes in text block \"Compatibility Report\"." % count)
+    else:
+        Blender.Draw.PupMenu("No issues found, this age should export without modification.")
+
+
+def Wizard_15_to_16_textransform():
+    # convert texture transforms
+    nStatic = []
+    nAnimated = []
+    nFailures = []
+    for mat in bpy.data.materials:
+        for i, mtex in enumerate(mat.textures):
+            if mtex != None:
+                
+                # calculate the new static parameters (don't apply them yet because they might be out of range)
+                sx = mtex.size[0]*mtex.size[2]
+                sy = mtex.size[1]*mtex.size[2]
+                ox = mtex.ofs[0] + 0.5 * sx - 0.5
+                oy = -(mtex.ofs[1] + 0.5 * sy - 0.5)
+                # for repeating textures, wrapping modulo 1 changes nothing, makes for nicer numbers, and can correct a possible out-of-range offset
+                if mtex.tex.extend == Blender.Texture.ExtendModes.REPEAT:
+                    ox = math.fmod(ox, 1.0)
+                    oy = math.fmod(oy, 1.0)
+                
+                name = mtex.tex.name.ljust(22) + "(material: " + mat.name + ")"
+                processedIpo = False
+                ipo = mat.ipo
+                if ipo != None:
+                    ipo.channel = i
+                    
+                    # both offsets and scales
+                    if ((Blender.Ipo.MA_OFSX in ipo) and (Blender.Ipo.MA_OFSY in ipo) and (Blender.Ipo.MA_OFSZ in ipo) and
+                        (Blender.Ipo.MA_SIZEX in ipo) and (Blender.Ipo.MA_SIZEY in ipo) and (Blender.Ipo.MA_SIZEZ in ipo) and
+                        len(ipo[Blender.Ipo.MA_OFSX].bezierPoints) == len(ipo[Blender.Ipo.MA_SIZEX].bezierPoints)):
+                        
+                        nAnimated.append(name)
+                        xcurve = ipo[Blender.Ipo.MA_OFSX].bezierPoints
+                        ycurve = ipo[Blender.Ipo.MA_OFSY].bezierPoints
+                        wcurve = ipo[Blender.Ipo.MA_SIZEX].bezierPoints
+                        hcurve = ipo[Blender.Ipo.MA_SIZEY].bezierPoints
+                        for frm in range(len(xcurve)):
+                            xcurve[frm].pt = (xcurve[frm].pt[0], xcurve[frm].pt[1] + 0.5 * wcurve[frm].pt[1] - 0.5)
+                            ycurve[frm].pt = (ycurve[frm].pt[0], -(ycurve[frm].pt[1] + 0.5 * hcurve[frm].pt[1] - 0.5))
+                        
+                        ipo[Blender.Ipo.MA_OFSX].recalc()
+                        ipo[Blender.Ipo.MA_OFSY].recalc()
+                        
+                        processedIpo = True
+                    
+                    # just offsets
+                    elif (Blender.Ipo.MA_OFSX in ipo) and (Blender.Ipo.MA_OFSY in ipo) and (Blender.Ipo.MA_OFSZ in ipo):
+                        if -100 <= sx and sx <= 100 and -100 <= sy and sy <= 100:
+                            nAnimated.append(name)
+                            xcurve = ipo[Blender.Ipo.MA_OFSX].bezierPoints
+                            ycurve = ipo[Blender.Ipo.MA_OFSY].bezierPoints
+                            for frm in range(len(xcurve)):
+                                xcurve[frm].pt = (xcurve[frm].pt[0], xcurve[frm].pt[1] + 0.5 * sx - 0.5)
+                                ycurve[frm].pt = (ycurve[frm].pt[0], -(ycurve[frm].pt[1] + 0.5 * sy - 0.5))
+                            
+                            ipo[Blender.Ipo.MA_OFSX].recalc()
+                            ipo[Blender.Ipo.MA_OFSY].recalc()
+                            
+                            mtex.size = (sx, sy, 1.0)
+                        else:
+                            # size out of range
+                            nFailures.append(name)
+                        
+                        processedIpo = True
+                    
+                    # just scales
+                    elif (Blender.Ipo.MA_SIZEX in ipo) and (Blender.Ipo.MA_SIZEY in ipo) and (Blender.Ipo.MA_SIZEZ in ipo):
+                        if -10 <= ox and ox <= 10 and -10 <= oy and oy <= 10:
+                            nAnimated.append(name)
+                            # nothing to do for the scale ipo
+                            mtex.ofs = (ox, oy, 0.0)
+                        else:
+                            # offset out of range
+                            nFailures.append(name)
+                        
+                        processedIpo = True
+                
+                if not processedIpo and (mtex.ofs[0] != 0 or mtex.ofs[1] != 0 or mtex.size[0] != 1 or mtex.size[1] != 1 or mtex.size[2] != 1):
+                    if -100 <= sx and sx <= 100 and -100 <= sy and sy <= 100 and -10 <= ox and ox <= 10 and -10 <= oy and oy <= 10:
+                        nStatic.append(name)
+                        mtex.size = (sx, sy, 1.0)
+                        mtex.ofs = (ox, oy, 0.0)
+                    else:
+                        nFailures.append(name)
+    
+    summary = ["Conversion completed%t"]
+    if len(nStatic) + len(nAnimated) + len(nFailures) == 0:
+        summary.append("(nothing to convert)")
+    else:
+        if len(nStatic) > 0:
+            summary.append("%d static textures converted" % len(nStatic))
+        if len(nAnimated) > 0:
+            summary.append("%d animated textures converted" % len(nAnimated))
+        if len(nFailures) > 0:
+            summary.append("%d textures not converted because converted values would be out of range" % len(nFailures))
+        summary.append("(details on console)")
+        
+        print "%d static textures converted" % len(nStatic)
+        for n in nStatic:
+            print "    " + n
+        print "%d animated textures converted" % len(nAnimated)
+        for n in nAnimated:
+            print "    " + n
+        print "%d textures not converted because converted values would be out of range" % len(nFailures)
+        for n in nFailures:
+            print "    " + n
+    
+    Blender.Draw.PupMenu("|".join(summary))

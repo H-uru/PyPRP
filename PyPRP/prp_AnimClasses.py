@@ -22,6 +22,7 @@ try:
     try:
         from Blender import Mesh
         from Blender import Lamp
+        from Blender import Ipo
     except Exception, detail:
         print detail
 except ImportError:
