@@ -1279,3 +1279,17 @@ def Wizard_15_to_16_textransform():
             print "    " + n
     
     Blender.Draw.PupMenu("|".join(summary))
+
+
+def antiShadow():
+    matList = Blender.Material.Get()
+    for mat in matList:
+        try:
+            if (mat.mode & Blender.Material.Modes["SHADOWBUF"]):
+                mat.mode &= ~Blender.Material.Modes["SHADOWBUF"]
+                print 'Shadbuf removed from Material:',
+                print mat.name
+        except:
+            print 'Unknown error for Material:',
+            print mat.name
+            continue

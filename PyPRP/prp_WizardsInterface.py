@@ -25,10 +25,11 @@ Blender: 245
 Group: 'Wizards'
 Submenu: '1.5 to 1.6 - Compatibility Report' w_Wizard_15_to_16_report
 Submenu: '1.5 to 1.6 - Convert Texture Transform' w_Wizard_15_to_16_textransform
-Submenu: 'Upgrade Book' i_upgrade_book
+Submenu: '0.5 to 1.x - Upgrade Book' i_upgrade_book
+Submenu: '0.5 to 1.x - Upgrade properties' w_Wizard_property_update
 Submenu: 'Add missing Blender materials and textures' w_Wizard_mattex_create
-Submenu: 'Upgrade properties' w_Wizard_property_update
 Submenu: 'Assign default bounds to selected objects' i_setbounds
+Submenu: 'Clear Shadbuf from all Materials' w_antiShadow
 Tooltip: 'GoW PyPRP Upgrade'
 """
 
