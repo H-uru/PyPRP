@@ -227,9 +227,7 @@ class alcUruPage:
         print "## => Exporting page %s %i <=" %(self.name,self.num)
         print "##"
         print "#########################################"
-        if self.prp==None:
-            self.prp=PrpFile(self)
-            self.update_page()
+        assert self.prp != None
         out = self.age.base + "/" + self.age.name + "/" + self.name
         SceneNodeRef=UruObjectRef()
 

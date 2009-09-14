@@ -570,10 +570,9 @@ class plSoftVolumeComplex(plSoftVolume):
         if type(_refs) == dict: # It should be a list - if it's a dict, make it a list with one entry
             _refs = [_refs,]
         if type(_refs) == list:
+            refparser = ScriptRefParser(self.getRoot(),str(self.Key.name),"softvolume")
             for r in _refs:
-                vol = ScriptRefParser.RefString_Decode(r)
-                v = self.getRoot().find(vol['type'],vol['name'],1)
-                self.vSV7C.append(v.data.getRef())
+                self.vSV7C.append(refparser.MixedRef_FindCreateRef(r))
 
 
 class plSoftVolumeUnion(plSoftVolumeComplex):

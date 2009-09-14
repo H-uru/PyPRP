@@ -163,7 +163,7 @@ class ScriptRefParser:
  #                       print "Error decoding keytype:",type_id
                         return None
 
-                    return { 'type': keytype, "name": name,"pagename": None }
+                    return { 'type': keytype, "name": name,"pagename": pagename }
 
                 else:
                     return None

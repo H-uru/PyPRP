@@ -728,6 +728,10 @@ class SphereBounds(HKBounds):
 
     def export_obj(self,obj):
         mesh = obj.getData(False,True)
+        # if the object has modifiers and no vertex groups (as in plDrawInterface.export_obj), apply the modifiers
+        if len(obj.modifiers) > 0 and len(mesh.getVertGroupNames()) == 0:
+            mesh = Mesh.New()
+            mesh.getFromObject(obj)
         print "  SphereBounds export"
         print "   Sphere based on %d (%d) vertices"%(len(mesh.verts),len(obj.data.verts))
         self.vertexs=[]
@@ -793,6 +797,10 @@ class HullBounds(HKBounds):
     def export_obj(self,obj):
         print "  HullBounds export"
         mesh = obj.getData(False,True)
+        # if the object has modifiers and no vertex groups (as in plDrawInterface.export_obj), apply the modifiers
+        if len(obj.modifiers) > 0 and len(mesh.getVertGroupNames()) == 0:
+            mesh = Mesh.New()
+            mesh.getFromObject(obj)
         print "   Exporting %d (%d) vertices"%(len(mesh.verts),len(obj.data.verts))
         self.fVertices=[]
 
@@ -853,6 +861,10 @@ class ProxyBounds(HullBounds):
 
     def export_obj(self,obj):
         mesh = obj.getData(False,True)
+        # if the object has modifiers and no vertex groups (as in plDrawInterface.export_obj), apply the modifiers
+        if len(obj.modifiers) > 0 and len(mesh.getVertGroupNames()) == 0:
+            mesh = Mesh.New()
+            mesh.getFromObject(obj)
         print "  ProxyBounds export"
         print "   Exporting %d (%d) vertices"%(len(mesh.verts),len(obj.data.verts))
         print "   Exporting %d (%d) faces"%(len(mesh.faces),len(obj.data.faces))

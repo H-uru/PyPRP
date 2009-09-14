@@ -74,6 +74,11 @@ def export_age(agename,basepath,selection=0,merge=0,pagename=None):
         for page in age.pages:
             if page.name=="Textures":
                 page.load()
+    #pre-create PrpFile objects for all pages, otherwise we are unable to export references to objects in later pages while processing an earlier page
+    for page in age.pages:
+        if page.prp==None:
+            page.prp=PrpFile(page)
+            page.update_page()
     #now export
     for page in age.pages:
         if page.name=="Textures":

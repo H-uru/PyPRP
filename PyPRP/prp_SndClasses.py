@@ -735,11 +735,6 @@ class plWin32Sound(plSound):
                 wavobj = Blender.Sound.Get(sname+".wav")
             except:
                 wavobj = None
-                fullsname = self.getFullFileName(sname + ".wav")
-                if fullsname == None:
-                    fullsname = self.getFullFileName(sname + ".ogg")
-                    if fullsname == None:
-                        raise ValueError, "Cannot locate any sound named \"%s\"" % sname
 
         if wavobj:
             #HACK - Save the sound so that Blender doesn't eat it >.<
@@ -747,7 +742,15 @@ class plWin32Sound(plSound):
             wavobj.setCurrent() #Make it the current sound object... just because we can :P
             fullsname = self.getFullFileName(wavobj.getFilename())
             if fullsname == None:
-                raise ValueError, "Cannot locate any sound named \"%s\"" % wavobj.getFilename()
+                print "  Invalid sound block \"%s\", fall back on alternate method" % wavobj.getFilename()
+                wavobj = None
+
+        if wavobj == None:
+            fullsname = self.getFullFileName(sname + ".wav")
+            if fullsname == None:
+                fullsname = self.getFullFileName(sname + ".ogg")
+                if fullsname == None:
+                    raise ValueError, "Cannot locate any sound named \"%s\"" % sname
 
 
         #Export a SoundBuffer

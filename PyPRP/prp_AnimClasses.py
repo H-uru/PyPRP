@@ -196,14 +196,14 @@ class plDynaFootMgr(plDynaDecalMgr):
             MatPreShade = refparser.MixedRef_FindCreate(matref)
             # add the ZInc flag for all the layers in the material
             for layer in MatPreShade.data.fLayers:
-                self.getRoot().findref(layer).data.fState.fZFlags |= hsGMatState.hsGMatZFlags["kZIncLayer"]
+                self.getRoot().findref(layer).data.fState.fZFlags |= prp_MatClasses.hsGMatState.hsGMatZFlags["kZIncLayer"]
             self.fMatPreShade = MatPreShade.data.getRef()
 
         matref = FindInDict(script,'matrtshade', None)
         MatRTShade = refparser.MixedRef_FindCreate(matref)
         # add the ZInc flag for all the layers in the material
         for layer in MatRTShade.data.fLayers:
-            self.getRoot().findref(layer).data.fState.fZFlags |= hsGMatState.hsGMatZFlags["kZIncLayer"]
+            self.getRoot().findref(layer).data.fState.fZFlags |= prp_MatClasses.hsGMatState.hsGMatZFlags["kZIncLayer"]
         self.fMatRTShade = MatRTShade.data.getRef()
 
         scnrefs = list(FindInDict(script,'targets', []))
@@ -278,14 +278,14 @@ class plDynaRippleMgr(plDynaDecalMgr):
             MatPreShade = refparser.MixedRef_FindCreate(matref)
             # add the ZInc flag for all the layers in the material
             for layer in MatPreShade.data.fLayers:
-                self.getRoot().findref(layer).data.fState.fZFlags |= hsGMatState.hsGMatZFlags["kZIncLayer"]
+                self.getRoot().findref(layer).data.fState.fZFlags |= prp_MatClasses.hsGMatState.hsGMatZFlags["kZIncLayer"]
             self.fMatPreShade = MatPreShade.data.getRef()
 
         matref = FindInDict(script,'matrtshade', None)
         MatRTShade = refparser.MixedRef_FindCreate(matref)
         # add the ZInc flag for all the layers in the material
         for layer in MatRTShade.data.fLayers:
-            self.getRoot().findref(layer).data.fState.fZFlags |= hsGMatState.hsGMatZFlags["kZIncLayer"]
+            self.getRoot().findref(layer).data.fState.fZFlags |= prp_MatClasses.hsGMatState.hsGMatZFlags["kZIncLayer"]
         self.fMatRTShade = MatRTShade.data.getRef()
 
         scnrefs = list(FindInDict(script,'targets', []))
@@ -362,14 +362,14 @@ class plDynaRippleVSMgr(plDynaRippleMgr):
             MatPreShade = refparser.MixedRef_FindCreate(matref)
             # add the ZInc flag for all the layers in the material
             for layer in MatPreShade.data.fLayers:
-                self.getRoot().findref(layer).data.fState.fZFlags |= hsGMatState.hsGMatZFlags["kZIncLayer"]
+                self.getRoot().findref(layer).data.fState.fZFlags |= prp_MatClasses.hsGMatState.hsGMatZFlags["kZIncLayer"]
             self.fMatPreShade = MatPreShade.data.getRef()
 
         matref = FindInDict(script,'matrtshade', None)
         MatRTShade = refparser.MixedRef_FindCreate(matref)
         # add the ZInc flag for all the layers in the material
         for layer in MatRTShade.data.fLayers:
-            self.getRoot().findref(layer).data.fState.fZFlags |= hsGMatState.hsGMatZFlags["kZIncLayer"]
+            self.getRoot().findref(layer).data.fState.fZFlags |= prp_MatClasses.hsGMatState.hsGMatZFlags["kZIncLayer"]
         self.fMatRTShade = MatRTShade.data.getRef()
 
         scnrefs = list(FindInDict(script,'targets', []))
@@ -448,14 +448,14 @@ class plDynaPuddleMgr(plDynaRippleMgr):
             MatPreShade = refparser.MixedRef_FindCreate(matref)
             # add the ZInc flag for all the layers in the material
             for layer in MatPreShade.data.fLayers:
-                self.getRoot().findref(layer).data.fState.fZFlags |= hsGMatState.hsGMatZFlags["kZIncLayer"]
+                self.getRoot().findref(layer).data.fState.fZFlags |= prp_MatClasses.hsGMatState.hsGMatZFlags["kZIncLayer"]
             self.fMatPreShade = MatPreShade.data.getRef()
 
         matref = FindInDict(script,'matrtshade', None)
         MatRTShade = refparser.MixedRef_FindCreate(matref)
         # add the ZInc flag for all the layers in the material
         for layer in MatRTShade.data.fLayers:
-            self.getRoot().findref(layer).data.fState.fZFlags |= hsGMatState.hsGMatZFlags["kZIncLayer"]
+            self.getRoot().findref(layer).data.fState.fZFlags |= prp_MatClasses.hsGMatState.hsGMatZFlags["kZIncLayer"]
         self.fMatRTShade = MatRTShade.data.getRef()
 
         scnrefs = list(FindInDict(script,'targets', []))
