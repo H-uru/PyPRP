@@ -1030,6 +1030,15 @@ class plLayer(plLayerInterface):             # Type 0x06
                 self.fTexture = mipmap.data.getRef()
                 self.fHasTexture = 1
                 # alphablend layers do not affect blendflags (as far as we know now)
+            
+            
+            elif (tex.type == Blender.Texture.Types.NOISE):
+                print "[ plDynamicTextMap %s ]" % tex.getName()
+                tmap = plDynamicTextMap.FindCreate(root, tex.getName())
+                tmap.data.export_obj(obj)
+                self.fTexture = tmap.data.getRef()
+                self.fHasTexture = 1
+                self.UsesAlpha = True
 
 
             elif(tex.type == Blender.Texture.Types.NONE):
@@ -2877,6 +2886,44 @@ class plDynamicEnvMap(plCubicRenderTarget):
         stream.WriteByte(self.fIncCharacters)
         self.fVisRegions.write(stream)
 
+class plDynamicTextMap(plMipMap):
+    def __init__(self,parent=None,name="unnamed",type=0x00AD):
+        plMipMap.__init__(self,parent,name,type)
+        self.fVisWidth = 512;
+        self.fVisHeight = 512;
+        self.fHasAlpha = False;
+    
+    def _Find(page,name):
+        return page.find(0x00AD,name,0)
+    Find = staticmethod(_Find)
+
+    def _FindCreate(page,name):
+        return page.find(0x00AD,name,1)
+    FindCreate = staticmethod(_FindCreate)
+    
+    def read(self, stream, really=1):
+        plBitmap.read(self,stream,really)
+        
+        self.fVisWidth = stream.Read32()
+        self.fVisHeight = stream.Read32()
+        self.fHasAlpha = stream.ReadBool()
+        
+        count = stream.Read32()
+        stream.Read(count)
+    
+    def write(self,stream,really=1):
+        plBitmap.write(self,stream,really)
+        
+        stream.Write32(self.fVisWidth)
+        stream.Write32(self.fVisHeight)
+        stream.WriteBool(self.fHasAlpha)
+        
+        stream.Write32(0) #DO NOT HANDLE THE INSANITY!
+    
+    def export_obj(self, obj):
+        self.fCompressionType = 0
+        self.BitmapInfo.fUncompressedInfo.fType = 0
+        self.fFlags = 0x11
 
 #############################################################
 # Begin waveset stuff. This likely belongs in DrawClasses.  #

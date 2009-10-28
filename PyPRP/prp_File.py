@@ -187,6 +187,8 @@ class PrpObject:
                 self.data=plVolumeSensorConditionalObject(self)
             elif self.type==0x00A8:
                 self.data=plMsgForwarder(self)
+            elif self.type==0x00AD:
+                self.data=plDynamicTextMap(self)
             elif self.type==0x00AE:
                 self.data=plSittingModifier(self)
             elif self.type==0x00B2:
