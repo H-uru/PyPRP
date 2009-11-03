@@ -1724,7 +1724,7 @@ class plPythonParameter :
         "activatorlist"         : {"typenum":  7, "type": "keylist", "defaultkeytype": 0x002D,  "allowlist": [0x002D,0x00A2,0x00AE,] }, \
         "responder"             : {"typenum":  8, "type": "key",     "defaultkeytype": 0x007C, "allowlist": [0x007C,] }, \
         "responderlist"         : {"typenum":  8, "type": "keylist", "defaultkeytype": 0x007C, "allowlist": [0x007C,] }, \
-#       "dynamictext"           : {"typenum":  9, "type": "key",     "defaultkeytype": 0x00AD, "allowlist": [0x00AD,] }, \
+        "dynamictext"           : {"typenum":  9, "type": "key",     "defaultkeytype": 0x00AD, "allowlist": [0x00AD,] }, \
 #       "guidialog"             : {"typenum": 10, "type": "key",     "defaultkeytype": 0x0098, "allowlist": [0x0098,] }, \
 #       "excluderegion"         : {"typenum": 11, "type": "key",     "defaultkeytype": 0x00A4, "allowlist": [0x00A4,] }, \
 #       "animation"             : {"typenum": 12, "type": "key",     "defaultkeytype": None,   "allowlist": [0x006D,0x00A8,] }, \
