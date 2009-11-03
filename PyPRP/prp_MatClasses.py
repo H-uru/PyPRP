@@ -392,6 +392,7 @@ class hsGMaterial(plSynchedObject):         # Type 0x07
                     if (mtex.tex.type == Blender.Texture.Types.BLEND or
                         mtex.tex.type == Blender.Texture.Types.NONE or
                         mtex.tex.type == Blender.Texture.Types.IMAGE or
+                        mtex.tex.type == Blender.Texture.Types.NOISE or
                         mtex.tex.type == Blender.Texture.Types.ENVMAP):
 
                         # we hit a problem when two textures are shared, because the mtex is different per material.
