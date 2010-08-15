@@ -598,6 +598,11 @@ class alcUruPage:
                     plCoordinateInterface.Export(self,obj,scnobj,name,1,objlist)
 
                     plAudioInterface.Export(self,obj,scnobj,name,SceneNodeRef,softVolumeParser)
+
+                    if FindInDict(objscript, "calibration", False):
+                        #It's acting as a Maintainer's Mark
+                        mm = plMaintainersMarkerModifier.Export(self,obj,scnobj,name)
+
                     # Logical Export
                     AlcLogicHelper.Export(self,obj,scnobj,name)
 
@@ -762,6 +767,10 @@ class alcUruPage:
                         print ""
                         print "[Visual Object %s]" % name
 
+
+                    if FindInDict(objscript, "calibration", False):
+                        #It's acting as a Maintainer's Mark
+                        plMaintainersMarkerModifier.Export(self,obj,scnobj,name)
 
                     isClimbable = getBoolPropertyOrDefault(obj,"climbable",0)
                     if(isClimbable):

@@ -1829,3 +1829,50 @@ class plPhysicalSndGroup(hsKeyedObject):
         stream.WriteInt(self.fGroup)
         self.fImpactSounds.write(stream)
         self.fSlideSounds.write(stream)
+
+class plMaintainersMarkerModifier(plMultiModifier):
+
+    Calibration = \
+    { \
+        "kBroken"       :  0, \
+        "kRepaired"     :  1, \
+        "kCalibrated"   :  2  \
+    }
+
+    ScriptCalibration = \
+    { \
+        "broken"        :  0, \
+        "repaired"      :  1, \
+        "calibrated"    :  2  \
+    }
+
+    def __init__(self,parent,name="unnamed",type=0x010D):
+        plMultiModifier.__init__(self,parent,name,type)
+        #format
+        self.fCalibrated = 2
+
+    def _Find(page,name):
+        return page.find(0x010D,name,0)
+    Find = staticmethod(_Find)
+
+    def _FindCreate(page,name):
+        return page.find(0x010D,name,1)
+    FindCreate = staticmethod(_FindCreate)
+
+    def read(self,stream):
+        plMultiModifier.read(self,stream)
+        self.fCalibrated = stream.Read32()
+
+    def write(self,stream):
+        plMultiModifier.write(self,stream)
+        stream.Write32(self.fCalibrated)
+
+    def export_obj(self,obj):
+        objscript = AlcScript.objects.Find(obj.name)
+        self.fCalibrated = int(plMaintainersMarkerModifier.ScriptCalibration[FindInDict(objscript, "calibration", 0)])
+    
+    def _Export(page,obj,scnobj,name):
+        mmm = plMaintainersMarkerModifier.FindCreate(page, name)
+        mmm.data.export_obj(obj)
+        scnobj.data.addModifier(mmm)
+    Export = staticmethod(_Export)

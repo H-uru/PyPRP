@@ -237,6 +237,8 @@ class PrpObject:
                 self.data=plDynamicEnvMap(self)
             elif self.type==0x010A:
                 self.data=plDynaRippleVSMgr(self)
+            elif self.type==0x010D:
+                self.data=plMaintainersMarkerModifier(self)
             elif self.type==0x0111:
                 self.data=plHardRegionPlanes(self)
             elif self.type==0x0112:
