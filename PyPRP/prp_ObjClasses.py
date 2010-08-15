@@ -1068,7 +1068,7 @@ class plHKPhysical(plPhysical):
         self.fPosition=Vertex() #position
         self.fOrientation=hsQuat() #orientation
         self.fMass=0.0   #mass (if 0, position is ignored as well as any related coordinate interface)
-        self.fRC=10.0    #refriction coefficient
+        self.fRC=0.5    #refriction coefficient
         self.fEL=0.0     #elasticity
         self.fBounds = ProxyBounds()
 
@@ -1485,7 +1485,7 @@ class plHKPhysical(plPhysical):
                 print "  No Friction, disabling frictive setting"
                 # If no friction is set, or it is set lower than 0,
                 # default it to around 10, so it doesn't appear unnatural on the moving objects...
-                self.fRC = 10.0
+                self.fRC = 0.5
                 # And disable friction :)
                 self.fLOSDB |= plPhysical.plLOSDB["kLOSDBAvatarWalkable"]
             else:
@@ -1498,6 +1498,8 @@ class plHKPhysical(plPhysical):
                 self.fEL = getFloatPropertyOrDefault(obj,"el",-1.0)
             if self.fEL < 0.0:
                 print "  No Elasticity set"
+                # reset to 0.0
+                self.fEL = 0.0
             else:
                 print "  Elasticity:",self.fEL
 
