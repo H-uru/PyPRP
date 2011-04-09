@@ -244,7 +244,7 @@ class RGBA:
         buf.WriteFloat(self.b)
         buf.WriteFloat(self.a)
 
-    def equals(col):
+    def equals(self, col):
         if self.r == col.r and self.b == col.b and self.g == col.g and self.a == col.a:
             return True
         else:
