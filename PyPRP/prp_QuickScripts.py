@@ -193,6 +193,9 @@ def QuickScript_SoundRegion(obj):
             emitter = getTextPropertyOrDefault(obj,"soundemitter",emitter)
             if not emitter is None:
                 emitters = [emitter,]
+        
+        oneway = FindInDict(objscript,"region.oneway",None)
+        oneway = getTextPropertyOrDefault(obj,"oneway",oneway)
 
         if not emitters is None and type(emitters) == list:
             print "  [QuickScript - SoundRegion]"
@@ -204,75 +207,89 @@ def QuickScript_SoundRegion(obj):
             StoreInDict(objscript,"region.type","logic")
 
             # Build up the required script
-            modtxt  = "- tag: Enter_SndRgn\n"
-            modtxt += "  flags:\n"
-            modtxt += "    - multitrigger\n"
-            modtxt += "  activators:\n"
-            modtxt += "    - type: objectinvolume\n"
-            modtxt += "      triggers:\n"
-            modtxt += "        - enter\n"
-            modtxt += "  conditions:\n"
-            modtxt += "    - type: volumesensor\n"
-            modtxt += "      satisfied: true\n"
-            modtxt += "      direction: enter\n"
-            modtxt += "  actions:\n"
-            modtxt += "    - type: responder\n"
-            modtxt += "      ref: $Enter_SndRgn\n"
-            modtxt += "- tag: Exit_SndRgn\n"
-            modtxt += "  flags:\n"
-            modtxt += "    - multitrigger\n"
-            modtxt += "  activators:\n"
-            modtxt += "    - type: objectinvolume\n"
-            modtxt += "      triggers:\n"
-            modtxt += "        - exit\n"
-            modtxt += "  conditions:\n"
-            modtxt += "    - type: volumesensor\n"
-            modtxt += "      satisfied: true\n"
-            modtxt += "      direction: exit\n"
-            modtxt += "  actions:\n"
-            modtxt += "    - type: responder\n"
-            modtxt += "      ref: $Exit_SndRgn\n"
+            modtxt  = ""
+            if oneway is None or str(oneway).lower() == "enter":
+                modtxt += "- tag: Enter_SndRgn\n"
+                modtxt += "  flags:\n"
+                modtxt += "    - multitrigger\n"
+                modtxt += "  activators:\n"
+                modtxt += "    - type: objectinvolume\n"
+                modtxt += "      triggers:\n"
+                modtxt += "        - enter\n"
+                modtxt += "  conditions:\n"
+                modtxt += "    - type: volumesensor\n"
+                modtxt += "      satisfied: true\n"
+                modtxt += "      direction: enter\n"
+                modtxt += "  actions:\n"
+                modtxt += "    - type: responder\n"
+                modtxt += "      ref: $Enter_SndRgn\n"
+            if oneway is None or str(oneway).lower() == "exit":
+                modtxt += "- tag: Exit_SndRgn\n"
+                modtxt += "  flags:\n"
+                modtxt += "    - multitrigger\n"
+                modtxt += "  activators:\n"
+                modtxt += "    - type: objectinvolume\n"
+                modtxt += "      triggers:\n"
+                modtxt += "        - exit\n"
+                modtxt += "  conditions:\n"
+                modtxt += "    - type: volumesensor\n"
+                modtxt += "      satisfied: true\n"
+                modtxt += "      direction: exit\n"
+                modtxt += "  actions:\n"
+                modtxt += "    - type: responder\n"
+                modtxt += "      ref: $Exit_SndRgn\n"
 
-            acttxt  = "- type: responder\n"
-            acttxt += "  tag: Enter_SndRgn\n"
-            acttxt += "  responder:\n"
-            acttxt += "      states:\n"
-            acttxt += "        - cmds:\n"
-            for emitter in list(emitters):
-                emitscript = AlcScript.objects.FindOrCreate(emitter)
-                emitvolume = FindInDict(emitscript,"sound.volume",1)
-                acttxt += "            - type: soundmsg\n"
-                acttxt += "              params:\n"
-                acttxt += "                  receivers:\n"
-                acttxt += "                    - 0011:" + str(emitter) + "\n"
-                acttxt += "                  cmds:\n"
-                acttxt += "                    - play\n"
-                acttxt += "                    - setvolume\n"
-                acttxt += "                  volume: " + str(emitvolume) + "\n"
-                acttxt += "              waiton: -1\n"
-            acttxt += "          nextstate: 0\n"
-            acttxt += "          waittocmd: 0\n"
-            acttxt += "      curstate: 0\n"
-            acttxt += "      flags:\n"
-            acttxt += "        - detecttrigger\n"
-            acttxt += "- type: responder\n"
-            acttxt += "  tag: Exit_SndRgn\n"
-            acttxt += "  responder:\n"
-            acttxt += "      states:\n"
-            acttxt += "        - cmds:\n"
-            for emitter in list(emitters):
-                acttxt += "            - type: soundmsg\n"
-                acttxt += "              params:\n"
-                acttxt += "                  receivers:\n"
-                acttxt += "                    - 0011:" + str(emitter) + "\n"
-                acttxt += "                  cmds:\n"
-                acttxt += "                    - stop\n"
-                acttxt += "              waiton: -1\n"
-            acttxt += "          nextstate: 0\n"
-            acttxt += "          waittocmd: 0\n"
-            acttxt += "      curstate: 0\n"
-            acttxt += "      flags:\n"
-            acttxt += "        - detecttrigger\n"
+            acttxt  = ""
+            if oneway is None or str(oneway).lower() == "enter":
+                acttxt += "- type: responder\n"
+                acttxt += "  tag: Enter_SndRgn\n"
+                acttxt += "  responder:\n"
+                acttxt += "      states:\n"
+                acttxt += "        - cmds:\n"
+                for emitter in list(emitters):
+                    emitscript = AlcScript.objects.FindOrCreate(emitter)
+                    emitvolume = FindInDict(emitscript,"sound.volume",1)
+                    acttxt += "            - type: soundmsg\n"
+                    acttxt += "              params:\n"
+                    acttxt += "                  receivers:\n"
+                    acttxt += "                    - 0011:" + str(emitter) + "\n"
+                    acttxt += "                  cmds:\n"
+                    acttxt += "                    - play\n"
+                    acttxt += "                    - setvolume\n"
+                    acttxt += "                  volume: " + str(emitvolume) + "\n"
+                    acttxt += "              waiton: -1\n"
+                acttxt += "          nextstate: 0\n"
+                acttxt += "          waittocmd: 0\n"
+                acttxt += "      curstate: 0\n"
+                acttxt += "      flags:\n"
+                acttxt += "        - detecttrigger\n"
+
+            if oneway is None or str(oneway).lower() == "exit":
+                acttxt += "- type: responder\n"
+                acttxt += "  tag: Exit_SndRgn\n"
+                acttxt += "  responder:\n"
+                acttxt += "      states:\n"
+                acttxt += "        - cmds:\n"
+                for emitter in list(emitters):
+                    emitscript = AlcScript.objects.FindOrCreate(emitter)
+                    emitvolume = FindInDict(emitscript,"sound.volume",1)
+                    acttxt += "            - type: soundmsg\n"
+                    acttxt += "              params:\n"
+                    acttxt += "                  receivers:\n"
+                    acttxt += "                    - 0011:" + str(emitter) + "\n"
+                    acttxt += "                  cmds:\n"
+                    if str(oneway).lower() == "exit":
+                        acttxt += "                    - play\n"
+                        acttxt += "                    - setvolume\n"
+                        acttxt += "                  volume: " + str(emitvolume) + "\n"
+                    else:
+                        acttxt += "                    - stop\n"
+                    acttxt += "              waiton: -1\n"
+                acttxt += "          nextstate: 0\n"
+                acttxt += "          waittocmd: 0\n"
+                acttxt += "      curstate: 0\n"
+                acttxt += "      flags:\n"
+                acttxt += "        - detecttrigger\n"
 
             print "Resulting Code for .logic.modifiers:\n",modtxt
             print "Resulting Code for .logic.actions:\n",acttxt

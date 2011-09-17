@@ -1293,3 +1293,52 @@ def antiShadow():
             print 'Unknown error for Material:',
             print mat.name
             continue
+
+    Blender.Draw.PupMenu('Done! See console for details')
+
+
+def undoFakeUser():
+    wavList = Blender.Sound.Get()
+    for wav in wavList:
+        try:
+            wav.fakeUser = 0
+            if wav.users:
+                print 'Warning! %s cannot be unlocked because it has %d user(s)' % (wav.name, wav.users)
+            else:
+                print '%s unlocked' % wav.name
+        except:
+            print 'Unknown error for sound:',
+            print wav.name
+            continue
+
+    Blender.Draw.PupMenu('Done! Save and restart Blender to remove. See console for details')
+
+
+def doFakeUser():
+    wavList = Blender.Sound.Get()
+    for wav in wavList:
+        try:
+            if wav.users:
+                print '%s already has %d user(s)' % (wav.name, wav.users)
+            else:
+                wav.fakeUser = 1
+                print '%s locked' % wav.name
+        except:
+            print 'Unknown error for sound:',
+            print wav.name
+            continue
+
+    Blender.Draw.PupMenu('Done! See console for details')
+
+
+def checkPassIndex():
+    counter = 0
+    for obj in bpy.data.scenes.active.objects:
+        if obj.passIndex:
+            print '%s has PassIndex: %d' % (obj.name, obj.passIndex)
+            counter = counter + 1
+
+    if counter:
+        Blender.Draw.PupMenu('%d objects have a PassIndex. See console for details' % counter)
+    else:
+        Blender.Draw.PupMenu('There are no objects with a PassIndex')

@@ -1093,6 +1093,12 @@ class plLayer(plLayerInterface):             # Type 0x06
                     self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendAlpha"]
                 if(mtex.neg): # set the negate colors flag if it is so required
                     self.fState.fBlendFlags |= hsGMatState.hsGMatBlendFlags["kBlendInvertColor"]
+                
+                # PATCH by Tachzusamm - set kBlendAlphaTestHigh to remove alpha edge artifacts
+                if(tex.type == Blender.Texture.Types.IMAGE):
+                    if(tex.image):
+                        if(tex.image.premul):
+                            self.fState.fBlendFlags  |= hsGMatState.hsGMatBlendFlags["kBlendAlphaTestHigh"]
 
                 if(mtex.mtHard):
                     self.fState.fMiscFlags  |= hsGMatState.hsGMatMiscFlags["kMiscBindNext"] | hsGMatState.hsGMatMiscFlags["kMiscRestartPassHere"]
@@ -2988,18 +2994,21 @@ class plWaveSet7(plMultiModifier):
         self.fEnvMap = envmap.data.getRef()
         # now we create a default waveset
         self.fMaxLen = FindInDict(objscript,'visual.waveset.maxlen',0.0)
-        geostate = self.fState.fGeoState
-        geostate.fMaxLength = FindInDict(objscript,'visual.waveset.geostate.maxlen',0.0)
-        geostate.fMinLength = FindInDict(objscript,'visual.waveset.geostate.minlen',0.0)
-        geostate.fAmpOverLen = FindInDict(objscript,'visual.waveset.geostate.ampoverlen',0.0)
-        geostate.fChop = FindInDict(objscript,'visual.waveset.geostate.chop',0.0)
-        geostate.fAngleDev = FindInDict(objscript,'visual.waveset.geostate.angledev',0.0)
         texstate = self.fState.fTexState
         texstate.fMaxLength = FindInDict(objscript,'visual.waveset.texstate.maxlen',6.25)
         texstate.fMinLength = FindInDict(objscript,'visual.waveset.texstate.minlen',0.78125)
         texstate.fAmpOverLen = FindInDict(objscript,'visual.waveset.texstate.ampoverlen',0.013)
         texstate.fChop = FindInDict(objscript,'visual.waveset.texstate.chop',0.5)
         texstate.fAngleDev = FindInDict(objscript,'visual.waveset.texstate.angledev',1.00356)
+        
+        # Use some defaults for the geostate so users with ancient hardware can see something
+        geostate = self.fState.fGeoState
+        geostate.fMaxLength = FindInDict(objscript,'visual.waveset.geostate.maxlen',texstate.fMaxLength)
+        geostate.fMinLength = FindInDict(objscript,'visual.waveset.geostate.minlen',texstate.fMinLength)
+        geostate.fAmpOverLen = FindInDict(objscript,'visual.waveset.geostate.ampoverlen',texstate.fAmpOverLen/10)
+        geostate.fChop = FindInDict(objscript,'visual.waveset.geostate.chop',0.0)
+        geostate.fAngleDev = FindInDict(objscript,'visual.waveset.geostate.angledev',texstate.fAngleDev)
+        
         self.fState.fRippleScale = FindInDict(objscript,'visual.waveset.ripplescale',100)
         windObj = FindInDict(objscript,'visual.waveset.winddir', None)
         windSpeed = FindInDict(objscript,'visual.waveset.windspeed', 1.0)

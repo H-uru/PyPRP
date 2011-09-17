@@ -347,7 +347,7 @@ class plSoundBuffer(hsKeyedObject):                     #Type 0x29
 
         self.fFlags |= plSoundBuffer.Flags["kIsExternal"]
         self.fFlags |= plSoundBuffer.Flags["kAlwaysExternal"]
-        self.fFlags |= plSoundBuffer.Flags["kStreamCompressed"]
+        
         #Assume that the sound is always external... let's not deal with embedded sounds o.o
         self.fDataLength = os.path.getsize(filename) #should get us the size
 
@@ -761,6 +761,9 @@ class plWin32Sound(plSound):
             sbuff.data.fFlags |= plSoundBuffer.Flags["kOnlyRightChannel"]
         if(chan == "left"):
             sbuff.data.fFlags |= plSoundBuffer.Flags["kOnlyLeftChannel"]
+        #fix for static sounds: only make streaming sounds play the ogg file!
+        if string.lower(FindInDict(objscript, "sound.buffer", "stream")) != "static":
+            sbuff.data.fFlags |= plSoundBuffer.Flags["kStreamCompressed"]
         self.fDataBuffer = sbuff.data.getRef() #We have our sound buffer
 
         vol = FindInDict(objscript,"sound.volume", 1.0)

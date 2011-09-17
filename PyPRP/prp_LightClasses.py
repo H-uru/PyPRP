@@ -614,7 +614,7 @@ class plSpotLightInfo(plOmniLightInfo):
 
         # Calculate the Outer angle of the Spotlight:
         spotSizeDeg = lamp.getSpotSize()
-        self.fSpotOuter = spotSizeDeg * 3.1415926536 / 180.0
+        self.fSpotOuter = spotSizeDeg / 180.0
 
         # Now calculate the angle of the inner spotlight
         #self.fSpotInner = (0.99 - (lamp.spotBlend * 0.98)) * self.fSpotOuter

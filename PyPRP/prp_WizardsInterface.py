@@ -30,7 +30,10 @@ Submenu: '0.5 to 1.x - Upgrade properties' w_Wizard_property_update
 Submenu: 'Add missing Blender materials and textures' w_Wizard_mattex_create
 Submenu: 'Assign default bounds to selected objects' i_setbounds
 Submenu: 'Clear Shadbuf from all Materials' w_antiShadow
-Tooltip: 'GoW PyPRP Upgrade'
+Submenu: 'Unlock all sound blocks for removal' w_undoFakeUser
+Submenu: 'Lock all sound blocks to prevent removal' w_doFakeUser
+Submenu: 'PassIndex check' w_checkPassIndex
+Tooltip: 'GoW PyPRP Compatibility Wizards'
 """
 
 __author__ = "GoW PyPRP Team"
