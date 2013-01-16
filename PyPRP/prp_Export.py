@@ -29,6 +29,7 @@ Submenu: 'Selection as full age (.age)' es_age
 Submenu: 'Generate single PRP with Release settings (.prp)' e_prp_final
 Submenu: 'All as single prp (.prp)' e_prp
 Submenu: 'All as single prp, per-page textures (.prp)' et_prp
+Submenu: 'All as single prp, per-page textures+generate BuiltIn (.prp)' etb_prp
 Submenu: 'Selection as single prp (.prp)' es_prp
 Tooltip: 'GoW PyPRP Exporter'
 """
@@ -56,7 +57,7 @@ from PyPRP.prp_ResManager import *
 from PyPRP.prp_Types import *
 from PyPRP.prp_AlcScript import *
 
-def export_age(agename,basepath,selection=0,merge=0,pagename=None):
+def export_age(agename,basepath,selection=0,merge=0,pagename=None,doBuiltIn=False):
     print "Exporting age %s" %agename
     # load the alcscript
     AlcScript.LoadFromBlender()
@@ -84,12 +85,12 @@ def export_age(agename,basepath,selection=0,merge=0,pagename=None):
         if page.name=="Textures":
             page.export_all(selection)
     for page in age.pages:
-        if (pagename==None or page.name==pagename) and page.name!="Textures":
+        if (pagename==None or page.name==pagename or (page.name=="BuiltIn" and doBuiltIn)) and page.name!="Textures": ## hack
             page.export_all(selection)
     #save
     print "" # for formatting of output
     for page in age.pages:
-        if pagename==None or page.name=="Textures" or page.name==pagename:
+        if pagename==None or page.name=="Textures" or page.name==pagename or (page.name=="BuiltIn" and doBuiltIn):
             page.save()
     #unload
     for page in age.pages:
@@ -177,6 +178,7 @@ def open_file(filename):
         page=pagea.split("_")
         agename = page[0]
         pagename = pagea[len(page[0]) + 1 + len(page[1]) + 1:]
+        builtin = False
         if w[0]=="e":
             selection=0
             merge=0
@@ -185,6 +187,12 @@ def open_file(filename):
             selection=0
             merge=0
             prp_Config.export_textures_to_page_prp = 1
+            pass
+        elif w[0]=="etb": ## to generate BuiltIn file
+            selection=0
+            merge=0
+            prp_Config.export_textures_to_page_prp = 1
+            builtin = True
             pass
         elif w[0]=="es":
             selection=1
@@ -200,7 +208,7 @@ def open_file(filename):
             pass
         else:
             raise RuntimeError,"Unimplemented option %s" %(args)
-        export_age(agename,basepath,selection,merge,pagename)
+        export_age(agename,basepath,selection,merge,pagename,builtin)
     else:
         raise RuntimeError,"Unimplemented option %s" %(args)
     stop=time.clock()
