@@ -1681,6 +1681,7 @@ class plDrawInterface(plObjInterface):
         ColorLayers = mesh.getColorLayerNames()
         UVLayers = mesh.getUVLayerNames()
 
+        auto_col = None # cache auto_col layer
         for mface in mesh.faces:
             if (len(mface.verts) < 3) or (len(mface.verts) > 4):
                 continue # ignore this face (too many verts)
@@ -1703,28 +1704,55 @@ class plDrawInterface(plObjInterface):
                 v.ny = vector.no[1]
                 v.nz = vector.no[2]
 
-                # vertex colors
-                if mesh.vertexColors:
-                    if len(ColorLayers) > 0:
-                        try:
-                            col_a=255
-                            for vc in range(len(ColorLayers)):
-                                if(ColorLayers[vc].lower() == "col"): #Mesh vertex colours
-                                    mesh.activeColorLayer = ColorLayers[vc]
-                                    col_r=mface.col[index].r
-                                    col_g=mface.col[index].g
-                                    col_b=mface.col[index].b
-                                    #if col_a >= 1.0: #See if there is alpha on the colour map
-                                    #    col_a = mface.col[index].a
-                                elif(ColorLayers[vc].lower() == "alpha"): #Mesh vertex alpha
-                                    mesh.activeColorLayer = ColorLayers[vc]
-                                    col_a = (mface.col[index].r + mface.col[index].g + mface.col[index].b) / 3.0
-                                    materialGroups[mface.mat]["vtxalphacol"] = True
-                                    blendSpan = True
+                # Vertex Colors
+                def find_layers(layers, col_name, alpha_name):
+                    """Helper that loops over the color layers and finds what we want"""
+                    col, alpha = None, None
+                    for layer in layers:
+                        if layer.lower() == col_name:
+                            col = layer
+                        elif layer.lower() == alpha_name:
+                            alpha = layer
+                        if col and alpha:
+                            break
+                    return col, alpha
 
-                            v.color = RGBA(col_r,col_g,col_b,col_a)
-                        except IndexError:
-                            pass
+                # Stage 1: Fiddle with baked colors
+                _mask = Blender.Material.Modes["VCOL_LIGHT"] | ~Blender.Material.Modes["SHADELESS"]
+                if mesh.materials[mface.mat].mode & _mask:
+                    if auto_col is None:
+                        # search for an auto_col from a bungled export. this is
+                        # just in case bungler decided to rename it to aUtO_cOl
+                        auto_col, alpha_layer = find_layers(ColorLayers, "auto_col", "alpha")
+                        if auto_col is None: # still?!
+                            auto_col = "auto_col"
+                            mesh.addColorLayer(auto_col)
+                        mesh.vertexShade(obj) # actually shade the object
+                    col_layer = auto_col
+                else:
+                    # we want manual colors
+                    col_layer, alpha_layer = find_layers(ColorLayers, "col", "alpha")
+
+                # VCols 2: Copy appropriate colors to vertex data
+                try:
+                    if alpha_layer is None:
+                        col_a = 255
+                    else:
+                        mesh.activeColorLayer = alpha_layer
+                        col_a = (mface.col[index].r + mface.col[index].g + mface.col[index].b) / 3.0
+                        materialGroups[mface.mat]["vtxalphacol"] = True
+                        blendSpan = True
+
+                    if col_layer is None:
+                        col_r, col_b, col_g = 255
+                    else:
+                        mesh.activeColorLayer = col_layer
+                        col_r = mface.col[index].r
+                        col_g = mface.col[index].g
+                        col_b = mface.col[index].b
+                    v.color = RGBA(col_r, col_g, col_b, col_a)
+                except IndexError:
+                    pass
 
                 # Blend weights.
                 if weightCount > 0:
@@ -1786,6 +1814,12 @@ class plDrawInterface(plObjInterface):
             elif len(mface.verts) == 4: # a quad must be separated into two triangles
                 materialGroups[mface.mat]["faces"].append([vertIdxs[0],vertIdxs[1],vertIdxs[2]]) # first triangle
                 materialGroups[mface.mat]["faces"].append([vertIdxs[0],vertIdxs[2],vertIdxs[3]]) # second triangle
+
+        # Hack?
+        # The auto_col layer will throw off the shaded view, so delete it.
+        # It's no loss--the user can make a copy himself. The shaded view is accurate as well :)
+        if auto_col:
+            mesh.removeColorLayer(auto_col)
 
         for MatGroup in materialGroups:
             if not MatGroup is None:
