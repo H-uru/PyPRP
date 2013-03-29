@@ -1718,7 +1718,7 @@ class plDrawInterface(plObjInterface):
                     return col, alpha
 
                 # Stage 1: Fiddle with baked colors
-                _mask = Blender.Material.Modes["VCOL_LIGHT"] | ~Blender.Material.Modes["SHADELESS"]
+                _mask = Blender.Material.Modes["VCOL_LIGHT"]
                 if mesh.materials[mface.mat].mode & _mask:
                     if auto_col is None:
                         # search for an auto_col from a bungled export. this is
@@ -1744,7 +1744,9 @@ class plDrawInterface(plObjInterface):
                         blendSpan = True
 
                     if col_layer is None:
-                        col_r, col_b, col_g = 255
+                        col_r = 255
+                        col_g = 255
+                        col_b = 255
                     else:
                         mesh.activeColorLayer = col_layer
                         col_r = mface.col[index].r
