@@ -904,7 +904,21 @@ class plAnimCmdMsg(plMessageWithCallbacks):
             if cmd.lower() in plAnimCmdMsg.ScriptModAnimCmds:
                 cidx = plAnimCmdMsg.ScriptModAnimCmds[cmd.lower()]
                 self.fCmd.SetBit(cidx)
-
+        
+        # Addon by Tachzusamm 2013-07-30: allow Speed, Time, Begin, LoopBegin etc. to be set as well
+        # NOTE: the commands gotopercent and playtopercentage are still unusable ;)
+        speed = FindInDict(script, "speed", None)
+        if speed != None:
+            self.fSpeed = float(speed)
+            print "    plAnimCmdMsg: speed: %f" % self.fSpeed
+        
+        # further values shorter scripted as one-liner ;)
+        self.fTime = float(FindInDict(script, "time", self.fTime))
+        self.fBegin = float(FindInDict(script, "begin", self.fBegin))
+        self.fEnd = float(FindInDict(script, "end", self.fEnd))
+        self.fLoopBegin = float(FindInDict(script, "loopbegin", self.fLoopBegin))
+        self.fLoopEnd = float(FindInDict(script, "loopend", self.fLoopEnd))
+        self.fSpeedChangeRate = float(FindInDict(script, "speedchangerate", self.fSpeedChangeRate))
 
 class plSoundMsg(plMessageWithCallbacks):
     ModSoundCmds = \

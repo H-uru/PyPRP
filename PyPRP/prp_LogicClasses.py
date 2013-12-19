@@ -1127,7 +1127,7 @@ class plSubWorldRegionDetector(plDetectorModifier):
     def _FindCreate(page,name):
         return page.find(0x00F3,name,1)
     FindCreate = staticmethod(_FindCreate)
-    
+
     def export_obj(self,obj):
         objscript = AlcScript.objects.Find(obj.name)
         self.fOnExit = FindInDict(objscript, "region.onexit", self.fOnExit)
@@ -1727,7 +1727,7 @@ class plPythonParameter :
         "dynamictext"           : {"typenum":  9, "type": "key",     "defaultkeytype": 0x00AD, "allowlist": [0x00AD,] }, \
 #       "guidialog"             : {"typenum": 10, "type": "key",     "defaultkeytype": 0x0098, "allowlist": [0x0098,] }, \
 #       "excluderegion"         : {"typenum": 11, "type": "key",     "defaultkeytype": 0x00A4, "allowlist": [0x00A4,] }, \
-#       "animation"             : {"typenum": 12, "type": "key",     "defaultkeytype": None,   "allowlist": [0x006D,0x00A8,] }, \
+        "animation"             : {"typenum": 12, "type": "key",     "defaultkeytype": 0x006D,  "allowlist": [0x006D,0x00A8,] }, \
         "animationname"         : {"typenum": 13, "type": "str"}, \
 # Duplicate is to allow for english spelling:
         "behaviour"             : {"typenum": 14, "type": "key",     "defaultkeytype": 0x0077,  "allowlist": [0x0077,] }, \
@@ -1799,6 +1799,7 @@ class plPythonParameter :
         _type = str(FindInDict(argscript,"type","none"))
         page = pyfmod.data.getRoot()
         resmgr = page.resmanager
+        idx = int(FindInDict(argscript,"index",index))		# Paradox-Mod to allow forcing the index (ID) of parameters
 
         if plPythonParameter.ScriptValueType.has_key(_type):
             typeinfo = plPythonParameter.ScriptValueType[_type]
@@ -1806,38 +1807,38 @@ class plPythonParameter :
                 value = bool(str(FindInDict(argscript,"value","false")).lower() == "true")
                 param = plPythonParameter(pyfmod)
                 param.fValue = value
-                param.fID = index
+                param.fID = idx
                 param.fValueType = typeinfo["typenum"]
                 pyfmod.data.addParameter(param)
             elif typeinfo["type"] == "int":
                 value = int(FindInDict(argscript,"value","0"))
                 param = plPythonParameter(pyfmod)
                 param.fValue = value
-                param.fID = index
+                param.fID = idx
                 param.fValueType = typeinfo["typenum"]
                 pyfmod.data.addParameter(param)
             elif typeinfo["type"] == "float":
                 value = float(FindInDict(argscript,"value","0.0"))
                 param = plPythonParameter(pyfmod)
                 param.fValue = value
-                param.fID = index
+                param.fID = idx
                 param.fValueType = typeinfo["typenum"]
                 pyfmod.data.addParameter(param)
             elif typeinfo["type"] == "str":
                 value = str(FindInDict(argscript,"value","0"))
                 param = plPythonParameter(pyfmod)
                 param.fValue = value
-                param.fID = index
+                param.fID = idx
                 param.fValueType = typeinfo["typenum"]
                 pyfmod.data.addParameter(param)
             elif typeinfo["type"] == "none":
                 param = plPythonParameter(pyfmod)
-                param.fID = index
+                param.fID = idx
                 param.fValueType = typeinfo["typenum"]
                 #pyfmod.data.addParameter(param)
             elif typeinfo["type"] == "key":
                 ref = FindInDict(argscript,"ref",None)
-                plPythonParameter.ExportKey(pyfmod,ref,typeinfo,index,scnobj)
+                plPythonParameter.ExportKey(pyfmod,ref,typeinfo,idx,scnobj)
             elif typeinfo["type"] == "keylist":
                 param = plPythonParameter(pyfmod)
 
@@ -1845,7 +1846,7 @@ class plPythonParameter :
 
                 for ref in refs:
                     if type(ref) == str:
-                        plPythonParameter.ExportKey(pyfmod,ref,typeinfo,index,scnobj)
+                        plPythonParameter.ExportKey(pyfmod,ref,typeinfo,idx,scnobj)
 
     ExportScript = staticmethod(_ExportScript)
 
@@ -2273,4 +2274,4 @@ class plAvLadderMod(plSingleModifier):
         scnobj.data.data2.append(laddermod.data.getRef())
 
     Export = staticmethod(_Export)
-    
+
