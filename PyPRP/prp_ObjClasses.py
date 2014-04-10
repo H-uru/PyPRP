@@ -1543,6 +1543,10 @@ class plHKPhysical(plPhysical):
                 else: # if coltype == "none":
                     self.gColType = plHKPhysical.Collision["cNone"]
 
+            clickHack = getTextPropertyOrDefault(obj,"clickable",False)
+            clickHack = FindInDict(objscript,"physical.clickable",clickHack)
+            if clickHack:
+                self.fLOSDB = plHKPhysical.plLOSDB["kLOSDBUIItems"]
 
             if (str(FindInDict(objscript,"physical.pinned","false")).lower() == "true" or (obj.rbFlags & Blender.Object.RBFlags["DYNAMIC"] == 0 and obj.rbFlags & Blender.Object.RBFlags["ACTOR"])):
                 print "  Pinning object"
