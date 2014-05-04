@@ -1194,7 +1194,7 @@ class plDrawableSpans(plDrawable):
         for idx in range(len(self.fGroups)):
             bufferGroup=self.fGroups[idx]
             if bufferGroup.GetSkinIndices()==bool(HasSkinIdx) and bufferGroup.GetNumSkinWeights()==NumSkinWeights \
-                and bufferGroup.GetUVCount()==UVCount and len(bufferGroup.fVertBuffStorage)+num_vertexs<0x0FFFF:
+                and bufferGroup.GetUVCount()==UVCount and len(bufferGroup.fVertBuffStorage)+num_vertexs<0x8000:
                 return idx
 
         #not found - create a new bufferGroup with the required format
@@ -1273,8 +1273,8 @@ class plDrawableSpans(plDrawable):
 
             print "   Material",MatGroup["mat"].name
 
-            if len(MatGroup["vertices"]) > 0x0FFFF:
-                raise RuntimeError, "Vertex count (=%i) on this material is above 65535, consider breaking up your object into several materials...." % len(MatGroup["vertices"])
+            if len(MatGroup["vertices"]) > 0x8000:
+                raise RuntimeError, "Vertex count on this material is too high, consider breaking up your object into several materials...."
 
             # Find the correct buffer group to store this, depending on
             # having skin indices, nr of vertex weights, nr of uvmaps and amount of vertices
