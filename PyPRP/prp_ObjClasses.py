@@ -217,6 +217,60 @@ class plSceneObject(plSynchedObject):                       #Type 0x01
     def addModifier(self,plobj):
         self.data2.append(plobj.data.getRef())
 
+    def checkSynchFlags(self):
+        """Last-minute pass over the SDL flags to make sure everything is sane for online environments
+           Here's the rub:
+               - If the flags have already been set, do nothing.
+               - If there is a Dynamic HKPhysical, see PFM (looks like a Cyanic hack).
+               - If there is a Responder attached, we exclude the Responder state
+               - If there is a PythonFileMod attached, we exclude everything a PFM might touch:
+                   - AGMaster
+                   - Layer
+                   - Responder
+                   - Sound
+                   - XRegion
+               - Otherwise, exclude everything!
+        """
+
+        def excludePyStates(self):
+            self.fSynchFlags |= plSynchedObject.Flags["kExcludePersistentState"]
+            self.fSDLExcludeList.append("AGMaster")
+            self.fSDLExcludeList.append("Layer")
+            if "Responder" not in self.fSDLExcludeList:
+                self.fSDLExcludeList.append("Responder")
+            self.fSDLExcludeList.append("Sound")
+            self.fSDLExcludeList.append("XRegion")
+
+        if self.fSDLExcludeList or self.fSynchFlags & plSynchedObject.Flags["kExcludeAllPersistentState"]:
+            # already set by user, bye-bye
+            return
+
+        if not self.simulation.isNull():
+            sim = plSimulationInterface.Find(self.getRoot(), self.simulation.Key.name)
+            phys = plHKPhysical.Find(self.getRoot(), sim.data.fPhysical.Key.name)
+            if phys.data.gColType & plHKPhysical.Collision["cStorePosition"]:
+                excludePyStates(self)
+                # we can't get any better than this.
+                return
+
+
+        for mod in self.data2.vector:
+            # PythonFileMod?
+            if mod.Key.object_type == 0x00A2:
+                excludePyStates(self)
+                # we're not going to exclude any more than this, so let's just go away...
+                return
+
+            # Responder Modifier?
+            elif mod.Key.object_type == 0x007C:
+                self.fSynchFlags |= plSynchedObject.Flags["kExcludePersistentState"]
+                self.fSDLExcludeList.append("Responder")
+                # don't break out--we might hit the more exclusive PFM
+
+        # If we haven't excluded anything at all (above), then exclude everything!
+        self.fSynchFlags |= plSynchedObject.Flags["kExcludeAllPersistentState"]
+
+
     def export_object(self, obj, objscript):
         plSynchedObject.export_obj(self, obj, objscript)
         # check for animations
