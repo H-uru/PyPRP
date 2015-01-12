@@ -904,9 +904,14 @@ class alcUruPage:
             else: # Not recognized here
                 objlist4.append(obj)
 
+        # Fifth pass:
+        #  SceneObject SDL flags
+        so_idx = self.prp.findidx(0x01)
+        for i in so_idx.objs:
+            i.data.checkSynchFlags()
 
 
-                ### End export code
+        ### End export code
         if self.type in (0x04,0x00):
             #update sceneNode
             self.prp.updateSceneNode()
