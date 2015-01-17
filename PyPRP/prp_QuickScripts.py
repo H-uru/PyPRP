@@ -408,7 +408,7 @@ def QuickScript_SDL(obj):
                 continue
             sdltype = str(FindInDict(sdlscript,"type",""))
             if sdltype == "boolshowhide":
-                result |= QuickScript_SDLBoolShowHide(obj)
+                result |= QuickScript_SDLBoolShowHide(obj,sdlscript)
             elif sdltype == "randombool":
                 result |= QuickScript_RandomBool(obj,sdlscript)
             elif sdltype == "intactenabler":
@@ -420,9 +420,13 @@ def QuickScript_SDL(obj):
     return False
 
 # add BoolShowHide
-def QuickScript_SDLBoolShowHide(obj):
+def QuickScript_SDLBoolShowHide(obj,sdlscript):
     print "  [QuickScript - SDLBoolShowHide]"
     objscript = AlcScript.objects.FindOrCreate(obj.name)
+
+    sdlname = FindInDict(sdlscript, "name", None)
+    if not sdlname:
+        sdlname =  str(obj.name) + "Vis"
 
     acttxt  = "- type: pythonfile\n"
     acttxt += "  tag: BoolShowHide\n"
@@ -430,7 +434,7 @@ def QuickScript_SDLBoolShowHide(obj):
     acttxt += "      file: xAgeSDLBoolShowHide\n"
     acttxt += "      parameters:\n"
     acttxt += "        - type: string\n"
-    acttxt += "          value: " + str(obj.name) + "Vis\n"
+    acttxt += "          value: " + str(sdlname) + "\n"
     acttxt += "        - type: bool\n"
     acttxt += "          value: true\n"
 
