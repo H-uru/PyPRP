@@ -625,11 +625,33 @@ class plAnimStage:
     }
 
     RegressType = {
-        "kAdvanceNone": 0,
-        "kAdvanceOnMove": 1,
-        "kAdvanceAuto": 2,
-        "kAdvanceOnAnyKey": 3,
-        "kAdvanceMax": 4
+        "kRegressNone": 0,
+        "kRegressOnMove": 1,
+        "kRegressAuto": 2,
+        "kRegressOnAnyKey": 3,
+        "kRegressMax": 4
+    }
+
+    alcNotifyType = {
+        "enter": 0x1,
+        "loop": 0x2,
+        "advance": 0x4,
+        "regress": 0x8
+    }
+
+    alcFwdBackType = {
+        "none": 0,
+        "key": 1,
+        "auto": 2,
+        "max": 3
+    }
+
+    alcAdvRegType = {
+        "none": 0,
+        "onmove": 1,
+        "auto": 2,
+        "onanykey": 3,
+        "max": 4
     }
 
     def __init__(self):
@@ -672,6 +694,60 @@ class plAnimStage:
         s.Write32(self.fAdvanceTo)
         s.WriteBool(self.fDoRegressTo)
         s.Write32(self.fRegressTo)
+    
+    
+    def _ExportScript(animstage, argscript):
+        """
+Example AlcScript:
+
+animation: <Animation Name, ex: GlobalScopeGrab>
+loops: <Number of loops, default: 0. -1: loop indefinitely (Python interrupt)>
+notify:
+  - <[enter | advance | loop | regress]>
+forward: <none|auto|key|max>
+backward: <none|auto|key|max>
+advance: <none|auto|onMove|onAnyKey|max>
+regress: <none|auto|onMove|onAnyKey|max>
+advanceto: <stage number, ex: 0 (first stage)> # optional, if not present: is disabled entirely
+regressto: <stage number, ex: 3 (fourth stage)> # optional, if not present: is disabled entirely
+"""
+        anim = FindInDict(argscript,"animation", None)
+        if anim is None:
+            raise RuntimeError("You can't have an AnimStage without an animation!")
+        animstage.fAnimName = str(anim)
+        animstage.fLoops = int(FindInDict(argscript,"loops", 0))
+        animstage.fNotify = 0
+        
+        # notify type flags
+        notify_script = list(FindInDict(argscript, "notify", []))
+        for i in notify_script:
+            try:
+                animstage.fNotify |= plAnimStage.alcNotifyType[i.lower()]
+            except KeyError:
+                raise RuntimeError("Unknown plAnimStage Notify '%s'! Valid options: %s" % (i, repr(plAnimStage.alcNotifyType)))
+        
+        def do_type(script, var, flagdict):
+            fwd = str(FindInDict(script, var, "none")).lower()
+            try:
+                return flagdict[fwd]
+            except KeyError:
+                raise RuntimeError("Unknown %s '%s'! Valid options: %s" % (var, fwd, repr(flagdict)))
+
+        animstage.fForwardType = do_type(argscript, "forward", plAnimStage.alcFwdBackType)
+        animstage.fBackType = do_type(argscript, "backward", plAnimStage.alcFwdBackType)
+        animstage.fAdvanceType = do_type(argscript, "advance", plAnimStage.alcAdvRegType)
+        animstage.fRegressType = do_type(argscript, "regress", plAnimStage.alcAdvRegType)
+        
+        advto = FindInDict(argscript, "advanceto", None)
+        if advto is not None:
+            animstage.fDoAdvanceTo = True
+            animstage.fAdvanceTo = int(advoto)
+        regto = FindInDict(argscript, "regressto", None)
+        if regto is not None:
+            animstage.fDoRegressTo = True
+            animstage.fRegressTo = int(regto)
+
+    ExportScript = staticmethod(_ExportScript)
 
 
 ###ATC Curve###

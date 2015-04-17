@@ -536,6 +536,25 @@ class alcUruPage:
                     # Logical Export
                     AlcLogicHelper.Export(self,obj,scnobj,name)
 
+                elif alctype=="multistage":
+                    print ""
+                    print "[Multistage Seek Point %s]" % name
+
+                    #find the sceneobject or create it
+                    scnobj = plSceneObject.FindCreate(self.prp,name)
+                    scnobj.data.scene=SceneNodeRef
+                    scnobj.data.export_object(obj, objscript)
+
+                    plCoordinateInterface.Export(self,obj,scnobj,name,1,objlist)
+
+                    plobj = plMultistageBehMod.FindCreate(self.prp,name)
+                    objscript = AlcScript.objects.Find(name)
+                    pscript = FindInDict(objscript,"multistage",{})
+                    plobj.data.export_script(pscript,scnobj)
+
+                    # Logical Export
+                    AlcLogicHelper.Export(self,obj,scnobj,name)
+
                 elif alctype=="swpoint": #A spawnPoint
                     print ""
                     print "[SpawnPoint %s]" % name

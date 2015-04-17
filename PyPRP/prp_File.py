@@ -195,6 +195,8 @@ class PrpObject:
                 self.data=plAvLadderMod(self)
             elif self.type==0x00B3:
                 self.data=plCameraBrain1_FirstPerson(self)
+            elif self.type==0x00C1:
+                self.data=plMultistageBehMod(self)
             elif self.type==0x00C2:
                 self.data=plCameraBrain1_Circle(self)
             elif self.type==0x00CB:
