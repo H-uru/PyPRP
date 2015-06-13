@@ -68,7 +68,7 @@ class VertexCoderColorElement:
                 return buf.ReadByte()
         else:
            raise RuntimeError, "VertexCoderColorElement prematurely reached end of count."
-4
+
 
 class plVertexCoder:
     # Still uses struct.pack and struct.unpack, but that is no problem
@@ -1185,7 +1185,7 @@ class plDrawableSpans(plDrawable):
     def find_buffer_group(self,HasSkinIdx,NumSkinWeights,UVCount,num_vertexs):
         # Find or create a buffer group corresponding to current format
 
-        # Each Buffergroup can store a maximum of 0x8000 vertices of a specific format
+        # Each Buffergroup can store a maximum of 0xffff vertices of a specific format (however we allow only 0x8000)
         # Format is based on:
         #
         # HasSkinIdx - (bool) Does it have Skin Indexes or not
@@ -1274,7 +1274,7 @@ class plDrawableSpans(plDrawable):
             print "   Material",MatGroup["mat"].name
 
             if len(MatGroup["vertices"]) > 0x8000:
-                raise RuntimeError, "Vertex count on this material is too high, consider breaking up your object into several materials...."
+                raise RuntimeError, "Vertex count (=%i) on this material is above 32768, consider breaking up your object into several materials...." %len(MatGroup["vertices"])
 
             # Find the correct buffer group to store this, depending on
             # having skin indices, nr of vertex weights, nr of uvmaps and amount of vertices
@@ -1375,6 +1375,12 @@ class plDrawableSpans(plDrawable):
                 # the old way
                 print "Warning: setting icicle properties as int is depreciated"
                 icicle.fProps = flags
+            
+            
+            
+            # Get the minimal and maximal visibility distance for this object
+            icicle.fMinDist = getStrIntPropertyOrDefault(obj,"mindist",-1)
+            icicle.fMaxDist = getStrIntPropertyOrDefault(obj,"maxdist",-1)
 
 
             # Store info about the Vertex Storage

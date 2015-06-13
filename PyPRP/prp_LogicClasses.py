@@ -1397,10 +1397,18 @@ class plMultistageBehMod(plSingleModifier):
         plSingleModifier.__init__(self,parent,name,type)
 
         self.fStages = []
-        self.fFreezePhys = True #this+0x70
+        self.fFreezePhys = False #this+0x70
         self.fSmartSeek = True #this+0x71
         self.fReverseFBControlsOnRelease = False #this+0x72
         self.fReceivers = hsTArray()
+
+    def _Find(page,name):
+        return page.find(0x00c1,name,0)
+    Find = staticmethod(_Find)
+
+    def _FindCreate(page,name):
+        return page.find(0x00c1,name,1)
+    FindCreate = staticmethod(_FindCreate)
 
 
     def read(self, s):
@@ -1430,6 +1438,78 @@ class plMultistageBehMod(plSingleModifier):
             stage.write(s)
 
         self.fReceivers.WriteVector(s)
+
+    def export_script(self,script,scnobj=None):
+        """
+Example AlcScript:
+
+
+<MultistageObject>:
+    type: multistage
+    multistage:
+        remote: <ObjectRef - use another object for the animation>
+        freezephys:         <True|False (default: false)>
+        smartseek:          <True|False (default: true)>
+        reverseonrelease:   <True|False (default: false)>
+        stages:
+            - animation: <Animation Name, ex: GlobalScopeGrab>
+              loops: <Number of loops, default: 0. -1: loop indefinitely (Python interrupt)>
+              notify:
+                - <[enter | advance | loop | regress]>
+              forward: <none|auto|key|max>
+              backward: <none|auto|key|max>
+              advance: <none|auto|onMove|onAnyKey|max>
+              regress: <none|auto|onMove|onAnyKey|max>
+              advanceto: <stage number, ex: 0 (first stage)> # optional, if not present: is disabled entirely
+              regressto: <stage number, ex: 3 (fourth stage)> # optional, if not present: is disabled entirely
+        receivers:
+            - <receivertype>: <objectname> # not required if using a Python script
+            - <receivertype>: <objectname>
+
+"""
+        print "   [MultistageBehMod %s]"%(str(self.Key.name))
+        # allow object to be customized given a given script....
+
+
+        # check where we should add ourself..
+        remote = FindInDict(script,"remote",None)
+        if remote is not None and str:
+            # if a name was given, usethat one to Find (or Create) the scene object ofthe seek point
+            ext_scnobj = plSceneObject.FindCreate(self.getRoot(),remote)
+
+            # in case it won't be exported beyond this, add an empty coordinateinterface...
+            # but only if no other coordinateinterface was set...
+            if ext_scnobj.data.coordinate.isNull():
+                co_itf = plCoordinateInterface.FindCreate(self.getRoot(),remote)
+                co_itf.data.parentref=ext_scnobj.data.getRef()
+                ext_scnobj.data.coordinate = co_itf.data.getRef()
+
+            ext_scnobj.data.addModifier(self.parent)
+        else:
+            # else, add it to the given scene object if we have one....
+            if not scnobj is None:
+                scnobj.data.addModifier(self.parent)
+
+
+        self.fFreezePhys = bool(str(FindInDict(script, 'freezephys', str(self.fFreezePhys))).lower() == 'true')
+        self.fSmartSeek = bool(str(FindInDict(script, 'smartseek', str(self.fSmartSeek))).lower() == 'true')
+        self.fReverseFBControlsOnRelease = bool(str(FindInDict(script, 'reverseonrelease', str(self.fReverseFBControlsOnRelease))).lower() == 'true')
+
+
+        stagelist = list(FindInDict(script,"stages",[]))
+        for stagescript in stagelist:
+            if isinstance(stagescript, dict):
+                animstage = plAnimStage()
+                plAnimStage.ExportScript(animstage, stagescript)
+                self.fStages.append(animstage)
+        
+        
+        receiverlist = list(FindInDict(script,"receivers",[]))
+        refparser = ScriptRefParser(self.getRoot(),str(scnobj.data.Key.name),None,[])
+        for keystr in receiverlist:
+            ref = refarser.RefString_FindCreateRef(basepage,keystring)
+            if not ref.isNull():
+                self.fReceivers.append(ref.Key)
 
 class plSittingModifier(plSingleModifier):
     Flags = \
@@ -1730,8 +1810,8 @@ class plPythonParameter :
         "animation"             : {"typenum": 12, "type": "key",     "defaultkeytype": 0x006D,  "allowlist": [0x006D,0x00A8,] }, \
         "animationname"         : {"typenum": 13, "type": "str"}, \
 # Duplicate is to allow for english spelling:
-        "behaviour"             : {"typenum": 14, "type": "key",     "defaultkeytype": 0x0077,  "allowlist": [0x0077,] }, \
-        "behavior"              : {"typenum": 14, "type": "key",     "defaultkeytype": 0x0077,  "allowlist": [0x0077,] }, \
+        "behaviour"             : {"typenum": 14, "type": "key",     "defaultkeytype": 0x0077,  "allowlist": [0x0077,0x00c1] }, \
+        "behavior"              : {"typenum": 14, "type": "key",     "defaultkeytype": 0x0077,  "allowlist": [0x0077,0x00c1] }, \
         "material"              : {"typenum": 15, "type": "key",     "defaultkeytype": 0x0004, "allowlist": [0x0004,], "tag": "texture",  }, \
 #       "guipopupmenu"          : {"typenum": 16, "type": "key",     "defaultkeytype": None,   "allowlist": [0x0119,] }, \
 #       "guiskin"               : {"typenum": 17, "type": "key",     "defaultkeytype": None,   "allowlist": [0xFFFF,] }, \

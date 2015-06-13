@@ -769,7 +769,7 @@ class plSpan:
         buf.Write16(self.fMaxeBoneIdx)
         buf.Write16(self.fPenBoneIdx)
         buf.WriteFloat(self.fMinDist)
-        buf.WriteFloat(self.fMinDist)
+        buf.WriteFloat(self.fMaxDist)
         if (self.fProps & plSpan.Props["kWaterHeight"]):
             buf.WriteFloat(self.fWaterHeight)
 
